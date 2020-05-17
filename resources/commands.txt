@@ -1,0 +1,5 @@
+﻿Выход
+Статус
+Запустить helper
+reboot
+Do {command}
