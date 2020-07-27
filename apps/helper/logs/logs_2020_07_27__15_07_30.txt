@@ -1,0 +1,54 @@
+App helper is launching	2020.07.27  15:07:30
+Base services are loaded	2020.07.27  15:07:31
+Binded helper with port = 5269	2020.07.27  15:07:31
+"ping" sending to bot	2020.07.27  15:07:31
+Pong!	2020.07.27  15:07:31
+The message is sent to "179995182": "Приложение "helper" запущено!"	2020.07.27  15:07:31
+Listening...	2020.07.27  15:07:31
+"update" sending to the bot	2020.07.27  15:07:31
+Socket received message: "ping"	2020.07.27  15:07:31
+"pong" sending to the bot	2020.07.27  15:07:31
+Socket received message: "{'user_id':'179995182','message':'hi','function':'passer'}"	2020.07.27  15:07:35
+Received message from "179995182": "hi"	2020.07.27  15:07:35
+Socket received message: "is_all_right"	2020.07.27  15:07:44
+Answered(3): 0	2020.07.27  15:07:44
+Socket received message: "ping"	2020.07.27  15:07:47
+"pong" sending to the bot	2020.07.27  15:07:47
+Socket received message: "{'user_id':'179995182','message':'helper start','function':'_launch'}"	2020.07.27  15:07:47
+Received message from "179995182": "helper start"	2020.07.27  15:07:47
+Created thread object	2020.07.27  15:07:47
+The message is sent to "179995182": "Поток приложения "helper" запускается"	2020.07.27  15:07:47
+Thread is ran	2020.07.27  15:07:47
+There is message Do hi from user 179995182	2020.07.27  15:07:50
+Socket received message: "{'user_id':'179995182','message':'hi','function':'passer'}"	2020.07.27  15:07:50
+Received message from "179995182": "hi"	2020.07.27  15:07:50
+The sticker "121" is sent to "179995182"	2020.07.27  15:07:51
+Socket received message: "is_all_right"	2020.07.27  15:07:56
+Answered(3): 2	2020.07.27  15:07:56
+Socket received message: "ping"	2020.07.27  15:08:02
+"pong" sending to the bot	2020.07.27  15:08:02
+Socket received message: "is_running"	2020.07.27  15:08:02
+Answered(2): True	2020.07.27  15:08:02
+Socket received message: "is_all_right"	2020.07.27  15:08:07
+Answered(3): 2	2020.07.27  15:08:07
+Socket received message: "ping"	2020.07.27  15:08:09
+"pong" sending to the bot	2020.07.27  15:08:09
+Socket received message: "is_all_right"	2020.07.27  15:08:16
+Answered(3): 2	2020.07.27  15:08:16
+Socket received message: "ping"	2020.07.27  15:08:17
+"pong" sending to the bot	2020.07.27  15:08:17
+Socket received message: "is_running"	2020.07.27  15:08:17
+Answered(2): True	2020.07.27  15:08:17
+Socket received message: "is_all_right"	2020.07.27  15:08:27
+Answered(3): 2	2020.07.27  15:08:27
+Socket received message: "is_all_right"	2020.07.27  15:08:38
+Answered(3): 2	2020.07.27  15:08:38
+Socket received message: "ping"	2020.07.27  15:08:48
+"pong" sending to the bot	2020.07.27  15:08:48
+Socket received message: "{'user_id':'179995182','message':'helper exit','function':'_exit'}"	2020.07.27  15:08:48
+Received message from "179995182": "helper exit"	2020.07.27  15:08:48
+The message is sent to "179995182": "Поток приложения "helper" останавливается..."	2020.07.27  15:08:48
+App is suspending	2020.07.27  15:08:48
+The thread is stopped	2020.07.27  15:08:54
+The message is sent to "179995182": "Поток остановлен. Приложение "helper" закрыто."	2020.07.27  15:08:54
+Program suspended	2020.07.27  15:08:54

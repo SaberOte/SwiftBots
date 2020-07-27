@@ -8,7 +8,6 @@ from logger import Logger
 
 class BotBase:
     plugins = []
-    BOT_PORT = 5100
     def __init__(self, is_debug):
         self.__init_base_services(is_debug)
         self.__init_plugins()
@@ -26,6 +25,7 @@ class BotBase:
         self.api = ApiManager(self.keys, logger.log)
         self.sender = Sender('./../resources/', self.keys, self.api, logger.log)
         self.start_time = datetime.datetime.utcnow()
+        self.BOT_PORT = self.keys.bot_port
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(('localhost', self.BOT_PORT))

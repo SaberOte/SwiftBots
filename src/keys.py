@@ -7,6 +7,7 @@ class KeyManager:
             os._exit(1)
         with open(path, 'r') as file:
             data = json.load(file)
+            self.bot_port = data.get('main_port')
             self.public_id = data.get('public_id')
             self.admin_id = data.get('admin_id')
             self.public_token = data.get('public_token')

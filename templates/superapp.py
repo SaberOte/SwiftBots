@@ -36,7 +36,7 @@ class SuperApp(SuperPlugin):
         self.log('Base services are loaded')
         self.user_id = self.keys.admin_id
 
-        BOT_PORT = 5100
+        BOT_PORT = self.keys.bot_port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.bot_port = BOT_PORT
         while True:
