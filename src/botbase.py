@@ -265,10 +265,10 @@ class BotBase:
         if mode == 0:
             pass #quiet start
         elif mode == 1:
-            self.sender.send(self.keys.admin_id, 'Бот запущен!')
+            self.sender.report('Бот запущен!')
             self.log('Bot is started. mode %d' % mode) 
         elif mode == 2:
-            self.sender.send(self.keys.admin_id, 'Бот перезапущен!')
+            self.sender.report('Бот перезапущен!')
             self.log('Bot is restarted %d' % mode) 
         elif mode == 3:
             self.log('Bot is restarted %d' % mode)
@@ -289,8 +289,8 @@ class BotBase:
             self._start_(3) 
         
         except Exception as e:
-            self.sender.send(self.keys.admin_id, 'Exception in Botbase:\n'+str(type(e))+'\n'+str(e))
-            self.sender.send(self.keys.admin_id, 'Бот запустится через 60 секунд...')
+            self.sender.report('Exception in Botbase:\n'+str(type(e))+'\n'+str(e))
+            self.sender.report('Бот запустится через 60 секунд...')
             self.log('!!ERROR!!\nException in Botbase:\n'+str(type(e))+'\n'+str(e))
             self.log('Bot is pausing about 60 seconds')
             time.sleep(60)
