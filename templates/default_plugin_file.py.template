@@ -1,0 +1,13 @@
+from superplugin import SuperPlugin, admin_only
+class __REPLACE_ME__(SuperPlugin):
+    def __init__(self, bot):
+        super().__init__(bot)
+
+    
+
+    prefixes = {
+#        'begin_of_command' : function_name
+    }
+    cmds = {
+#        'command' : function_name
+    }

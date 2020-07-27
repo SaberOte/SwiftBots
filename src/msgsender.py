@@ -1,29 +1,30 @@
 from vk_api.utils import get_random_id
 
 def ExpCatcher(func):
-    def do(self, a, b):
+    def do(*args, **kwargs):
         try:
-            func(self, a, b)
+            func(*args, **kwargs)
         except Exception as e:
             try: 
+                self.log(f'!!ERROR!! It\'s try to send error to admin about exception in Sender: \n' + 'Exception in Sender:\n'+str(type(e))+'\n'+str(e))
                 self.api.messages.send(
                             user_id=self.keys.admin_id,
                             random_id=get_random_id(),
                             message=('Exception in Sender:\n'+str(type(e))+'\n'+str(e))
                         )
             except Exception as ex:
-                print('Critical error in Sender:\n'+str(type(ex))+'\n'+str(ex))
+                self.log('!!ERROR!! Sending is impossible. Critical error in Sender:\n'+str(type(ex))+'\n'+str(ex))
                 import os, sys
-                sys.stdout.flush()
                 os._exit(1)
     return do
 
 class Sender:
-    def __init__(self, keys, api):
+    def __init__(self, path, keys, api, log):
         self.keys = keys
         self.api = api.pub_api
-        self.keyboard=open("./../resources/keyboard.json", 'r', encoding="UTF-8").read()
-        self.static_keyboard=open("./../resources/static_keyboard.json", 'r', encoding="UTF-8").read()        
+        self.keyboard=open(path+"keyboard.json", 'r', encoding="UTF-8").read()
+        self.static_keyboard=open(path+"static_keyboard.json", 'r', encoding="UTF-8").read()        
+        self.log = log
 
     @ExpCatcher
     def send(self, user_id, message):
@@ -42,8 +43,9 @@ class Sender:
                         message=msg,
                         keyboard=self.static_keyboard
                     )
+            self.log(f'The message is sent to "{user_id}": "{msg[:100] + "..." if len(msg) > 100 else msg}"')
         
-    #@ExpCatcher
+    @ExpCatcher
     def send_sticker(self, user_id, sticker_id):
         self.api.messages.send(
                     user_id=user_id,
@@ -51,18 +53,18 @@ class Sender:
                     sticker_id=sticker_id,
                     keyboard=self.static_keyboard
                 )
+        self.log(f'The sticker "{sticker_id}" is sent to "{user_id}"')
 
-    #@ExpCatcher
-    def send_menu(self):
+    @ExpCatcher
+    def send_menu(self, user_id):
         self.api.messages.send(
-                    user_id=self.keys.admin_id,
+                    user_id=user_id,
                     random_id=get_random_id(),
                     message=open('./../resources/commands.txt', encoding="utf-8").read(),
                     keyboard=self.keyboard
                 )
+        self.log(f'The menu is sent to "{user_id}"')
+
     
     def report(self, message):
         self.send(self.keys.admin_id, message)
-
-    def debug(self, message):
-        self.send(self.keys.debug_per_id, message)

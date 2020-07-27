@@ -4,9 +4,9 @@
       [{
         "action": {
           "type": "text",
-          "label": "Команды"
+          "label": "Статус"
         },
-        "color": "positive"
+        "color": "primary"
       }]
     ]
   }

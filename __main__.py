@@ -1,16 +1,21 @@
-if __name__ == '__main__':
-    import os
-    import sys
-    import json
-    from inspect import getsourcefile
+import os
+import sys
+from inspect import getsourcefile
+is_debug = False
+for arg in sys.argv:
+    if arg == '-d':
+        is_debug = True
+path = os.path.abspath(getsourcefile(lambda:0))[:-11]
+sys.path.insert(0, path+'src')
+sys.path.insert(0, path+'plugins')
+sys.path.insert(0, path+'templates')
+sys.path.insert(0, path+'apps')
+os.chdir(path+'src')
 
-    path = os.path.abspath(getsourcefile(lambda:0))[:-11]
-    sys.path.insert(0, path+'src')
-    os.chdir(path+'src')
-    import botbase
+import botbase
 
-    bot = botbase.BotBase()
-    try:
-        bot.start(1)
-    except Exception as e:
-        bot.sender.send(bot.keys.admin_id, 'Exception in unknown place:\n'+str(type(e))+'\n'+str(e))
+bot = botbase.BotBase(is_debug)
+try:
+    bot._start_(1)
+except Exception as e:
+    bot.sender.send(bot.keys.admin_id, 'Exception in unknown place:\n'+str(type(e))+'\n'+str(e))

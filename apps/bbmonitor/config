@@ -1,0 +1,6 @@
+port=5581
+commands={'bbmon stop': '_stop', 'bbmon reboot': '_reboot', 'bbmon ребут': '_reboot', 'bbmon rreboot': '_radical_reboot', 'bbmon rexit': '_radical_exit', 'bbmon exit': '_exit', 'bbmon выход': '_exit', 'bbmon запустить': '_launch', 'bbmon launch': '_launch', 'bbmon start': '_launch'}
+prefixes={}
+name=bbmon
+launch_time=1595809826.8733342
+date=Mon Jul 27 00:30:26 2020
