@@ -185,16 +185,16 @@ date={time.ctime()}""")
         t = time.time()
         while time.time() - t < 10:
             if not self.thread.is_alive():
-                self.sender.error(self.user_id, 'Поток приложения "{self.name}" остановлен')
+                self.sender.error(self.user_id, f'Поток приложения "{self.name}" остановлен')
                 self.log('The thread has stopped by stop()')
                 return
-        self.sender.error(self.user_id, 'Поток приложения "{self.name}" не удаётся остановить более 10 секунд. Можно подождать или завершить его насильно')
+        self.sender.error(self.user_id, f'Поток приложения "{self.name}" не удаётся остановить более 10 секунд. Можно подождать или завершить его насильно')
 
         def fuck():
             while self.__superbitch__:
                 if self.thread.is_alive() == False:
                     self.log('The thread is stopped')
-                    self.sender.error(user_id, 'Поток приложения "{self.name} остановлен')
+                    self.sender.error(user_id, f'Поток приложения "{self.name} остановлен')
         threading.Thread(target=fuck, daemon=True).start()
 
     @admin_only

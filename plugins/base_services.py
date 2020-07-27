@@ -14,6 +14,7 @@ class BaseServices(SuperPlugin):
     
     @admin_only
     def reboot(self):
+        self.bot.sock.close()
         if platform == 'linux':
             subprocess.Popen(['python3','./../upbot.py'])
         elif platform == 'win32':
@@ -34,13 +35,6 @@ class BaseServices(SuperPlugin):
         
     @admin_only
     def common_status(self):
-        '''
-        status = 'Статус сообщества - '
-        if self.api.pub_api.groups.getOnlineStatus(group_id=self.keys.public_id).get('status') == 'online':
-            status = status + '&#10004;Online'    
-        else:
-            status = status + '&#10006;Offline'    
-        '''
         status = ''
         dt = datetime.datetime.utcnow()-self.start_time
         if dt.days == 0:
@@ -57,12 +51,12 @@ class BaseServices(SuperPlugin):
         elif dt.days < 365:
             dt = str(dt.days//30) + " месяцев"
         else: dt = str(dt.days//365) + " лет"
-        self.sender.send(self.user_id, f'С запуска бота прошло {dt}') 
+        status += f'С запуска бота прошло {dt}\n' 
         for app in self.bot.apps:
-            self.app_status(app)
+            status += '\n' + self._get_app_status(app) + '\n'
+        self.sender.send(self.user_id, status)
     
-    @admin_only
-    def app_status(self, app=None):
+    def _get_app_status(self, app=None):
         if app == None:
             for a in self.bot.apps:
                 if a.name == self.message:
@@ -88,7 +82,11 @@ class BaseServices(SuperPlugin):
                 respond = 'Uncorrect answer "is_running"'
         if info != None:
             respond += info
-        self.sender.send(self.user_id, respond)
+        return respond
+
+    @admin_only
+    def app_status(self, app=None):
+        self.sender.send(self.user_id, self._get_app_status(app))
 
     @admin_only
     def update_apps(self):
@@ -210,7 +208,6 @@ class BaseServices(SuperPlugin):
             "launch" : launch_app,
             "start" : launch_app,
             "status" : app_status,
-            "статус" : app_status,
             "logs" : show_logs,
             "логи" : show_logs
             }
@@ -237,7 +234,6 @@ class BaseServices(SuperPlugin):
         "отсоси" : exit,
         "иди нахуй" : exit,
         "умри" : exit,
-        "статус" : common_status,
         "status" : common_status,
         "перезагрузить" : reboot,
         "перезапустить" : reboot,
