@@ -133,9 +133,7 @@ date={time.ctime()}""")
                 self.log(f'Answered(3): {ans}')
                 self.sock.sendto(ans.encode('utf-8'), ('localhost', self.bot_port))
             else:
-                if self.user_id != self.keys.admin_id:
-                    self.sender.send(self.user_id, f'В сокет приложения "{self.name}" пришло сообщение неправильного формата: {msg}')
-                self.sender.report(f'В сокет приложения "{self.name}" пришло сообщение неправильного формата: {msg}')
+                self.sender.error(self.user_id, f'В сокет приложения "{self.name}" пришло сообщение неправильного формата: {msg}')
 
     def handler(self, msg):
         # формат msg r"{'user_id':'\d+','message':'.*','function':'.*'}$"
@@ -146,7 +144,7 @@ date={time.ctime()}""")
             self.log(f'!!ERROR!!\nException in "SuperApp.handler":\n{type(e)}\n{str(e)}')
             self.sender.report(f'Exception in "SuperApp.handler":\n{type(e)}\n{str(e)}')
             return
-        
+
         user_id = js.get('user_id')
         message = js.get('message')
         self.user_id = user_id
@@ -161,13 +159,13 @@ date={time.ctime()}""")
                 function = method[1]
         if function == None:
             self.log(f'!!ERROR!!\nThere is no function with such name "{function_name}"')
-            self.sender.send(user_id, f'В классе "{self.name}" нет метода "{function_name}"')
+            self.sender.error(user_id, f'В классе "{self.name}" нет метода "{function_name}"')
             return
 
         try:
             function()
         except Exception as e:
-            self.sender.send(user_id, f'Exception in app "{self.name}" in method "{function_name}":\n{type(e)}\n{str(e)}')
+            self.sender.error(user_id, f'Exception in app "{self.name}" in method "{function_name}":\n{type(e)}\n{str(e)}')
             self.log(f'!!ERROR!!\nException in app "{self.name}" in method "{function_name}":\n{type(e)}\n{str(e)}')
 
     def launch(self):
@@ -181,24 +179,22 @@ date={time.ctime()}""")
     def _stop(self):
         self.is_active = False
         if self.thread == None:
-            self.sender.send(self.user_id, 'Поток не был запущен')
+            self.sender.error(self.user_id, f'Поток приложения "{self.name}" не был запущен')
             return
         self.log('There is query to stop the thread')
         t = time.time()
         while time.time() - t < 10:
             if not self.thread.is_alive():
-                self.sender.send(self.user_id, 'Поток остановлен')
+                self.sender.error(self.user_id, 'Поток приложения "{self.name}" остановлен')
                 self.log('The thread has stopped by stop()')
                 return
-        self.sender.send(self.user_id, 'Поток не удаётся остановить более 10 секунд. Можно подождать или завершить его насильно')
+        self.sender.error(self.user_id, 'Поток приложения "{self.name}" не удаётся остановить более 10 секунд. Можно подождать или завершить его насильно')
 
         def fuck():
             while self.__superbitch__:
                 if self.thread.is_alive() == False:
                     self.log('The thread is stopped')
-                    self.sender.send(user_id, 'Поток остановлен')
-                    if user_id != self.keys.admin_id:
-                        self.sender.report('Поток остановлен')
+                    self.sender.error(user_id, 'Поток приложения "{self.name} остановлен')
         threading.Thread(target=fuck, daemon=True).start()
 
     @admin_only
@@ -215,13 +211,11 @@ date={time.ctime()}""")
                 self.thread = threading.Thread(target=func_wrapper, daemon=True)
                 self.log('Created thread object')
                 self.is_active = True
-                self.sender.send(self.user_id, f'Поток приложения "{self.name}" запускается')
-                if self.user_id != self.keys.admin_id:
-                    self.sender.report(self.user_id, f'Поток приложения "{self.name}" запускается')
+                self.sender.error(self.user_id, f'Поток приложения "{self.name}" запускается')
                 self.thread.start()
                 self.log('Thread is ran')
             elif self.thread.is_alive():
-                self.sender.send(self.user_id, f'Служба класса "{self.name}" итак активна. Можете её остановить')
+                self.sender.error(self.user_id, f'Служба класса "{self.name}" итак активна. Можете её остановить')
         except Exception as e:
             self.sender.report("Exception in SuperApp._launch:\n"+str(type(e))+'\n'+str(e))
 
@@ -232,13 +226,9 @@ date={time.ctime()}""")
         user_id = self.user_id
         self.is_active = False
         if self.thread and self.thread.is_alive():
-            self.sender.send(self.user_id, f'Поток приложения "{self.name}" останавливается...')
-            if self.user_id != self.keys.admin_id:
-                self.sender.report(self.user_id, f'Поток приложения "{self.name}" останавливается...')
+            self.sender.error(self.user_id, f'Поток приложения "{self.name}" останавливается...')
         else:
-            self.sender.send(self.user_id, f'Приложение "{self.name}" закрыто')
-            if self.user_id != self.keys.admin_id:
-                self.sender.report(self.user_id, f'Приложение "{self.name}" закрыто')
+            self.sender.error(self.user_id, f'Приложение "{self.name}" закрыто')
             self.log('Program suspended')
             self.sock.sendto(b'exited', ('localhost', self.bot_port))
             self.sock.close()
@@ -248,23 +238,19 @@ date={time.ctime()}""")
         while t - time.time() < 65:
             if self.thread.is_alive() == False:
                 self.log('The thread is stopped')
-                self.sender.send(self.user_id, f'Поток остановлен. Приложение "{self.name}" закрыто.')
-                if self.user_id != self.keys.admin_id:
-                    self.sender.report(self.user_id, f'Поток остановлен. Приложение "{self.name}" закрыто.')
+                self.sender.error(self.user_id, f'Поток остановлен. Приложение "{self.name}" закрыто.')
                 self.sock.sendto(b'exited', ('localhost', self.bot_port))
                 self.sock.close()
                 self.log('Program suspended')
                 os._exit(0) 
         if self.thread.is_alive() == True:
-            self.sender.send(user_id, 'Поток не получается остановить больше минуты. Можно подождать дольше или завершить приложение насильно')
+            self.sender.error(user_id, 'Поток не получается остановить больше минуты. Можно подождать дольше или завершить приложение насильно')
 
         def fuck():
             while self.__superbitch__:
                 if self.thread.is_alive() == False:
                     self.log('The thread is stopped')
-                    self.sender.send(self.user_id, f'Поток остановлен. Приложение "{self.name}" закрыто.')
-                    if self.user_id != self.keys.admin_id:
-                        self.sender.report(self.user_id, f'Поток остановлен. Приложение "{self.name}" закрыто.')
+                    self.sender.error(self.user_id, f'Поток остановлен. Приложение "{self.name}" закрыто.')
                     self.sock.sendto(b'exited', ('localhost', self.bot_port))
                     self.sock.close()
                     self.log('Program suspended')
@@ -279,9 +265,7 @@ date={time.ctime()}""")
         user_id = self.user_id
         self.is_active = False
         self.log('App force suspends')
-        self.sender.send(user_id, f'Приложение "{self.name}" закрыто.')
-        if user_id != self.keys.admin_id:
-            self.sender.report(f'Приложение "{self.name}" насильно закрыто.')
+        self.sender.error(user_id, f'Приложение "{self.name}" насильно закрыто.')
         self.sock.sendto(b'exited', ('localhost', self.bot_port))
         self.sock.close()
         self.log('Program force suspended')
@@ -311,12 +295,10 @@ date={time.ctime()}""")
         user_id = self.user_id
         self.is_active = False 
         if self.thread and self.thread.is_alive(): 
-            self.sender.send(user_id, f'Поток приложения "{self.name}" останавливается...')
+            self.sender.error(user_id, f'Поток приложения "{self.name}" останавливается...')
         self.log('App is rebooting')
         if self.thread == None or not self.thread.is_alive():
-            self.sender.send(user_id, f'Приложение "{self.name}" закрыто.')
-            if user_id != self.keys.admin_id:
-                self.sender.report(f'Приложение "{self.name}" закрыто.')
+            self.sender.error(user_id, f'Приложение "{self.name}" закрыто.')
             self.__up_new_app()
             self.sock.close()
             self.log('Program suspended')
@@ -325,23 +307,19 @@ date={time.ctime()}""")
         while time.time() - t < 65:
             if self.thread.is_alive() == False:
                 self.log('The thread is stopped')
-                self.sender.send(user_id, f'Поток остановлен. Приложение "{self.name}" закрыто.')
-                if user_id != self.keys.admin_id:
-                    self.sender.report(f'Поток остановлен. Приложение "{self.name}" закрыто.')
+                self.sender.error(user_id, f'Поток остановлен. Приложение "{self.name}" закрыто.')
                 self.__up_new_app()
                 self.sock.close()
                 self.log('Program suspended')
                 os._exit(0)
                  
         if self.thread.is_alive() == True:
-            self.sender.send(user_id, 'Поток не получается остановить больше минуты. Можно подождать дольше или завершить приложение насильно')
+            self.sender.error(user_id, 'Поток не получается остановить больше минуты. Можно подождать дольше или завершить приложение насильно')
         def __fuck():
             while self.__superbitch__:
                 if self.thread.is_alive() == False:
                     self.log('The thread is stopped')
-                    self.sender.send(user_id, f'Поток остановлен. Приложение "{self.name}" закрыто.')
-                    if user_id != self.keys.admin_id:
-                        self.sender.report(f'Поток остановлен. Приложение "{self.name}" закрыто.')
+                    self.sender.error(user_id, f'Поток остановлен. Приложение "{self.name}" закрыто.')
                     self.__up_new_app()
                     self.sock.close()
                     self.log('Program suspended')
@@ -350,9 +328,7 @@ date={time.ctime()}""")
 
     @admin_only
     def _radical_reboot(self):
-        self.sender.send(self.user_id, f'Приложение "{self.name}" закрыто.')
-        if self.user_id != self.keys.admin_id:
-            self.sender.report(self.user_id, f'Приложение "{self.name}" закрыто.')
+        self.sender.error(self.user_id, f'Приложение "{self.name}" закрыто.')
         self.log('Radical reboot is called')
         self.__up_new_app()
         self.sock.close()

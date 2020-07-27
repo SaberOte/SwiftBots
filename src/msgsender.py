@@ -65,6 +65,10 @@ class Sender:
                 )
         self.log(f'The menu is sent to "{user_id}"')
 
+    def error(self, user_id, msg):
+        if user_id != keys.admin_id and user_id in keys.oper_ids:
+            self.send(user_id,msg)
+        self.report(msg)
     
     def report(self, message):
         self.send(self.keys.admin_id, message)
