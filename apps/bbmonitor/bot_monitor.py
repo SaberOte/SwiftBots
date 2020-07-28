@@ -25,6 +25,6 @@ class BaseBotMonitor(SuperApp):
         t = self.last_check
         dif = int(now - t)
         hours = dif // (60*60)
-        minutes = dif // 60
-        seconds = dif
+        minutes = dif // 60 % 60
+        seconds = dif % 60
         return f'Последняя проверка ботом была {(str(hours)+" часов ") if hours > 0 else ""} {(str(minutes)+" минут ") if minutes > 0 else ""} {(str(seconds)+" секунд ") if seconds > 0 else ""} назад'
