@@ -1,9 +1,9 @@
 from vk_api.utils import get_random_id
 
 def ExpCatcher(func):
-    def do(*args, **kwargs):
+    def do(self, *args, **kwargs):
         try:
-            func(*args, **kwargs)
+            func(self, *args, **kwargs)
         except Exception as e:
             try: 
                 self.log(f'!!ERROR!! It\'s try to send error to admin about exception in Sender: \n' + 'Exception in Sender:\n'+str(type(e))+'\n'+str(e))
