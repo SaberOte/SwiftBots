@@ -10,8 +10,11 @@ class Helper(SuperApp):
     def __init__(self):
         super().__init__()
 
-    @admin_only
     def launch_python(self, script, user):
+        if user not in self.keys.oper_ids and user != self.keys.admin_id:
+            self.sender.send(user, 'Эта команда недоступна для вас')
+            self.log('User %s has rejected' % user)
+            return
         def func(args):
             if platform == 'linux': 
                 subprocess.Popen(['python3']+args.split(' '))
@@ -19,12 +22,12 @@ class Helper(SuperApp):
                 subprocess.Popen(['python']+args.split(' '))
             else: raise Exception('idiot?')
         if script == 'upbot':
+            self.sender.send(user, 'bot is called to launch')
             func('./../../upbot.py')
-        
+            
         else:
             func(script)
 
-    @admin_only
     def doer(self, command, user):
         if command == 'status' or command == 'статус':
             self.sender.send(user, 'Helper активен!&#10004;')
@@ -32,6 +35,11 @@ class Helper(SuperApp):
 
         if command == 'hi' or command == 'q':
             self.sender.send_sticker(user, 121) #4275
+            return
+
+        if user not in self.keys.oper_ids and user != self.keys.admin_id:
+            self.sender.send(user, 'Эта команда недоступна для вас')
+            self.log('User %s has rejected' % user)
             return
 
         try:
@@ -76,7 +84,6 @@ class Helper(SuperApp):
                 self.sender.report("Exception in Helper!\n"+str(type(e))+'\n'+str(e))
                 self.log(str(type(e))+'\n'+str(e))
 
-    @admin_only
     def passer(self):
         pass
 
