@@ -1,5 +1,5 @@
 from superplugin import SuperPlugin, admin_only
-import os, datetime, subprocess
+import os, datetime, subprocess, random
 from sys import platform
 
 class BaseServices(SuperPlugin):

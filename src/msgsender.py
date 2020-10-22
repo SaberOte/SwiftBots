@@ -22,7 +22,7 @@ class Sender:
     def __init__(self, path, keys, api, log):
         self.keys = keys
         self.api = api.pub_api
-        self.keyboard=open(path+"keyboard.json", 'r', encoding="UTF-8").read()
+        #self.keyboard=open(path+"keyboard.json", 'r', encoding="UTF-8").read()
         self.static_keyboard=open(path+"static_keyboard.json", 'r', encoding="UTF-8").read()        
         self.log = log
 
@@ -61,7 +61,7 @@ class Sender:
                     user_id=user_id,
                     random_id=get_random_id(),
                     message=open('./../resources/commands.txt', encoding="utf-8").read(),
-                    keyboard=self.keyboard
+                    #keyboard=self.keyboard
                 )
         self.log(f'The menu is sent to "{user_id}"')
     

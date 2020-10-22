@@ -290,8 +290,7 @@ class BotBase:
         
         except Exception as e:
             self.sender.report('Exception in Botbase:\n'+str(type(e))+'\n'+str(e))
-            self.sender.report('Бот запустится через 60 секунд...')
+            self.sender.report('Бот запустится через 5 секунд')
             self.log('!!ERROR!!\nException in Botbase:\n'+str(type(e))+'\n'+str(e))
-            self.log('Bot is pausing about 60 seconds')
-            time.sleep(60)
-            self._start_(1)
+            time.sleep(5)
+            self._start_(2)

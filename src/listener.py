@@ -39,17 +39,16 @@ class Listener:
                     method = plugin.cmds.get(message)
                 else:
                     #prefixes in plugins
-                    prefix = message.split(' ')[0]
                     for plug in self.plugins:
                         for pref in plug.prefixes:
-                            if pref == prefix:
+                            if message.startswith(pref) and (message == pref or message[len(pref)] == ' '):
                                 plugin = plug
-                                if message == prefix:
+                                if message == pref:
                                     plug.message = ''
                                 else:
-                                    plug.message = message[len(prefix)+1:]
+                                    plug.message = message[len(pref)+1:]
                                 plugin.user_id = user_id
-                                method = plugin.prefixes.get(prefix)
+                                method = plugin.prefixes.get(pref)
                 if plugin != None:
                     if not callable(method):
                         if user_id in self.keys.oper_ids and user_id != self.keys.admin_id:
@@ -84,13 +83,12 @@ class Listener:
                             break
                     #prefixes of apps
                     if plugin == None:
-                        prefix = message.split(' ')[0]
                         for app in self.apps: 
                             for pref in app.prefixes:
-                                if pref == prefix:
+                                if message.startswith(pref) and (message == pref or message[len(pref)] == ' '):
                                     if app.is_enabled == True:
                                         app.last_act = time.time()
-                                        fuck = "{'user_id':'%s','message':'%s','function':'%s'}" % (user_id, (message[len(prefix)+1:] if prefix!=message else ''), app.prefixes.get(prefix))
+                                        fuck = "{'user_id':'%s','message':'%s','function':'%s'}" % (user_id, (message[len(pref)+1:] if pref!=message else ''), app.prefixes.get(pref))
                                         self.log(f'Message routed to "{app.name}"') 
                                         self.sock.sendto(fuck.encode('utf-8'), ('localhost', app.port))
                                     else:
