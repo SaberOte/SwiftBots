@@ -1,5 +1,5 @@
 from superplugin import SuperPlugin, admin_only
-import os, datetime, subprocess, random
+import os, datetime, subprocess
 from sys import platform
 
 class BaseServices(SuperPlugin):
@@ -10,7 +10,7 @@ class BaseServices(SuperPlugin):
         self.sender.send_menu(self.user_id)
 
     def say_hi(self):
-        self.sender.send_sticker(self.user_id, '21') #12116
+        self.sender.send_sticker(self.user_id, '21')
     
     @admin_only
     def reboot(self):
@@ -173,7 +173,7 @@ class BaseServices(SuperPlugin):
                 return
         self.log('!!ERROR!!\nNo app with such name "%s"' % self.message)
         if self.user_id != self.keys.admin_id:
-            self.sender.send(user_id, 'Нет приложения "%s"' % self.message)
+            self.sender.send(self.user_id, 'Нет приложения "%s"' % self.message)
         self.sender.report('Нет приложения "%s"' % self.message)
 
     @admin_only
@@ -214,26 +214,13 @@ class BaseServices(SuperPlugin):
     cmds = {
         "команды" : send_menu,
         "привет" : say_hi,
-        "доброе утро" : say_hi,
         "hi" : say_hi,
         "hello" : say_hi,
-        "хай" : say_hi,
-        "хаюшки" : say_hi,
-        "приветики" : say_hi,
-        "ку" : say_hi,
-        "q" : say_hi,
-        "здравствуйте" : say_hi,
-        "здрасьте" : say_hi,
         "update" : update_apps,
         "выход" : exit,
         "exit" : exit,
         "выключить" : exit,
-        "отключить" : exit,
-        "иди нахер" : exit,
-        "пошел в очко" : exit,
-        "отсоси" : exit,
-        "иди нахуй" : exit,
-        "умри" : exit,
+        "stop" : exit,
         "status" : common_status,
         "перезагрузить" : reboot,
         "перезапустить" : reboot,
@@ -244,5 +231,3 @@ class BaseServices(SuperPlugin):
         "автокоманды" : auto_commands,
         "autocommands" : auto_commands
     }
-    
-
