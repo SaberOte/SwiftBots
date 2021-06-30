@@ -3,7 +3,9 @@ while True:
     print('Input file name: ',end='')
     file_name = input()
     dirs = os.listdir('./plugins/')
-    if file_name+'.py' in dirs:
+    if not file_name.endswith('.py'):
+        file_name += '.py'
+    if file_name in dirs:
         print('Such name in the directory plugins/ already exists')
         continue
     break
