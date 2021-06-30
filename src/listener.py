@@ -20,12 +20,6 @@ class Listener:
                 message = event.object.message.get('text').lower()
                 user_id = str(event.object.message.get('from_id'))
 
-                ### !!!! УБРАТЬ КОГДА БУДЕТ НОРМАЛЬНАЯ СИСТЕМА ЗАЩИТЫ   
-                #if user_id != self.keys.admin_id:
-                #    self.sender.send(user_id, 'Сорри, но пока что этот бот исполняет только команды vk.com/polkadot')
-                #    continue
-                ### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                
                 self.log(f'\nThe message from "{user_id}" is catched: "{message}"')
                 self._bot.last_msg = time.time()
                 plugin = None
