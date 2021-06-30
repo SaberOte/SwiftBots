@@ -9,6 +9,7 @@ from superapp import SuperApp, admin_only
 class Helper(SuperApp):
     def __init__(self):
         super().__init__()
+        self.sticker_id = open('sticker_id.txt', 'r').read()
 
     def launch_python(self, script, user):
         if user not in self.keys.oper_ids and user != self.keys.admin_id:
@@ -34,7 +35,7 @@ class Helper(SuperApp):
             return
 
         if command == 'hi' or command == 'q':
-            self.sender.send_sticker(user, 121) #4275
+            self.sender.send_sticker(user, self.sticker_id)
             return
 
         if user not in self.keys.oper_ids and user != self.keys.admin_id:
