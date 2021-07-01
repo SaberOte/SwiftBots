@@ -21,6 +21,9 @@ class SuperApp(SuperPlugin):
             self.name = config.read().split('\n')[3][5:]
             if len(self.name) == 0:
                 raise Exception('name is zero word')
+
+        if not os.path.exists(os.path.join(os.getcwd(), 'logs')):
+            os.makedirs('logs')
         logger = Logger(is_debug, './logs/')
         self.log = logger.log
         try: os.remove('ERROR.txt')
