@@ -2,7 +2,7 @@ import socket, random
 class Communicator:
     BUFFER_AMOUNT = 8192
 
-    def __init__(self, log, port=0):
+    def __init__(self, log=None, port=0):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         is_random_port = None
         if port == 0:
@@ -25,11 +25,13 @@ class Communicator:
             except OSError:
                 raise Exception('This port is already busy')
         self.port = port
+        if log == None:
+          log = print
         self.log = log
         if is_random_port:
-            log('Binded socket with specified port', port)
+            log(f'Binded socket with random port {port} with try {counter}')
         else:
-            log('Binded socket with random port', port)
+            log(f'Binded socket with specified port {port}')
         
     def listen(self):
         self.log('Listening port %d...' % self.port)
@@ -49,13 +51,17 @@ class Communicator:
                 msg, addr = sock.recvfrom(self.BUFFER_AMOUNT)
             except socket.timeout: continue
             msg = msg.decode('utf-8')
-            assert msg.startswith('SES'), 'Corrupted pattern of message in socket listener (SES...) - ' + msg
+            # strict check
             try:
-                session_id = int(msg[3:9])
-                print(session_id)
-            except ValueError:
-                raise Exception('Corrupted pattern of message in socket listener (ses_number) - ' + msg)
-            assert msg.endswith('END') or msg.endswith('SLC'), 'Corrupted pattern of message in socket listener (wrong end) - ' + msg
+              assert msg.startswith('SES'), 'Corrupted pattern of message in socket listener (SES...) - ' + msg
+              try:
+                  session_id = int(msg[3:9])
+              except ValueError:
+                  raise Exception('Corrupted pattern of message in socket listener (ses_number[3:9]) - ' + msg)
+              assert msg.endswith('END') or msg.endswith('SLC'), 'Corrupted pattern of message in socket listener (wrong end) - ' + msg
+            except Exception as e:
+              self.close()
+              raise e
 
             final_msg = ''
             if msg.endswith('END'):
@@ -68,25 +74,19 @@ class Communicator:
                     final_msg = msg[9:-3]
                     #print('session =',session_id, 'message -', msg[9:-3])
                 #print('Received message from', addr, 'with session_id =', session_id,  ':', final_msg)
-                yield final_msg, addr, session_id
+                yield (final_msg, addr, session_id)
             elif msg.endswith('SLC'):
                 if session_id in sliced_messages:
                     sliced_messages[session_id] += msg[9:-3]
                 else:
                     sliced_messages[session_id] = msg[9:-3]
 
-    def wait(self, session_id, timeout=1):
-        pass
-    
-    def request(self, msg, port, timeout=1, max_size=1024):
-        self.send(msg, port)
-    
     def send(self, msg, port, session_id=0):
         # session_id generating
         if session_id == 0:
             session_id = random.randint(100000, 999999)
                 
-        # cutting message on slices. If message size isn't greater than the buffer, than message won't be cut
+        # cutting message on slices. If message size isn't greater than the buffer, then message won't be cut
         slice_size = self.BUFFER_AMOUNT - 12
         slices = []
         slice = msg 
