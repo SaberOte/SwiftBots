@@ -172,7 +172,8 @@ class BaseServices(SuperPlugin):
     prefixes = {
             "status" : app_status,
             "logs" : show_logs,
-            "логи" : show_logs
+            "логи" : show_logs,
+            
             }
     cmds = {
         "команды" : send_menu,
