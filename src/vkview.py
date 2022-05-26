@@ -1,7 +1,7 @@
 import time
 from vk_api.bot_longpoll import VkBotEventType
 
-class Listener:
+class VkView:
     def __init__(self, bot):
         self._bot = bot
         self.keys = bot.keys

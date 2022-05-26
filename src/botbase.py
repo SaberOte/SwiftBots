@@ -2,7 +2,7 @@ import os, time, datetime, requests, inspect
 from keys import KeyManager
 from msgsender import Sender
 from superplugin import SuperPlugin
-from listener import Listener
+from vkview import VkView
 from apimanager import ApiManager
 from logger import Logger
 
@@ -12,7 +12,7 @@ class BotBase:
         self.__init_base_services(is_debug)
         self.__init_plugins()
         self.last_msg = time.time()
-        self.__listener = Listener(self)
+        self.__vkview = VkView(self)
 
     def __init_base_services(self, is_debug):
         logger = Logger(is_debug, './../logs/')
@@ -63,7 +63,7 @@ class BotBase:
 
     def __listen__(self):
         try:
-            self.__listener.listen()
+            self.__vkview.listen()
         except requests.exceptions.ConnectionError:
             self.log('Connection ERROR in botbase')
             time.sleep(60)
