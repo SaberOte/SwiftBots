@@ -1,4 +1,4 @@
-import communicator, cronmanager
+import communicator, cronmanager, os
 class Listener():
   def __init__(self, log, bot):
     self._bot = bot
@@ -10,14 +10,14 @@ class Listener():
   def listen(self):
     for command in self.communicator.listen():
       try:
-        _, task = command['message'].split('|')
+        plugin_name, task = command['message'].split('|')
 
         plugin = None
         for plug in self._bot.plugins:
           if task in plug.tasks:
             plugin = plug
         if plugin == None:
-          cronmanager.remove(command['message'])
+          cronmanager.remove(plugin_name, task, os.path.split(os.getcwd())[0])
           self.log(f'Message {task} is not recognized. Then removed')
           continue
         method = plugin.tasks[task][0]
@@ -33,6 +33,6 @@ class Listener():
             self.log(f'!!ERROR!!\nException in "{method.__name__}" from "{type(plugin).__name__}":\n{str(type(e))}\n{str(e)}')
             continue
       except Exception as e:
-        self.sender.report(f'Exception in "{method.__name__}" from "{type(plugin).__name__}":\n{str(type(e))}\n{str(e)}')
-        self.log(f'!!ERROR!!\nException in "{method.__name__}" from "{type(plugin).__name__}":\n{str(type(e))}\n{str(e)}')
+        self.sender.report(f'Exception in Listener:\n{str(type(e))}\n{str(e)}')
+        self.log(f'!!ERROR!!\nException in Listener:\n{str(type(e))}\n{str(e)}')
         
