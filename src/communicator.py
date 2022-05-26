@@ -104,7 +104,11 @@ class Communicator:
                       final_msg = sliced_messages.pop(session_id) + msg[9:-3]
                   else:
                       final_msg = msg[9:-3]
-                  yield (final_msg.decode('utf-8'), addr, session_id)
+                  yield {
+                    'message' : final_msg.decode('utf-8'), 
+                    'address' : addr, 
+                    'session_id' : session_id,
+                  }
               elif msg.endswith(b'SLC'):
                   if session_id in sliced_messages:
                       sliced_messages[session_id] += msg[9:-3]
