@@ -50,84 +50,39 @@ class BaseServices(SuperPlugin):
             dt = str(dt.days//30) + " месяцев"
         else: dt = str(dt.days//365) + " лет"
         status += f'С запуска бота прошло {dt}\n' 
-        #for app in self.bot.apps: #########
-        #    status += '\n' + self._get_app_status(app) + '\n' ##############
+        status += self._get_tasks_status()
         self.sender.send(self.user_id, status)
     
-    def _get_app_status(self, app=None):
-        pass
-        ###############
-        '''
-        if app == None:
-            for a in self.bot.apps:
-                if a.name == self.message:
-                    app = a
-        if app == None:
-            self.log(f'App with such name "{self.message}" is not found')
-            self.sender.send(self.user_id, f'Нет приложения с названием "{self.message}"')
-            return
-        self.bot.check_connection(app)
-        info = None
-        if app.is_enabled == False:
-            respond = app.name+' неактивен&#9898;\n'
-        else:
-            ans = self.bot.send_to_port('is_running', app, 0.4, 32)
-            if ans == "True":
-                respond = app.name+' активен&#128640;\n'
-                info = self.bot.send_to_port('get_info', app, 5, 8192)
-            elif ans == "False":
-                respond = app.name+' ожидает&#129517;\n'
-                info = self.bot.send_to_port('get_info', app, 5, 8192)
-            else:
-                self.log('Uncorrect answer "is_running"')
-                respond = 'Uncorrect answer "is_running"'
-        if info != None:
-            respond += info
+    def _get_tasks_status(self):
+        tasks = cronmanager.get('../resources/config.ini')
+        respond = ''
+        all_tasks = []
+        for x in self.bot.plugins:
+          for j in x.tasks:
+            all_tasks.append(j)
+        for t in all_tasks:
+          if t in tasks:
+            respond += '- ' + t +' активен&#128640;\n'
+        for t in all_tasks:
+          if t not in tasks:
+            respond += '- ' + t +' неактивен&#9898;\n'
         return respond
-        '''
 
     @admin_only
-    def app_status(self, app=None):
-        ################
-        #self.sender.send(self.user_id, self._get_app_status(app))
-        pass
-
-    @admin_only
-    def show_apps(self):
-        pass
-        #########
-        '''
-        active = []
-        waiting = []
-        non_active = []
-        for app in self.bot.apps:
-            self.bot.check_connection(app)
-            if app.is_enabled:
-                is_running = self.bot.send_to_port('is_running', app, 1, 32) 
-                if is_running == "True":
-                    active.append(app.name)
-                elif is_running == "False":
-                    waiting.append(app.name)
-                else:
-                    self.log('Uncorrect answer "is_running"')
-                    self.sender.report('Uncorrect answer "is_running"')
-            else:
-                non_active.append(app.name)
-        report = ''
-        if len(active) > 0:
-            report += 'Активные службы:\n'
-            for x in active:
-                report += '- '+x+'&#128640;\n' # ракета 
-        if len(waiting) > 0:
-            report += 'В режиме ожидания:\n'
-            for x in waiting:
-                report += '- '+x+'&#129517;\n' # часики 
-        if len(non_active) > 0:
-            report += 'Неактивные:\n'
-            for x in non_active:
-                report += '- '+x+'&#9898;\n' # пусто
-        self.sender.send(self.user_id, report)
-        '''
+    def show_tasks(self):
+        tasks = cronmanager.get('../resources/config.ini')
+        respond = ''
+        all_tasks = []
+        for x in self.bot.plugins:
+          for j in x.tasks:
+            all_tasks.append(j)
+        for t in all_tasks:
+          if t in tasks:
+            respond += '- ' + t +' активен&#128640;\n'
+        for t in all_tasks:
+          if t not in tasks:
+            respond += '- ' + t +' неактивен&#9898;\n'
+        self.sender.send(self.user_id, respond)
     
     @admin_only
     def show_logs(self):
@@ -211,18 +166,19 @@ class BaseServices(SuperPlugin):
       self.sender.send(self.user_id, 'Задача удалена')
 
     prefixes = {
-            "status" : app_status,
             "logs" : show_logs,
             "логи" : show_logs,
             "start" : schedule_task,
             "stop" : unschedule_task,
             }
     cmds = {
+        "status" : common_status,
+        "tasks" : show_tasks,
+        "задачи" : show_tasks,
         "команды" : send_menu,
         "привет" : say_hi,
         "hi" : say_hi,
         "hello" : say_hi,
-        #"update" : update_apps,
         "выход" : exit,
         "exit" : exit,
         "выключить" : exit,
@@ -232,8 +188,6 @@ class BaseServices(SuperPlugin):
         "перезапустить" : reboot,
         "reboot" : reboot,
         "ребут" : reboot,
-        #"apps" : show_apps,
-        #"приложения" : show_apps,
         "автокоманды" : auto_commands,
         "autocommands" : auto_commands
     }

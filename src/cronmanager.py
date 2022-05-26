@@ -48,3 +48,9 @@ def remove(plugin, task, proj_path):
   config.remove_option('Tasks', task_name)
   with open(config_path, 'w') as file:
     config.write(file)
+
+def get(config_path):
+  config = configparser.ConfigParser()
+  config.read(config_path)
+  tasks = config.items('Tasks')
+  return list(map(lambda x: x[0].split('|')[1], tasks))
