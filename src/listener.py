@@ -6,10 +6,8 @@ class Listener:
         self._bot = bot
         self.keys = bot.keys
         self.log = bot.log
-        self.sock = bot.sock
         self.plugins = bot.plugins
         self.lp = bot.api.lp
-        self.apps = bot.apps
         self.sender = bot.sender
         self.api = bot.api
     
@@ -59,39 +57,7 @@ class Listener:
                         self.sender.report(f'Exception in "{method.__name__}" from "{type(plugin).__name__}":\n{str(type(e))}\n{str(e)}')
                         self.log(f'!!ERROR!!\nException in "{method.__name__}" from "{type(plugin).__name__}":\n{str(type(e))}\n{str(e)}')
                 else:
-                    #apps
-                    for app in self.apps:
-                        if message in app.cmds:
-                            app.last_act = time.time()
-                            if app.is_enabled == True and self._bot.check_connection(app):
-                                # формат msg r"{'user_id':'\d+','message':'.*','function':'.*'}$"
-                                #пример {'user_id':'179995182','message':'ping','function':'send_pong'} 
-                                fuck = "{'user_id':'%s','message':'%s','function':'%s'}" % (user_id, message, app.cmds[message])
-                                self.sock.sendto(fuck.encode('utf-8'), ('localhost', app.port))
-                                self.log(f'Message routed to "{app.name}"') 
-                            else:
-                                app.is_enabled = False
-                                self.sender.send(user_id, f'Приложение "{app.name}" не запущено')
-                                self.log(f'Command places in the disabled app "{app.name}"')
-                            plugin = 1
-                            break
-                    #prefixes of apps
-                    if plugin == None:
-                        for app in self.apps: 
-                            for pref in app.prefixes:
-                                if message.startswith(pref) and (message == pref or message[len(pref)] == ' '):
-                                    if app.is_enabled == True:
-                                        app.last_act = time.time()
-                                        fuck = "{'user_id':'%s','message':'%s','function':'%s'}" % (user_id, (message[len(pref)+1:] if pref!=message else ''), app.prefixes.get(pref))
-                                        self.log(f'Message routed to "{app.name}"') 
-                                        self.sock.sendto(fuck.encode('utf-8'), ('localhost', app.port))
-                                    else:
-                                        self.sender.send(user_id, f'Приложение "{app.name}" не запущено')
-                                        self.log(f'Prefix places in the disabled app "{app.name}"')
-                                    plugin = 1
-                                    break
-                    if plugin == None:
-                        self.unknown_cmd(user_id)
+                    self.unknown_cmd(user_id)
 
     def unknown_cmd(self, user_id):
         self.log('That\'s unknown command')

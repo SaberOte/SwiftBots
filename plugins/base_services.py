@@ -14,7 +14,6 @@ class BaseServices(SuperPlugin):
     
     @admin_only
     def reboot(self):
-        self.bot.sock.close()
         if platform == 'linux':
             subprocess.Popen(['python3','./../upbot.py'])
         elif platform == 'win32':
@@ -30,7 +29,6 @@ class BaseServices(SuperPlugin):
             self.sender.report('Бот остановлен.')
         self.sender.send(self.user_id, 'Бот остановлен.')
         self.log('Program is suspended')
-        self.bot.sock.close()
         os._exit(1)
         
     @admin_only
@@ -52,11 +50,14 @@ class BaseServices(SuperPlugin):
             dt = str(dt.days//30) + " месяцев"
         else: dt = str(dt.days//365) + " лет"
         status += f'С запуска бота прошло {dt}\n' 
-        for app in self.bot.apps:
-            status += '\n' + self._get_app_status(app) + '\n'
+        #for app in self.bot.apps: #########
+        #    status += '\n' + self._get_app_status(app) + '\n' ##############
         self.sender.send(self.user_id, status)
     
     def _get_app_status(self, app=None):
+        pass
+        ###############
+        '''
         if app == None:
             for a in self.bot.apps:
                 if a.name == self.message:
@@ -83,17 +84,19 @@ class BaseServices(SuperPlugin):
         if info != None:
             respond += info
         return respond
+        '''
 
     @admin_only
     def app_status(self, app=None):
-        self.sender.send(self.user_id, self._get_app_status(app))
-
-    @admin_only
-    def update_apps(self):
-        self.bot.update()
+        ################
+        #self.sender.send(self.user_id, self._get_app_status(app))
+        pass
 
     @admin_only
     def show_apps(self):
+        pass
+        #########
+        '''
         active = []
         waiting = []
         non_active = []
@@ -124,6 +127,7 @@ class BaseServices(SuperPlugin):
             for x in non_active:
                 report += '- '+x+'&#9898;\n' # пусто
         self.sender.send(self.user_id, report)
+        '''
     
     @admin_only
     def show_logs(self):
@@ -133,6 +137,7 @@ class BaseServices(SuperPlugin):
             with open(filename, 'r') as file:
                 self.sender.send(self.user_id, file.read()[-12000:])
             return
+        ''' ##############
         app = None
         for a in self.bot.apps:
             if a.name == self.message:
@@ -146,67 +151,25 @@ class BaseServices(SuperPlugin):
         filename = path_to_logs + sorted(os.listdir(path_to_logs))[-1]
         with open(filename, 'r', encoding='utf-8') as file:
             self.sender.send(self.user_id, file.read()[-12000:])
-
-    @admin_only
-    def launch_app(self):
-        for app in self.bot.apps:
-            if self.message == app.name:
-                if app.is_enabled == True and self.bot.check_connection(app):
-                    self.log("It's try to launch app that is already enabled")
-                    self.sender.send(self.user_id, 'App already is running')
-                    return
-                self.log('Launching app %s...' % app.name)
-                old_path = os.getcwd()
-                try:
-                    if platform == 'linux':
-                        bot_name = old_path.split('/')[-2]
-                        os.chdir('./../apps/')
-                        subprocess.Popen(['python3', app.folder, '{%s}'%bot_name])
-                    elif platform == 'win32':
-                        os.chdir('.\\..\\apps\\')
-                        subprocess.Popen('python %s' % app.folder)
-                except Exception as e:
-                    os.chdir(old_path)
-                    raise e
-                os.chdir(old_path)
-                self.log('App is launched')
-                return
-        self.log('!!ERROR!!\nNo app with such name "%s"' % self.message)
-        if self.user_id != self.keys.admin_id:
-            self.sender.send(self.user_id, 'Нет приложения "%s"' % self.message)
-        self.sender.report('Нет приложения "%s"' % self.message)
+        '''
 
     @admin_only
     def auto_commands(self):
         answer = ''
-        answer += 'Plugins:\n'
         for x in self.bot.plugins:
             answer += '- '+x.__class__.__name__+'\n'
             if len(x.cmds) > 0:
-                answer += 'commands: '
+                answer += 'COMMANDS: '
                 answer += ', '.join(list(x.cmds.keys()))
                 answer += '\n'
             if len(x.prefixes) > 0:
-                answer += 'prefixes: '
+                answer += 'PREFIXES: '
                 answer += ', '.join(list(x.prefixes.keys()))
                 answer += '\n'
 
-        answer += 'Apps:\n'
-        for x in self.bot.apps:
-            answer += '- '+x.name+'\n'
-            if len(x.cmds) > 0:
-                answer += 'commands: '
-                answer += ', '.join(list(x.cmds.keys()))
-                answer += '\n'
-            if len(x.prefixes) > 0:
-                answer += 'prefixes: '
-                answer += ', '.join(list(x.prefixes.keys()))
-                answer += '\n'
         self.sender.send(self.user_id, answer)
 
     prefixes = {
-            "launch" : launch_app,
-            "start" : launch_app,
             "status" : app_status,
             "logs" : show_logs,
             "логи" : show_logs
@@ -216,7 +179,7 @@ class BaseServices(SuperPlugin):
         "привет" : say_hi,
         "hi" : say_hi,
         "hello" : say_hi,
-        "update" : update_apps,
+        #"update" : update_apps,
         "выход" : exit,
         "exit" : exit,
         "выключить" : exit,
@@ -226,8 +189,8 @@ class BaseServices(SuperPlugin):
         "перезапустить" : reboot,
         "reboot" : reboot,
         "ребут" : reboot,
-        "apps" : show_apps,
-        "приложения" : show_apps,
+        #"apps" : show_apps,
+        #"приложения" : show_apps,
         "автокоманды" : auto_commands,
         "autocommands" : auto_commands
     }

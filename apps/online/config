@@ -1,6 +1,0 @@
-port=5831
-commands={'online stop': '_stop', 'online reboot': '_reboot', 'online ребут': '_reboot', 'online rreboot': '_radical_reboot', 'online rexit': '_radical_exit', 'online exit': '_exit', 'online выход': '_exit', 'online запустить': '_launch', 'online launch': '_launch', 'online start': '_launch'}
-prefixes={}
-name=online
-launch_time=1595844434.1308897
-date=Mon Jul 27 10:07:14 2020
