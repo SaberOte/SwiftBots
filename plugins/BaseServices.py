@@ -190,6 +190,10 @@ class BaseServices(SuperPlugin):
       self.log(f'Task {task} is scheduled')
       self.sender.send(self.user_id, 'Задача запущена')
 
+    @admin_only
+    def unschedule_task(self):
+      pass
+
     prefixes = {
             "status" : app_status,
             "logs" : show_logs,

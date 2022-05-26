@@ -16,6 +16,6 @@ import botbase
 
 bot = botbase.BotBase(is_debug)
 try:
-    bot._start_(1)
+    bot._start_()
 except Exception as e:
     bot.sender.send(bot.keys.admin_id, 'Exception in unknown place:\n'+str(type(e))+'\n'+str(e))

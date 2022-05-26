@@ -14,7 +14,7 @@ for i in config.items('Tasks'):
     break
 if task_name:
   comm = communicator.Communicator(config_path, 'cron')
-  comm.send(task_name, 'listener')
+  comm.send(task_name, 'mainlistener')
   comm.close()
 else:
   pass # задача уже удалена

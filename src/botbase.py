@@ -1,10 +1,11 @@
-import os, time, datetime, requests, inspect
+import os, time, datetime, requests, inspect, threading
 from keys import KeyManager
 from msgsender import Sender
 from superplugin import SuperPlugin
 from vkview import VkView
 from apimanager import ApiManager
 from logger import Logger
+from listener import Listener
 
 class BotBase:
     plugins = []
@@ -12,7 +13,6 @@ class BotBase:
         self.__init_base_services(is_debug)
         self.__init_plugins()
         self.last_msg = time.time()
-        self.__vkview = VkView(self)
 
     def __init_base_services(self, is_debug):
         logger = Logger(is_debug, './../logs/')
@@ -21,6 +21,9 @@ class BotBase:
         self.keys = KeyManager('./../resources/data.json', logger.log)
         self.api = ApiManager(self.keys, logger.log)
         self.sender = Sender('./../resources/', self.keys, self.api, logger.log)
+        self.__listener = Listener(self.log)
+        self.__vkview = VkView(self)
+        self.__monitoring_thread = threading.Thread(target=self.__listenVk__, daemon=True)
         self.start_time = datetime.datetime.utcnow()
         self.log('Base services are loaded')
 
@@ -47,7 +50,11 @@ class BotBase:
             self.plugins.append(x(self))
         self.log('Plugins are loaded')
 
-    def _start_(self, mode=0):
+    def _start_(self):
+        self.__monitoring_thread.start()
+        self.__listener.listen()
+
+    def __listenVk__(self, mode=1):
         if mode == 0:
             pass #quiet start
         elif mode == 1:
@@ -58,10 +65,6 @@ class BotBase:
             self.log('Bot is restarted %d' % mode) 
         elif mode == 3:
             self.log('Bot is restarted %d' % mode)
-        
-        self.__listen__()
-
-    def __listen__(self):
         try:
             self.__vkview.listen()
         except requests.exceptions.ConnectionError:
