@@ -192,7 +192,23 @@ class BaseServices(SuperPlugin):
 
     @admin_only
     def unschedule_task(self):
-      pass
+      task = self.message
+      plugin = None
+      for plug in self.bot.plugins:
+        if task in plug.tasks:
+          plugin = plug
+      if plugin == None:
+        all_tasks = []
+        for plug in self.bot.plugins:
+          for x in plug.tasks:
+            all_tasks.append(x)
+        self.sender.send(self.user_id, 'Такой задачи нет. Все задачи: ' + ', '.join(all_tasks))
+        self.log(f'Unknown task {task} is called')
+        return
+      path = os.path.split(os.getcwd())[0]
+      cronmanager.remove(plugin.__class__.__name__, task, path)
+      self.log(f'Task {task} is unscheduled')
+      self.sender.send(self.user_id, 'Задача удалена')
 
     prefixes = {
             "status" : app_status,

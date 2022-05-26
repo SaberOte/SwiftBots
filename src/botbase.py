@@ -21,7 +21,7 @@ class BotBase:
         self.keys = KeyManager('./../resources/data.json', logger.log)
         self.api = ApiManager(self.keys, logger.log)
         self.sender = Sender('./../resources/', self.keys, self.api, logger.log)
-        self.__listener = Listener(self.log)
+        self.__listener = Listener(self.log, self)
         self.__vkview = VkView(self)
         self.__monitoring_thread = threading.Thread(target=self.__listenVk__, daemon=True)
         self.start_time = datetime.datetime.utcnow()
