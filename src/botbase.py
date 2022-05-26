@@ -55,31 +55,4 @@ class BotBase:
         self.__listener.listen()
 
     def __listenVk__(self, mode=1):
-        if mode == 0:
-            pass #quiet start
-        elif mode == 1:
-            self.sender.report('Бот запущен!')
-            self.log('Bot is started. mode %d' % mode) 
-        elif mode == 2:
-            self.sender.report('Бот перезапущен!')
-            self.log('Bot is restarted %d' % mode) 
-        elif mode == 3:
-            self.log('Bot is restarted %d' % mode)
-        try:
-            self.__vkview.listen()
-        except requests.exceptions.ConnectionError:
-            self.log('Connection ERROR in botbase')
-            time.sleep(60)
-            self._start_(3)
-
-        except requests.exceptions.ReadTimeout:
-            self.log('ReadTimeout (night reboot)')
-            time.sleep(60)
-            self._start_(3) 
-        
-        except Exception as e:
-            self.sender.report('Exception in Botbase:\n'+str(type(e))+'\n'+str(e))
-            self.sender.report('Бот запустится через 5 секунд')
-            self.log('!!ERROR!!\nException in Botbase:\n'+str(type(e))+'\n'+str(e))
-            time.sleep(5)
-            self._start_(2)
+      self.__vkview.listen()

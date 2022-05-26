@@ -10,8 +10,38 @@ class VkView:
         self.lp = bot.api.lp
         self.sender = bot.sender
         self.api = bot.api
+
+    def listen(self, mode=1):
+        if mode == 0:
+            pass #quiet start
+        elif mode == 1:
+            self.sender.report('Бот запущен!')
+            self.log('Bot is started. mode %d' % mode) 
+        elif mode == 2:
+            self.sender.report('Бот перезапущен!')
+            self.log('Bot is restarted %d' % mode) 
+        elif mode == 3:
+            self.log('Bot is restarted %d' % mode)
+        try:
+            self.__listen__()
+        except requests.exceptions.ConnectionError:
+            self.log('Connection ERROR in botbase')
+            time.sleep(60)
+            self.listen(3)
+
+        except requests.exceptions.ReadTimeout:
+            self.log('ReadTimeout (night reboot)')
+            time.sleep(60)
+            self.listen(3) 
+        
+        except Exception as e:
+            self.sender.report('Exception in Botbase:\n'+str(type(e))+'\n'+str(e))
+            self.sender.report('Бот запустится через 5 секунд')
+            self.log('!!ERROR!!\nException in Botbase:\n'+str(type(e))+'\n'+str(e))
+            time.sleep(5)
+            self.listen(2)
     
-    def listen(self):
+    def __listen__(self):
         self.log('Listening is started')
         for event in self.lp.listen():
             if event.type == VkBotEventType.MESSAGE_NEW:
@@ -65,3 +95,4 @@ class VkView:
             self.api.pub_api.messages.markAsRead(group_id=self.keys.public_id,mark_conversation_as_read=1,peer_id=user_id)
         else:
             self.sender.send(user_id, 'Неизвестная команда')
+
