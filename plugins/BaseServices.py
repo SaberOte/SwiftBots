@@ -1,5 +1,5 @@
 from superplugin import SuperPlugin, admin_only
-import os, datetime, subprocess
+import os, datetime, subprocess, cronmanager
 from sys import platform
 
 class BaseServices(SuperPlugin):
@@ -169,11 +169,33 @@ class BaseServices(SuperPlugin):
 
         self.sender.send(self.user_id, answer)
 
+    @admin_only
+    def schedule_task(self):
+      task = self.message
+      plugin = None
+      for plug in self.bot.plugins:
+        if task in plug.tasks:
+          plugin = plug
+      if plugin == None:
+        all_tasks = []
+        for plug in self.bot.plugins:
+          for x in plug.tasks:
+            all_tasks.append(x)
+        self.sender.send(self.user_id, 'Такой задачи нет. Все задачи: ' + ', '.join(all_tasks))
+        self.log(f'Unknown task {task} is called')
+        return
+      delay = plugin.tasks[task][1]
+      path = os.path.split(os.getcwd())[0]
+      cronmanager.add(plugin.__class__.__name__, task, delay, path)
+      self.log(f'Task {task} is scheduled')
+      self.sender.send(self.user_id, 'Задача запущена')
+
     prefixes = {
             "status" : app_status,
             "logs" : show_logs,
             "логи" : show_logs,
-            
+            "start" : schedule_task,
+            "stop" : unschedule_task,
             }
     cmds = {
         "команды" : send_menu,

@@ -18,10 +18,11 @@ def superadmin_only(func):
     return check
 
 class SuperPlugin:
-    cmds = {}
     message = ''
     user_id = ''
     prefixes = {} 
+    cmds = {}
+    tasks = {}
     def __init__(self, bot):
         self.bot = bot
         vars_v = vars(bot)

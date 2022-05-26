@@ -6,8 +6,8 @@ class __REPLACE_ME__(SuperPlugin):
     
 
     prefixes = {
-#        'begin_of_command' : function_name
+        # 'begin_of_command' : function_name
     }
     cmds = {
-#        'command' : function_name
+        # 'command' : function_name
     }
