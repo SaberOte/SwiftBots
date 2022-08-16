@@ -3,7 +3,6 @@ class Listener():
   def __init__(self, log, bot):
     self._bot = bot
     self.log = log
-    self.keys = bot.keys
     self.sender = bot.sender
     self.communicator = communicator.Communicator('../resources/config.ini', 'mainlistener')
   

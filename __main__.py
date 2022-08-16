@@ -9,7 +9,7 @@ path = os.path.abspath(getsourcefile(lambda:0))[:-11]
 sys.path.insert(0, path+'src')
 sys.path.insert(0, path+'plugins')
 sys.path.insert(0, path+'templates')
-sys.path.insert(0, path+'apps')
+sys.path.insert(0, path+'views')
 os.chdir(path+'src')
 
 import botbase
