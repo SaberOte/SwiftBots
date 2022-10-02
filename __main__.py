@@ -1,5 +1,4 @@
-import os
-import sys
+import os, sys
 from inspect import getsourcefile
 is_debug = False
 for arg in sys.argv:

@@ -4,7 +4,7 @@ class Listener():
     self._bot = bot
     self.log = log
     self.sender = bot.sender
-    self.communicator = communicator.Communicator('../resources/config.ini', 'mainlistener')
+    self.communicator = communicator.Communicator('../resources/config.ini', 'CORE')
   
   def listen(self):
     for command in self.communicator.listen():
@@ -34,4 +34,3 @@ class Listener():
       except Exception as e:
         self.sender.report(f'Exception in Listener:\n{str(type(e))}\n{str(e)}')
         self.log(f'!!ERROR!!\nException in Listener:\n{str(type(e))}\n{str(e)}')
-        

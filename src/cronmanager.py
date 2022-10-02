@@ -7,8 +7,6 @@ def add(plugin, task, freq, proj_path):
   # добавить задачу в конфиг
   config = configparser.ConfigParser()
   config.read(config_path)
-  if 'Tasks' not in config.sections():
-    config.add_section("Tasks")
   task_id = str(uuid.uuid4())
   config.set('Tasks', task_name, task_id)
   with open(config_path, 'w') as file:

@@ -1,4 +1,6 @@
 import socket, random, configparser, os
+
+
 class Communicator:
     BUFFER_AMOUNT = 8192
     sock = None
@@ -50,7 +52,7 @@ class Communicator:
                     break
                 except OSError:
                     if counter >= 1000:
-                        raise Exception('More than 1000 attempts to bind socket was unseccesfully')
+                        raise Exception('More than 1000 attempts to bind socket was unsuccesfully')
                     counter += 1
                     continue
         else:
@@ -66,25 +68,34 @@ class Communicator:
         else:
             self.log(f'Binded socket with specified port {port}')
 
-    def listen(self):
-        self.assign_port()
+    def listen(self, requested=None):
+        if not self.sock:
+            self.assign_port()
         self.log('Listening port %d...' % self.port)
         sliced_messages = {}
         sock = self.sock
         #cleaning
-        sock.settimeout(0.01)
+        sock.settimeout(0.001)
         while True:
             try:
                 sock.recv(self.BUFFER_AMOUNT)
             except: break
 
+        if requested:
+            requested_ses_id = self.send(*requested)
         #listening
         try:
           while True:
-              sock.settimeout(60*60*6)
+              if requested:
+                  sock.settimeout(1)
+              else:
+                  sock.settimeout(60*60*6)
               try:
                   msg, addr = sock.recvfrom(self.BUFFER_AMOUNT)
-              except socket.timeout: continue
+              except socket.timeout:
+                  if requested:
+                      yield None
+                  continue
               msg = msg
               # strict check
               try:
@@ -104,11 +115,12 @@ class Communicator:
                       final_msg = sliced_messages.pop(session_id) + msg[9:-3]
                   else:
                       final_msg = msg[9:-3]
-                  yield {
-                    'message' : final_msg.decode('utf-8'), 
-                    'address' : addr, 
-                    'session_id' : session_id,
-                  }
+                  if not requested or requested and session_id == requested_ses_id:
+                      yield {
+                        'message': final_msg.decode('utf-8'),
+                        'address': addr,
+                        'session_id': session_id,
+                      }
               elif msg.endswith(b'SLC'):
                   if session_id in sliced_messages:
                       sliced_messages[session_id] += msg[9:-3]
@@ -138,7 +150,7 @@ class Communicator:
         slices.append(slice)
 
         # format: SES123456[all_message]END
-        # format: SES123456[sliceed_message]SLC
+        # format: SES123456[sliced_message]SLC
         for i in range(len(slices)):
             slices[i] = 'SES'.encode('utf-8') + str(session_id).encode('utf-8') + slices[i]
             if i == len(slices)-1:
@@ -150,7 +162,11 @@ class Communicator:
             except:
               self.assign_port()
               self.sock.sendto(slices[i], ('localhost', port))
+        return session_id
 
+    def request(self, msg, name):
+        for i in self.listen((msg, name)):
+            return i
 
     def close(self):
         if self.sock:

@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+
 class Logger:
     def __init__(self, is_debug, path):
         self.is_debug = is_debug
