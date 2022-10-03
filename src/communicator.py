@@ -1,38 +1,32 @@
-import socket, random, configparser, os
+import socket, random, os
+from config import readconfig, writeconfig
 
 
 class Communicator:
     BUFFER_AMOUNT = 8192
     sock = None
 
-    def __init__(self, config_dir, name, log=print):
-        if not os.path.exists(config_dir):
-            raise Exception('No such config directory for names')
-        self.config_dir = config_dir
+    def __init__(self, name, log=print):
         self.log = log
         self.name = name
         
     def get_name(self, port):
-        config = configparser.ConfigParser()
-        config.read(self.config_dir)
+        config = readconfig()
         for i in config.items("Names"):
             if i[1] == port:
                 return i[0]
         raise Exception('No such port in Names config')
 
     def get_port(self, name):
-        config = configparser.ConfigParser()
-        config.read(self.config_dir)
-        return int(config.get("Names", name))
+        config = readconfig()
+        return int(config["Names"][name])
 
     def set_name(self):
         if not self.port:
             raise Exception("Port is not assigned")
-        config = configparser.ConfigParser()
-        config.read(self.config_dir)
-        config.set("Names", self.name, str(self.port))
-        with open(self.config_dir, 'w') as file:
-            config.write(file)
+        config = readconfig()
+        config["Names"][self.name] = str(self.port)
+        writeconfig(config)
 
     def assign_port(self, port=0):
         if self.sock:
@@ -169,10 +163,6 @@ class Communicator:
     def close(self):
         if self.sock:
             self.sock.close()
-        config = configparser.ConfigParser()
-        config.read(self.config_dir)
-        if 'Names' not in config.sections():
-            config.add_section("Names")
+        config = readconfig()
         if config.remove_option("Names", self.name):
-          with open(self.config_dir, 'w') as file:
-              config.write(file)
+            writeconfig(config)

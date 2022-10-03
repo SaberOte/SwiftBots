@@ -1,21 +1,21 @@
 import os, sys, inspect
 
-path = os.path.abspath(inspect.getsourcefile(lambda: 0))[:-11]
+path = os.path.dirname(os.path.abspath(__file__))
 os.chdir(path)
-sys.path.insert(0, path + '../../src')
-sys.path.insert(0, path + '../../templates')
-sys.path.insert(0, path + '.')
+sys.path.insert(0, os.path.join(path, '../../src'))
+sys.path.insert(0, os.path.join(path, '../../templates'))
+sys.path.insert(0, os.path.join(path, '.'))
 from superview import SuperView
 
 
 def send_ex(e, place):
     from communicator import Communicator
     import logger
-    log = logger.Logger(True, './logs/').log
-    comm = Communicator('../../resources/config.ini', __file__[:-3], log)
+    log = logger.Logger('-d' in sys.argv, './logs/').log
+    comm = Communicator(__file__[:-3], log)
     log('It is a bad try to launch the view')
     msg = f'Исключение в {place}:\n' + str(type(e)) + '\n' + str(e)
-    comm.send('VIEWERROR'+msg, 'CORE')
+    comm.send('VIEWERROR'+msg, 'core')
     log(msg)
     comm.close()
 
@@ -38,7 +38,8 @@ for x in all_classes:
     if x not in classes:
         classes.append(x)
 if len(classes) != 1:
-    msg = f'This folder contains {len(classes)} classes that inherits with SuperApp, but it must be unique in this folder'
+    msg = f'This folder contains {len(classes)} classes that inherits with SuperApp, but ' \
+          f'it must be unique in this folder'
     send_ex(Exception(msg), 'main')
     exit(1)
 try:

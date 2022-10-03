@@ -9,5 +9,6 @@ class CliView(SuperView):
         print(message)
 
     def listen(self):
+        print("Hello in the command line interface! Good day!")
         while True:
             yield input('-> ')

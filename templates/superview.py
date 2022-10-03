@@ -1,5 +1,6 @@
-import os, threading, logger, configparser
+import os, threading, logger, sys
 from communicator import Communicator
+from config import readconfig, writeconfig
 from abc import ABC, abstractmethod
 '''
 что вьюшка должна уметь делать?
@@ -12,9 +13,8 @@ from abc import ABC, abstractmethod
 class SuperView(ABC):
     def __init__(self):
         self.view_name = type(self).__name__.lower()
-        self.config_dir = '../../resources/config.ini'
-        self.log = logger.Logger(True, './logs/').log
-        self.comm = Communicator(self.config_dir, self.view_name)
+        self.log = logger.Logger('-d' in sys.argv, './logs/').log
+        self.comm = Communicator(self.view_name, self.log)
         self.core_listener = threading.Thread(target=self.listen_port, daemon=True)
         self.core_listener.start()
         self.enable_in_config()
@@ -23,13 +23,15 @@ class SuperView(ABC):
     def listen(self):
         raise Exception('Not implemented method')
 
+    @abstractmethod
+    def report(self):
+        raise Exception('Not implemented method')
+
     def enable_in_config(self):
-        config = configparser.ConfigParser()
-        config.read(self.config_dir)
+        config = readconfig()
         if self.view_name in config['Disabled_Views']:
             del config['Disabled_Views'][self.view_name]
-            with open(self.config_dir, 'w') as file:
-                config.write(file)
+            writeconfig(config)
 
     def init_listen(self):  # listens the outer resource
         for command in self.listen():  # calls overridden listen()
@@ -42,11 +44,9 @@ class SuperView(ABC):
             command = data['message']
             if command == 'exit':
                 self.log('View is exited')
-                config = configparser.ConfigParser()
-                config.read(self.config_dir)
-                config.set("Disabled_Views", self.view_name, '')
-                with open(self.config_dir, 'w') as file:
-                    config.write(file)
+                config = readconfig()
+                config["Disabled_Views"][self.view_name] = ''
+                writeconfig(config)
                 self.comm.send('exited', 'core', data['session_id'])
                 self.comm.close()
                 os._exit(1)

@@ -1,4 +1,5 @@
-import os, subprocess, inspect, superview, configparser
+import os, subprocess, inspect, superview
+from config import readconfig, writeconfig
 
 
 class RawView:
@@ -8,29 +9,61 @@ class RawView:
     def report(self, message):
         self.log(message)
 
+
 class ViewsManager:
     main_view = None
+
+    def error(self, message):
+        self.log('!!!ERROR!!!\n'+str(message))
+        self.report(message)
+
     def report(self, message):
+        # можно ещё сделать накопление ошибок или передачу их другой вьюшке
+        if not self.main_view:
+            self.assign_main_view()
         self.main_view.report(message)
 
     def assign_main_view(self):
         if len(self.views) == 0:
             self.main_view = RawView(self.log)
-        elif len(self.views) > 1:
-            config = configparser.ConfigParser()
-            config.read('../resources/config.ini')
-            last_views = list(map(lambda x: x[0], config.items('Last_Views')))
-            print(last_views)
-            exit(1)
-            '''остановился здесь. нужна функция для пропингивания всех вьюшек, а затем алгоритм для постановки основной вьюшки'''
+            return
+        config = readconfig()
+        disabled_views = set(config['Disabled_Views'])
+        main_views = list(config['Main_View'])
+        loaded_views = self.views
+        if len(main_views) > 0:
+            view = main_views[0]
+            if view in loaded_views and view not in disabled_views and self.ping_view(view):
+                self.main_view = view
+                return
+        for view in loaded_views:
+            if view != 'cliview' and view not in disabled_views and self.ping_view(view):
+                self.main_view = loaded_views[view]
+                return
+        if 'cliview' in loaded_views and 'cliview' not in disabled_views and self.ping_view('cliview'):
+            self.main_view = loaded_views['cliview']
+            return
+        self.main_view = RawView(self.log)
 
-        elif len(self.views) > 1 and self.views[0][0] == 'cliview':  # избегать cliview
-            self.main_view = self.views[1][1]
-        else:
-            self.main_view
-
-    def __init__(self, log):
+    def __init__(self, log, communicator):
+        self.communicator = communicator
         self.log = log
+
+    def ping_view(self, view):
+        ans = self.communicator.request('ping', view)
+        if ans and ans['message'] == 'pong':
+            return True
+        return False
+
+    def ping_views(self):
+        config = readconfig()
+        disabled_views = set(config['Disabled_Views'])
+        active_views = set(filter(lambda x: x.endswith('view'), config['Names'])) - disabled_views
+        running_views = set()
+        for view in active_views:
+            if self.ping_view(view):
+                running_views.add(view)
+        return running_views
 
     def init_views(self):
         views_dir = [x for x in os.listdir('../views') if x.endswith('view')]
@@ -42,13 +75,13 @@ class ViewsManager:
                 msg = f'Exception in the import view module({x}):\n{str(type(e))}\n{str(e)}'
                 self.log(msg)
                 ###### self.sender.report(msg)
-        views = []
+        views = {}
         for x in imports:
             found = False
             for cls in inspect.getmembers(x, inspect.isclass):
                 view_name = x.__name__.split('.')[0]
                 if superview.SuperView in cls[1].__bases__ and cls[0].lower() == view_name:
-                    views.append((view_name, cls[1]))  # составляется список вьюшек вида (название, класс)
+                    views[view_name] = cls[1]  # составляется словарь вьюшек вида { название : класс }
                     found = True
                     break
             if not found:
@@ -58,17 +91,10 @@ class ViewsManager:
         self.log(f'Loaded views: {str(views)}')
         self.views = views
 
-        config = configparser.ConfigParser()
-        config.read('../resources/config.ini')
-        disabled_views = set(map(lambda x: x[0], config.items('Disabled_Views')))
-        active_views = set(filter(lambda x: x[0].endswith('view'), config.items('Names')))
-        active_views = set(map(lambda x: x[0], active_views)) - disabled_views
-        running_views = set()
-        for view in active_views:
-            ans = self.communicator.request('ping', view)
-            if ans and ans['message'] == 'pong':
-                running_views.add(view)
-        views_to_start = set(map(lambda x: x[0], views)) - running_views - disabled_views
+        config = readconfig()
+        disabled_views = set(config['Disabled_Views'])
+        running_views = self.ping_views()
+        views_to_start = set(views.keys()) - running_views - disabled_views
 
         if len(views_to_start) > 0:
             old_path = os.getcwd()
@@ -83,4 +109,3 @@ class ViewsManager:
             self.log(str(views_to_start) + ' started')
         else:
             self.log('No views to start')
-        return views

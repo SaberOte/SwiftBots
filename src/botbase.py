@@ -1,7 +1,8 @@
-import os, time, datetime, inspect, threading, superplugin, superview, configparser, communicator
+import os, time, datetime, inspect, superplugin, superview, communicator
 from viewsmanager import ViewsManager
 from logger import Logger
 from listener import Listener
+from config import readconfig, writeconfig
 
 
 class BotBase:
@@ -11,35 +12,42 @@ class BotBase:
         self.start_time = datetime.datetime.utcnow()
         self.__init_base_services(is_debug)
         self.__init_views()
-        self.sender = self.viewsManager.get_sender()
+        self.report = self.viewsManager.report
+        self.error = self.viewsManager.error
         # self.__init_plugins()
         self.last_msg = time.time()
         self.__listener = Listener(self)
 
     def __fill_config(self):
-        config = configparser.ConfigParser()
-        config_path = '../resources/config.ini'
-        config.read(config_path)
+        config = readconfig()
+        changed = False
         if 'Disabled_Views' not in config.sections():
             config.add_section('Disabled_Views')
+            changed = True
         if 'Names' not in config.sections():
             config.add_section('Names')
+            changed = True
         if 'Tasks' not in config.sections():
             config.add_section('Tasks')
+            changed = True
         if 'Main_View' not in config.sections():
             config.add_section('Last_Views')
-        with open(config_path, 'w') as file:
-            config.write(file)
+            changed = True
+        if 'Main_View' not in config.sections():
+            config.add_section('Main_View')
+            changed = True
+        if changed:
+            writeconfig(config)
 
     def __init_base_services(self, is_debug):
         logger = Logger(is_debug, './../logs/')
         self.log = logger.log
         self.log('Program is launching')
-        self.communicator = communicator.Communicator('../resources/config.ini', 'core', self.log)
+        self.communicator = communicator.Communicator('core', self.log)
         self.log('Base services are loaded')
 
     def __init_views(self):
-        self.viewsManager = ViewsManager(self.log)
+        self.viewsManager = ViewsManager(self.log, self.communicator)
         self.viewsManager.init_views()
 
     def __init_plugins(self):

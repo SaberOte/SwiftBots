@@ -3,3 +3,6 @@
 **/logs
 resources/*
 .env
+.idea/
+plugins/
+views/
