@@ -30,8 +30,6 @@ class Communicator:
             raise Exception("Port is not assigned")
         config = configparser.ConfigParser()
         config.read(self.config_dir)
-        if 'Names' not in config.sections():
-            config.add_section("Names")
         config.set("Names", self.name, str(self.port))
         with open(self.config_dir, 'w') as file:
             config.write(file)

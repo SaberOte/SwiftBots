@@ -1,4 +1,6 @@
 import crontab, getpass, os, configparser, uuid
+
+
 def add(plugin, task, freq, proj_path):
   cron = crontab.CronTab(user=getpass.getuser())
   task_name = f'{plugin}|{task}'

@@ -1,10 +1,12 @@
-import communicator, cronmanager, os
-class Listener():
-  def __init__(self, log, bot):
+import cronmanager, os
+
+
+class Listener:
+  def __init__(self, bot):
     self._bot = bot
-    self.log = log
+    self.log = bot.log
     self.sender = bot.sender
-    self.communicator = communicator.Communicator('../resources/config.ini', 'CORE')
+    self.communicator = bot.communicator
   
   def listen(self):
     for command in self.communicator.listen():
