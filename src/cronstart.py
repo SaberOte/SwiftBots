@@ -11,7 +11,7 @@ for i in config.items('Tasks'):
     break
 if task_name:
   comm = communicator.Communicator('cron')
-  comm.send(task_name, 'core')
+  comm.send('cron|'+task_name, 'core')
   comm.close()
 else:
   pass # задача уже удалена

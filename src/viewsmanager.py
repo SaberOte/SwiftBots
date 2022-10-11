@@ -31,28 +31,35 @@ class ViewsManager:
         disabled_views = set(config['Disabled_Views'])
         main_views = list(config['Main_View'])
         loaded_views = self.views
-        if len(main_views) > 0:
+        if len(main_views) > 0:  # сначала берётся из конфига основной репортер
             view = main_views[0]
             if view in loaded_views and view not in disabled_views and self.ping_view(view):
                 self.main_view = loaded_views[view]
                 return
-        for view in loaded_views:
+        for view in loaded_views:  # если основной репортер недоступен/отсутствует, то берётся первый попавшийся
             if view != 'cliview' and view not in disabled_views and self.ping_view(view):  # избегаю cliview
                 self.main_view = loaded_views[view]
                 return
-        if 'cliview' in loaded_views and 'cliview' not in disabled_views and self.ping_view('cliview'):
+        if 'cliview' in loaded_views and 'cliview' not in disabled_views and self.ping_view('cliview'):  # если только cliview есть, выбирается он
             self.main_view = loaded_views['cliview']
             return
-        self.main_view = RawView(self.log)
+        self.main_view = RawView(self.log)  # если ну прям вообще ничего нет, то всё уйдёт в логи
 
     def __init__(self, log, communicator):
         self.communicator = communicator
         self.log = log
 
     def ping_view(self, view):
+        config = readconfig()
+        if view not in config['Names']:
+            return False
         ans = self.communicator.request('ping', view)
         if ans and ans['message'] == 'pong':
             return True
+        config = readconfig()
+        if view in config['Names']:
+            del config['Names'][view]
+            writeconfig(config)
         return False
 
     def ping_views(self):
@@ -99,8 +106,11 @@ class ViewsManager:
         self.views = views
 
         running_views = self.ping_views()
-        self.log(f'Running views now: {str(running_views)}')
-        views_to_start = set(views.keys()) - running_views - disabled_views
+        if len(running_views):
+            self.log(f'Running views now: {str(running_views)}')
+        else:
+            self.log('No running views now. Using Raw View from ViewsManager')
+        views_to_start = set(views.keys()) - running_views - disabled_views - {'cliview'}
 
         if len(views_to_start) > 0:
             old_path = os.getcwd()
@@ -109,8 +119,7 @@ class ViewsManager:
                 try:
                     subprocess.Popen(['python3', view, '{%s}' % view])
                 except Exception as e:
-                    os.chdir(old_path)
-                    raise e
+                    continue
             os.chdir(old_path)
             self.log(str(views_to_start) + ' started')
         else:

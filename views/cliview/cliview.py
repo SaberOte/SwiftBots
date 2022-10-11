@@ -22,6 +22,9 @@ class CliView(SuperView):
     def reply(self, message):
         self.report(message)
 
+    def unknown_command(self):
+        self.report('Неизвестная команда')
+
     def out(self, message):
         print('\b\b\b-------------------')
         print(message)

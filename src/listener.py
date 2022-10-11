@@ -57,6 +57,36 @@ class Listener:
                 f'Exception in "{method.__name__}" from "{type(plugin).__name__}":\n{str(type(e))}\n{str(e)}')
             view.error()
 
+    def do_cron(self, plugin_name, task):
+        plugin = None
+        for plug in self._bot.plugins:
+            if task in plug.tasks:
+                plugin = plug
+        if not plugin:
+            cronmanager.remove(plugin_name, task)
+            self.log(f'Message {task} is not recognized. Then removed')
+            return
+        task_info = plugin.tasks[task]
+        view_name = task_info[2]
+        try:
+            view = next(filter(lambda x: x == view_name, self._bot.viewsManager.views))
+            view = self._bot.viewsManager.views[view]
+        except StopIteration:
+            self.error(f'View {view_name} is disabled or does not exist. Call from cron {plugin_name} {task}')
+            return
+        method = task_info[0]
+        if not callable(method):
+            self.error(
+                f'There\'s fatal error! "{str(method)}" from class "{type(plugin).__name__}" is not a method '
+                'or a function!')
+            return
+        self.log(f'Method "{method.__name__}" from class "{type(plugin).__name__}" is called by cron')
+        try:
+            method(plugin, view)
+        except Exception as e:
+            self.error(
+                f'Exception in "{method.__name__}" from "{type(plugin).__name__}":\n{str(type(e))}\n{str(e)}')
+
     def handle_message(self, raw_data):
         try:
             # могут прийти 3 типа сообщения:
@@ -67,39 +97,18 @@ class Listener:
             # Если ни один не подходит, то считается, что это сообщение от внутренних компонентов бота (дебил????)
             print(raw_data)
             raw_message = raw_data['message']
-            sender = raw_data['sender']
             if raw_message.startswith('com|'):
                 # надо вставить threading
+                sender = raw_data['sender']
                 self.do_command(raw_message[4:], sender)
-            '''Закончил здесь. Нужно сделать крон'''
+            elif raw_message.startswith('cron|'):
+                plugin_name, task = raw_message[5:].split('|')
+                if plugin_name is None or task is None:
+                    self.error('Unknown form of cron task' + str(plugin_name) + ' ' + str(task))
+                self.do_cron(plugin_name, task)
+            else:
+                self.report('Unknown message from ' + raw_data['sender'] + ' in listener:\n'+str(raw_message))
 
-            return
-            # пока что выключу
-            try:
-                plugin_name, task = command['message'].split('|')
-
-                plugin = None
-                for plug in self._bot.plugins:
-                    if task in plug.tasks:
-                        plugin = plug
-                if not plugin:
-                    cronmanager.remove(plugin_name, task)
-                    self.log(f'Message {task} is not recognized. Then removed')
-                    return
-                method = plugin.tasks[task][0]
-                if not callable(method):
-                    self.error(
-                        f'There\'s fatal error! "{str(method)}" from class "{type(plugin).__name__}" is not a method '
-                        'or a function!')
-                    return
-                self.log(f'Method "{method.__name__}" from class "{type(plugin).__name__}" is called')
-                try:
-                    method(plugin)
-                except Exception as e:
-                    self.error(
-                        f'Exception in "{method.__name__}" from "{type(plugin).__name__}":\n{str(type(e))}\n{str(e)}')
-                    return
-            except: pass
         except Exception as e:
             self.error(f'Exception in Listener:\n{str(type(e))}\n{str(e)}')
 
