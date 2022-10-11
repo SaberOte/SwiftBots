@@ -1,4 +1,4 @@
-import socket, random, os
+import socket, random, re
 from config import readconfig, writeconfig
 
 
@@ -7,6 +7,9 @@ class Communicator:
     sock = None
 
     def __init__(self, name, log=print):
+        name = name.lower()
+        if not re.match(r'^[0-9a-z_]+$', name):
+            raise Exception('Name of communicator ' + str(name) + " can only contain letters or digits or '_'")
         self.log = log
         self.name = name
         
@@ -96,6 +99,11 @@ class Communicator:
                     session_id = int(msg[3:9])
                 except ValueError:
                     raise Exception('Corrupted pattern of message in socket listener (ses_number[3:9]) - ' + msg)
+                assert msg[9:11] == b'NM', 'Corrupted pattern of message in socket listener (no first NM) - ' + msg
+                second_NM = msg.find(b'NM', 11)
+                if second_NM in (-1, 11):
+                    raise Exception('Corrupted pattern of message in socket listener (no second NM or it is no name: ...NMNM...)' + msg)
+                sender_name = msg[11:second_NM]
                 assert msg.endswith(b'END') or msg.endswith(b'SLC'), 'Corrupted pattern of message in socket listener (wrong end) - ' + msg
               except Exception as e:
                 self.close()
@@ -104,25 +112,27 @@ class Communicator:
               final_msg = ''
               if msg.endswith(b'END'):
                   if session_id in sliced_messages:
-                      final_msg = sliced_messages.pop(session_id) + msg[9:-3]
+                      final_msg = sliced_messages.pop(session_id) + msg[second_NM+2:-3]
                   else:
-                      final_msg = msg[9:-3]
+                      final_msg = msg[second_NM+2:-3]
                   if not requested or requested and session_id == requested_ses_id:
                       yield {
                         'message': final_msg.decode('utf-8'),
+                        'sender': sender_name.decode('utf-8'),
                         'address': addr,
                         'session_id': session_id,
                       }
               elif msg.endswith(b'SLC'):
                   if session_id in sliced_messages:
-                      sliced_messages[session_id] += msg[9:-3]
+                      sliced_messages[session_id] += msg[second_NM+2:-3]
                   else:
-                      sliced_messages[session_id] = msg[9:-3]
+                      sliced_messages[session_id] = msg[second_NM+2:-3]
         except Exception as e:
           self.close()
           raise e
 
     def send(self, msg, name, session_id=0):
+        name = name.lower()
         msg = msg.encode('utf-8')
         port = self.get_port(name)
         if not self.sock:
@@ -132,7 +142,7 @@ class Communicator:
             session_id = random.randint(100000, 999999)
                 
         # cutting message on slices. If message size isn't greater than the buffer, then message won't be cut
-        slice_size = self.BUFFER_AMOUNT - 12
+        slice_size = self.BUFFER_AMOUNT - 16 - len(self.name)  # SES123456NM...NM...END + [NAME]
         slices = []
         slice = msg 
         if len(msg) > slice_size:
@@ -141,19 +151,23 @@ class Communicator:
                 slice = slice[slice_size:]
         slices.append(slice)
 
-        # format: SES123456[all_message]END
-        # format: SES123456[sliced_message]SLC
+        SES = 'SES'.encode('utf-8')
+        NM = 'NM'.encode('utf-8')
+        END = 'END'.encode('utf-8')
+        SLC = 'SLC'.encode('utf-8')
+        # format: SES123456NM[NAME]NM[all_message]END
+        # format: SES123456NM[NAME]NM[sliced_message]SLC
         for i in range(len(slices)):
-            slices[i] = 'SES'.encode('utf-8') + str(session_id).encode('utf-8') + slices[i]
+            slices[i] = SES + str(session_id).encode('utf-8') + NM + self.name.encode('utf-8') + NM + slices[i]
             if i == len(slices)-1:
-                slices[i] += 'END'.encode('utf-8')
+                slices[i] += END
             else:
-                slices[i] += 'SLC'.encode('utf-8')
+                slices[i] += SLC
             try:
-              self.sock.sendto(slices[i], ('localhost', port))
+                self.sock.sendto(slices[i], ('localhost', port))
             except:
-              self.assign_port()
-              self.sock.sendto(slices[i], ('localhost', port))
+                self.assign_port()
+                self.sock.sendto(slices[i], ('localhost', port))
         return session_id
 
     def request(self, msg, name):

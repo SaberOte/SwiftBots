@@ -14,7 +14,7 @@ def send_ex(e, place):
     log = logger.Logger('-d' in sys.argv, './logs/').log
     comm = Communicator(__file__[:-3], log)
     log('It is a bad try to launch the view')
-    msg = f'Исключение в {place}:\n' + str(type(e)) + '\n' + str(e)
+    msg = f'Exception in {place}:\n' + str(type(e)) + '\n' + str(e)
     comm.send('VIEWERROR'+msg, 'core')
     log(msg)
     comm.close()

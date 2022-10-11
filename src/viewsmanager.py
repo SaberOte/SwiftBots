@@ -15,7 +15,7 @@ class ViewsManager:
 
     def error(self, message):
         self.log('!!!ERROR!!!\n'+str(message))
-        self.report(message)
+        self.report(str(message))
 
     def report(self, message):
         # можно ещё сделать накопление ошибок или передачу их другой вьюшке
@@ -34,10 +34,10 @@ class ViewsManager:
         if len(main_views) > 0:
             view = main_views[0]
             if view in loaded_views and view not in disabled_views and self.ping_view(view):
-                self.main_view = view
+                self.main_view = loaded_views[view]
                 return
         for view in loaded_views:
-            if view != 'cliview' and view not in disabled_views and self.ping_view(view):
+            if view != 'cliview' and view not in disabled_views and self.ping_view(view):  # избегаю cliview
                 self.main_view = loaded_views[view]
                 return
         if 'cliview' in loaded_views and 'cliview' not in disabled_views and self.ping_view('cliview'):
@@ -66,34 +66,40 @@ class ViewsManager:
         return running_views
 
     def init_views(self):
-        views_dir = [x for x in os.listdir('../views') if x.endswith('view')]
+        views_dir = [x for x in os.listdir('../views') if x.endswith('view') and x.islower()]
         imports = []
+        failed_imports = {}
         for x in views_dir:
             try:
                 imports.append(getattr(__import__(f'{x}.{x}'), x))
             except Exception as e:
                 msg = f'Exception in the import view module({x}):\n{str(type(e))}\n{str(e)}'
-                self.log(msg)
-                ###### self.sender.report(msg)
+                self.error(msg)
+        config = readconfig()
+        disabled_views = set(config['Disabled_Views'])
+        self.log(f'Disabled views: {str(disabled_views)}')
         views = {}
         for x in imports:
+            if x.__name__.split('.')[0] in disabled_views:
+                continue
             found = False
             for cls in inspect.getmembers(x, inspect.isclass):
                 view_name = x.__name__.split('.')[0]
                 if superview.SuperView in cls[1].__bases__ and cls[0].lower() == view_name:
-                    views[view_name] = cls[1]  # составляется словарь вьюшек вида { название : класс }
+                    try:
+                        views[view_name] = cls[1](is_daemon=False)  # составляется словарь вьюшек вида { название : класс }
+                    except Exception as e:
+                        failed_imports[cls[1]] = str(e)
                     found = True
                     break
             if not found:
                 msg = 'Can\'t import view ' + x + '. This file does not contain class that inherited from SuperView and names like view folder'
-                self.log(msg)
-                ###### self.sender.report(msg)
+                self.error(msg)
         self.log(f'Loaded views: {str(views)}')
         self.views = views
 
-        config = readconfig()
-        disabled_views = set(config['Disabled_Views'])
         running_views = self.ping_views()
+        self.log(f'Running views now: {str(running_views)}')
         views_to_start = set(views.keys()) - running_views - disabled_views
 
         if len(views_to_start) > 0:
@@ -109,3 +115,8 @@ class ViewsManager:
             self.log(str(views_to_start) + ' started')
         else:
             self.log('No views to start')
+
+        print(failed_imports)
+        if len(failed_imports):
+            for imp in failed_imports:
+                self.error('Failed imoprt view: ' + str(imp) + '\nException: ' + str(failed_imports[imp]))

@@ -18,7 +18,7 @@ try:
     bot._start_()
 except Exception as e:
     msg = 'Exception in unknown place:\n'+str(type(e))+'\n'+str(e)
-    if bot.report:
-        bot.report(msg)
+    if bot.error:
+        bot.error(msg)
     else:
         print(msg)

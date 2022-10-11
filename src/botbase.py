@@ -14,7 +14,7 @@ class BotBase:
         self.__init_views()
         self.report = self.viewsManager.report
         self.error = self.viewsManager.error
-        # self.__init_plugins()
+        self.__init_plugins()
         self.last_msg = time.time()
         self.__listener = Listener(self)
 
@@ -48,7 +48,7 @@ class BotBase:
 
     def __init_views(self):
         self.viewsManager = ViewsManager(self.log, self.communicator)
-        self.viewsManager.init_views()
+        failed_views = self.viewsManager.init_views()
 
     def __init_plugins(self):
         modules = [x[:-3] for x in os.listdir('./../plugins') if x.endswith('.py')]
@@ -57,19 +57,18 @@ class BotBase:
             try:
                 imports.append(__import__(x))
             except Exception as e:
-                self.sender.report(f'Exception in the import module({x}):\n{str(type(e))}\n{str(e)}')
-        all_classes = []
+                self.error(f'Exception in the import module({x}):\n{str(type(e))}\n{str(e)}')
+        classes = []
         for x in imports:
             for cls in inspect.getmembers(x, inspect.isclass):
                 if superplugin.SuperPlugin in cls[1].__bases__:
-                    all_classes.append(cls[1])
-        classes = []
-        for x in all_classes:
-            if x not in classes:
-                classes.append(x)
+                    try:
+                        classes.append(cls[1]())
+                    except Exception as e:
+                        self.error('Error in constructor plugin: ' + str(cls[0]) + '\n' + str(e))
         for x in classes:
-            self.plugins.append(x(self))
-        self.log(f'Loaded classes: {str(classes)}')
+            self.plugins.append(x)
+        self.log(f'Loaded plugins: {str(classes)}')
 
     def _start_(self):
         self.__listener.listen()

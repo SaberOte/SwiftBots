@@ -1,14 +1,42 @@
 from superview import SuperView
+from communicator import Communicator
 
 
 class CliView(SuperView):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, is_daemon=True):
+        super().__init__(is_daemon)
 
-    def report(self, message):
-        print(message)
+    plugins = ['test']
 
     def listen(self):
-        print("Hello in the command line interface! Good day!")
+        print("Welcome in the command line chat! Good day, Friend!")
         while True:
-            yield input('-> ')
+            msg = input('-> ')
+            ans = {
+                'command': msg,
+                'sender': 'pidaras',
+                'hash': 'kakoy blyat hash',
+            }
+            yield ans
+
+    def reply(self, message):
+        self.report(message)
+
+    def out(self, message):
+        print('\b\b\b-------------------')
+        print(message)
+        print('-------------------')
+        print('->')
+
+    def report(self, message):
+        if message.startswith('THIS view dies'):
+            print(message)
+            return
+        self.log('It is cliview_ghost. Do not frighten')
+        communicator = Communicator('cliview_ghost')
+        communicator.send('com|report|'+message, 'cliview')
+        communicator.close()
+
+    inner_commands = {
+        'report': out,
+    }

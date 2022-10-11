@@ -1,4 +1,4 @@
-import cronmanager
+import cronmanager, ast, threading
 
 
 class Listener:
@@ -6,13 +6,74 @@ class Listener:
         self._bot = bot
         self.log = bot.log
         self.report = bot.report
+        self.error = bot.error
         self.communicator = bot.communicator
 
-    def listen(self):
-        self.log('Start listening...')
-        for command in self.communicator.listen():
-            print(command['message'])
-            continue
+    def check_cmds(self, command, view):
+        plugins = self._bot.plugins
+        accepted_plugins = [x.lower() for x in view.plugins]
+        plugins = filter(lambda plug: plug.__class__.__name__.lower() in accepted_plugins, plugins)
+        for plugin in plugins:
+            if command in plugin.cmds:
+                return plugin.cmds[command], plugin
+        return None, None
+
+    def check_prefixes(self, command, view):
+        plugins = self._bot.plugins
+        accepted_plugins = [x.lower() for x in view.plugins]
+        plugins = filter(lambda plug: plug.__class__.__name__.lower() in accepted_plugins, plugins)
+        for plugin in plugins:
+            for prefix in plugin.prefixes:
+                if command.startswith(prefix):
+                    if len(prefix) == len(command):
+                        view.data['message'] = command
+                    elif command[len(prefix)] == ' ':
+                        view.data['message'] = command[len(prefix)+1:]
+                    return plugin.prefixes[prefix], plugin
+        return None, None
+
+    def do_command(self, raw, sender):
+        command = raw.split('|')[0]
+        data = raw[1+len(command):]
+        data = ast.literal_eval(data)
+        view = self._bot.viewsManager.views[sender]
+        view.data = data
+        method, plugin = self.check_cmds(command, view)
+        if not plugin:
+            method, plugin = self.check_prefixes(command, view)
+            if not plugin:
+                view.unknown_command()
+                return
+        if not callable(method):
+            self.error(
+                f'There\'s fatal error! "{str(method)}" from class "{type(plugin).__name__}" is not a method '
+                'or a function!')
+            return
+        self.log(f'Method "{method.__name__}" from class "{type(plugin).__name__}" is called')
+        try:
+            method(plugin, view)
+        except Exception as e:
+            self.error(
+                f'Exception in "{method.__name__}" from "{type(plugin).__name__}":\n{str(type(e))}\n{str(e)}')
+            view.error()
+
+    def handle_message(self, raw_data):
+        try:
+            # могут прийти 3 типа сообщения:
+            # com|... - сообщение формата com|команда|информация. Приходит от вьюшки
+            # any|... - сообщение сразу с информацией. Не является командой, тупо пересылается плагину, ответственному
+            #   за вьюшку, из которой сообщение прилетело
+            # cron|... - сообщение от крона. имеет формат plugin_name|task
+            # Если ни один не подходит, то считается, что это сообщение от внутренних компонентов бота (дебил????)
+            print(raw_data)
+            raw_message = raw_data['message']
+            sender = raw_data['sender']
+            if raw_message.startswith('com|'):
+                # надо вставить threading
+                self.do_command(raw_message[4:], sender)
+            '''Закончил здесь. Нужно сделать крон'''
+
+            return
             # пока что выключу
             try:
                 plugin_name, task = command['message'].split('|')
@@ -24,19 +85,30 @@ class Listener:
                 if not plugin:
                     cronmanager.remove(plugin_name, task)
                     self.log(f'Message {task} is not recognized. Then removed')
-                    continue
+                    return
                 method = plugin.tasks[task][0]
                 if not callable(method):
                     self.error(
-                        f'There\'s fatal error! "{str(method)}" from class "{type(plugin).__name__}" is not a method ' 
+                        f'There\'s fatal error! "{str(method)}" from class "{type(plugin).__name__}" is not a method '
                         'or a function!')
-                    continue
+                    return
                 self.log(f'Method "{method.__name__}" from class "{type(plugin).__name__}" is called')
                 try:
                     method(plugin)
                 except Exception as e:
                     self.error(
                         f'Exception in "{method.__name__}" from "{type(plugin).__name__}":\n{str(type(e))}\n{str(e)}')
-                    continue
+                    return
+            except: pass
+        except Exception as e:
+            self.error(f'Exception in Listener:\n{str(type(e))}\n{str(e)}')
+
+
+    def listen(self):
+        self.log('Start listening...')
+        while 1:
+            try:
+                for raw_data in self.communicator.listen():
+                    threading.Thread(target=self.handle_message, args=(raw_data,), daemon=True).start()
             except Exception as e:
                 self.error(f'Exception in Listener:\n{str(type(e))}\n{str(e)}')
