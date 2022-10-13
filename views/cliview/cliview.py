@@ -37,8 +37,12 @@ class CliView(SuperView):
             return
         self.log('It is cliview_ghost. Do not frighten')
         communicator = Communicator('cliview_ghost')
-        communicator.send('com|report|'+message, 'cliview')
-        communicator.close()
+        try:
+            communicator.send('com|report|'+message, 'cliview')
+        except:
+            self.log('Sending to cliview impossible now')
+        finally:
+            communicator.close()
 
     inner_commands = {
         'report': out,

@@ -1,10 +1,13 @@
 from datetime import datetime, timedelta
+import os
 
 
 class Logger:
     def __init__(self, is_debug, path):
         self.is_debug = is_debug
         path = path
+        if not os.path.isdir(os.path.dirname(path)):
+            os.makedirs(os.path.dirname(path))
         starttime = (datetime.utcnow() + timedelta(hours=5)).strftime('%Y_%m_%d__%H_%M_%S')
         self.file = open(path+'logs_'+starttime+'.txt', 'w', encoding='utf-8')
     

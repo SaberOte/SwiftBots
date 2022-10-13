@@ -63,7 +63,7 @@ class BotBase:
             for cls in inspect.getmembers(x, inspect.isclass):
                 if superplugin.SuperPlugin in cls[1].__bases__:
                     try:
-                        classes.append(cls[1]())
+                        classes.append(cls[1](self))
                     except Exception as e:
                         self.error('Error in constructor plugin: ' + str(cls[0]) + '\n' + str(e))
         for x in classes:

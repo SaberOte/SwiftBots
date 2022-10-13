@@ -68,7 +68,7 @@ class SuperView(ABC):
                 msg = 'EXCEPTION ' + str(e)
                 self.comm.send(msg, 'core')
                 self.log(msg)
-                self.report('It is impossible error in superview.py with exception: ' + msg)
+                self.report('Exception in listen: ' + msg)
 
     def listen_port(self):  # waits commands from core bot
         self.log('start listening')

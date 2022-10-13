@@ -1,4 +1,4 @@
-import os, subprocess, inspect, superview
+import os, inspect, superview
 from config import readconfig, writeconfig
 
 
@@ -12,6 +12,10 @@ class RawView:
 
 class ViewsManager:
     main_view = None
+
+    def __init__(self, log, communicator):
+        self.communicator = communicator
+        self.log = log
 
     def error(self, message):
         self.log('!!!ERROR!!!\n'+str(message))
@@ -33,21 +37,17 @@ class ViewsManager:
         loaded_views = self.views
         if len(main_views) > 0:  # сначала берётся из конфига основной репортер
             view = main_views[0]
-            if view in loaded_views and view not in disabled_views and self.ping_view(view):
+            if view in loaded_views and view not in disabled_views:
                 self.main_view = loaded_views[view]
                 return
         for view in loaded_views:  # если основной репортер недоступен/отсутствует, то берётся первый попавшийся
-            if view != 'cliview' and view not in disabled_views and self.ping_view(view):  # избегаю cliview
+            if view != 'cliview' and view not in disabled_views:  # избегаю cliview
                 self.main_view = loaded_views[view]
                 return
         if 'cliview' in loaded_views and 'cliview' not in disabled_views and self.ping_view('cliview'):  # если только cliview есть, выбирается он
             self.main_view = loaded_views['cliview']
             return
         self.main_view = RawView(self.log)  # если ну прям вообще ничего нет, то всё уйдёт в логи
-
-    def __init__(self, log, communicator):
-        self.communicator = communicator
-        self.log = log
 
     def ping_view(self, view):
         config = readconfig()
@@ -117,7 +117,7 @@ class ViewsManager:
             os.chdir('./../views/')
             for view in views_to_start:
                 try:
-                    subprocess.Popen(['python3', view, '{%s}' % view])
+                    os.system(f'nohup python3 {view} > ./{view}/logs/launchlogs.txt 2>&1 &')
                 except Exception as e:
                     continue
             os.chdir(old_path)
@@ -125,7 +125,6 @@ class ViewsManager:
         else:
             self.log('No views to start')
 
-        print(failed_imports)
         if len(failed_imports):
             for imp in failed_imports:
-                self.error('Failed imoprt view: ' + str(imp) + '\nException: ' + str(failed_imports[imp]))
+                self.error('Failed import view: ' + str(imp) + '\nException: ' + str(failed_imports[imp]))
