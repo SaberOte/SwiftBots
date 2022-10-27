@@ -1,4 +1,4 @@
-import cronmanager, ast, threading
+import cronmanager, ast, threading, traceback
 
 
 class Listener:
@@ -10,7 +10,7 @@ class Listener:
         self.communicator = bot.communicator
 
     def check_cmds(self, command, view):
-        plugins = self._bot.plugins
+        plugins = self._bot.plugin_manager.plugins
         accepted_plugins = [x.lower() for x in view.plugins]
         plugins = filter(lambda plug: plug.__class__.__name__.lower() in accepted_plugins, plugins)
         for plugin in plugins:
@@ -19,16 +19,16 @@ class Listener:
         return None, None
 
     def check_prefixes(self, command, view):
-        plugins = self._bot.plugins
+        plugins = self._bot.plugin_manager.plugins
         accepted_plugins = [x.lower() for x in view.plugins]
         plugins = filter(lambda plug: plug.__class__.__name__.lower() in accepted_plugins, plugins)
         for plugin in plugins:
             for prefix in plugin.prefixes:
                 if command.startswith(prefix):
                     if len(prefix) == len(command):
-                        view.data['message'] = command
+                        view.data['command'] = command
                     elif command[len(prefix)] == ' ':
-                        view.data['message'] = command[len(prefix)+1:]
+                        view.data['command'] = command[len(prefix)+1:]
                     return plugin.prefixes[prefix], plugin
         return None, None
 
@@ -36,7 +36,7 @@ class Listener:
         command = raw.split('|')[0]
         data = raw[1+len(command):]
         data = ast.literal_eval(data)
-        view = self._bot.viewsManager.views[sender]
+        view = self._bot.views_manager.views[sender]
         view.data = data
         method, plugin = self.check_cmds(command, view)
         if not plugin:
@@ -54,12 +54,12 @@ class Listener:
             method(plugin, view)
         except Exception as e:
             self.error(
-                f'Exception in "{method.__name__}" from "{type(plugin).__name__}":\n{str(type(e))}\n{str(e)}')
+                f'Exception in "{method.__name__}" from "{type(plugin).__name__}":\n{str(type(e))}\n{str(e)}\n{traceback.format_exc()}')
             view.error()
 
     def do_cron(self, plugin_name, task):
         plugin = None
-        for plug in self._bot.plugins:
+        for plug in self._bot.plugin_manager.plugins:
             if task in plug.tasks:
                 plugin = plug
         if not plugin:
@@ -69,8 +69,8 @@ class Listener:
         task_info = plugin.tasks[task]
         view_name = task_info[2]
         try:
-            view = next(filter(lambda x: x == view_name, self._bot.viewsManager.views))
-            view = self._bot.viewsManager.views[view]
+            view = next(filter(lambda x: x == view_name, self._bot.views_manager.views))
+            view = self._bot.views_manager.views[view]
         except StopIteration:
             self.error(f'View {view_name} is disabled or does not exist. Call from cron {plugin_name} {task}')
             return
@@ -95,10 +95,10 @@ class Listener:
             #   за вьюшку, из которой сообщение прилетело
             # cron|... - сообщение от крона. имеет формат plugin_name|task
             # Если ни один не подходит, то считается, что это сообщение от внутренних компонентов бота (дебил????)
-            print(raw_data)
+
             raw_message = raw_data['message']
+            self.log(f'Came message: {raw_message}')
             if raw_message.startswith('com|'):
-                # надо вставить threading
                 sender = raw_data['sender']
                 self.do_command(raw_message[4:], sender)
             elif raw_message.startswith('cron|'):
@@ -110,7 +110,7 @@ class Listener:
                 self.report('Unknown message from ' + raw_data['sender'] + ' in listener:\n'+str(raw_message))
 
         except Exception as e:
-            self.error(f'Exception in Listener:\n{str(type(e))}\n{str(e)}')
+            self.error(f'Exception in handling message:\n{str(type(e))}\n{str(e)}')
 
 
     def listen(self):

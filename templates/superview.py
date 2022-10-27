@@ -16,16 +16,13 @@ class SuperView(ABC):
     inner_commands = []  # команды от ядра бота конкретно для этой вьюшки
 
     def __init__(self, is_daemon=True):
+        self.view_name = type(self).__name__.lower()
+        self.log = logger.Logger('-d' in sys.argv, './logs/').log
         if is_daemon:
-            self.view_name = type(self).__name__.lower()
-            self.log = logger.Logger('-d' in sys.argv, './logs/').log
             self.comm = Communicator(self.view_name, self.log)
             self.core_listener = threading.Thread(target=self.listen_port, daemon=True)
             self.core_listener.start()
             self.enable_in_config()
-        else:
-            self.view_name = type(self).__name__.lower()
-            self.log = logger.Logger('-d' in sys.argv, '../logs/').log
 
     @abstractmethod
     def listen(self):  # должен быть определён. Чтобы слушать внешний источник команд

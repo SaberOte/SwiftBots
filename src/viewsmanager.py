@@ -2,34 +2,36 @@ import os, inspect, superview
 from config import readconfig, writeconfig
 
 
-class RawView:
+class _RawView:
     def __init__(self, log):
         self.log = log
 
-    def report(self, message):
+    def report(self, message: str):
         self.log(message)
 
 
 class ViewsManager:
     main_view = None
+    views = {}
 
     def __init__(self, log, communicator):
         self.communicator = communicator
         self.log = log
 
-    def error(self, message):
+    def error(self, message: str):
         self.log('!!!ERROR!!!\n'+str(message))
         self.report(str(message))
 
-    def report(self, message):
+    def report(self, message: str):
         # можно ещё сделать накопление ошибок или передачу их другой вьюшке
         if not self.main_view:
             self.assign_main_view()
-        self.main_view.report(message)
+        self.log('Report has sent to main view : ' + self.main_view.__class__.__name__)
+        self.main_view.report(str(message))
 
     def assign_main_view(self):
         if len(self.views) == 0:
-            self.main_view = RawView(self.log)
+            self.main_view = _RawView(self.log)
             return
         config = readconfig()
         disabled_views = set(config['Disabled_Views'])
@@ -47,9 +49,9 @@ class ViewsManager:
         if 'cliview' in loaded_views and 'cliview' not in disabled_views and self.ping_view('cliview'):  # если только cliview есть, выбирается он
             self.main_view = loaded_views['cliview']
             return
-        self.main_view = RawView(self.log)  # если ну прям вообще ничего нет, то всё уйдёт в логи
+        self.main_view = _RawView(self.log)  # если ну прям вообще ничего нет, то всё уйдёт в логи
 
-    def ping_view(self, view):
+    def ping_view(self, view: str):
         config = readconfig()
         if view not in config['Names']:
             return False
@@ -62,7 +64,7 @@ class ViewsManager:
             writeconfig(config)
         return False
 
-    def ping_views(self):
+    def ping_views(self) -> set:
         config = readconfig()
         disabled_views = set(config['Disabled_Views'])
         active_views = set(filter(lambda x: x.endswith('view'), config['Names'])) - disabled_views
@@ -102,7 +104,7 @@ class ViewsManager:
             if not found:
                 msg = 'Can\'t import view ' + x + '. This file does not contain class that inherited from SuperView and names like view folder'
                 self.error(msg)
-        self.log(f'Loaded views: {str(views)}')
+        self.log(f'Loaded views: {str([x for x in views])}')
         self.views = views
 
         running_views = self.ping_views()
@@ -128,3 +130,52 @@ class ViewsManager:
         if len(failed_imports):
             for imp in failed_imports:
                 self.error('Failed import view: ' + str(imp) + '\nException: ' + str(failed_imports[imp]))
+
+    def update_view(self, view: str) -> int:
+        module = [x for x in os.listdir('../views') if x.endswith('view') and x.islower() and x == view]
+        if len(module) == 0:
+            return 0
+        module = module[0]
+        try:
+            imported = getattr(__import__(f'{module}.{module}'), module)
+        except Exception as e:
+            msg = f'Exception in the import view module({module}):\n{str(type(e))}\n{str(e)}'
+            raise Exception(msg)
+        config = readconfig()
+        disabled_views = set(config['Disabled_Views'])
+        self.log(f'Disabled views: {str(disabled_views)}')
+        found = False
+        view_key = None
+        for cls in inspect.getmembers(imported, inspect.isclass):
+            view_name = imported.__name__.split('.')[0]
+            if superview.SuperView in cls[1].__bases__ and cls[0].lower() == view_name:
+                try:
+                    self.views[view_name] = cls[1](is_daemon=False)
+                except Exception as e:
+                    raise Exception(f'Failed to instantiate view {view}:\n{str(type(e))}\n{str(e)}')
+                found = True
+                break
+        if not found:
+            msg = 'Can\'t import view ' + view + '. This file does not contain class that inherited from SuperView and names like view folder'
+            self.error(msg)
+        self.log(f'Updated internal view: {view}')
+
+        running_views = self.ping_views()
+        if len(running_views):
+            self.log(f'Running views now: {str(running_views)}')
+        else:
+            self.log('No running views now')
+        if view in running_views:
+            old_path = os.getcwd()
+            os.chdir('./../views/')
+            try:
+                os.system(f'nohup python3 {view} > ./{view}/logs/launchlogs.txt 2>&1 &')
+            except Exception as e:
+                os.chdir(old_path)
+                raise Exception(f'View {view} failed to start!!\n{type(str(e))}\n{e}')
+            os.chdir(old_path)
+            self.log(str(view) + ' started')
+            return 2
+        else:
+            self.log('View is not needed to start')
+            return 1

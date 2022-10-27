@@ -1,5 +1,4 @@
 from superview import SuperView
-from communicator import Communicator
 import requests, os
 
 
@@ -9,7 +8,7 @@ class TgView(SuperView):
 
     token = '1745687697:AAEKSGiWm6iTc_lfzRj32HVvWLKzvkzase0'
     admin = '367363759'
-    plugins = ['test']
+    plugins = ['test', 'adminpanel']
 
     def get(self, method, data=''):
         answer = requests.get(f'https://api.telegram.org/bot{self.token}/{method}?{data}')
@@ -28,13 +27,23 @@ class TgView(SuperView):
         while 1:
             ans = self.get('getUpdates', f'timeout={timeout}&limit=1&offset={offset}&allowed_updates=["message"]')
             if not ans['ok']:
-                raise Exception(str(ans['error_code']) + ans['description'])
+                raise Exception(str(ans['error_code']) + ' ' + ans['description'])
             if len(ans['result']) != 0:
                 offset = ans['result'][0]['update_id']+1
                 yield ans
 
+    def hard_code(self, text):
+        if text == 'selfexit':
+            self.report('exited')
+            self.comm.close()
+            self.log('exited')
+            os._exit(1)
+        if text == 'hey':
+            self.report('Hola der Fruend!')
+            return 22
+
     def listen(self):
-        # self.report('Bot is launched')
+        self.report('TGView запущен')
         try:
             for update in self.get_updates():
                 update = update['result'][0]
@@ -43,15 +52,10 @@ class TgView(SuperView):
                     text = message['text']
                     sender = message['from']['id']
                     self.log(f"Came message: '{text}' from {sender} ({message['from']['username']})")
-                    if text == 'exit':
-                        self.comm.close()
-                        self.log('exited')
-                        os._exit(1)
-                    if text == 'hey':
-                        self.report('hey!')
+                    if self.hard_code(text) == 22:
+                        continue
                     yield {
-                        'command': message,
-                        'text': text,
+                        'command': text,
                         'sender': sender,
                     }
                 else:

@@ -1,4 +1,4 @@
-import socket, random, re
+import socket, random, re, psutil, signal, os
 from config import readconfig, writeconfig
 
 
@@ -28,8 +28,26 @@ class Communicator:
         if not self.port:
             raise Exception("Port is not assigned")
         config = readconfig()
+        if self.name in config['Names']:
+            self.kill_process(config['Names'][self.name])
         config["Names"][self.name] = str(self.port)
         writeconfig(config)
+
+    def kill_process(self, port):  # radical but awesome
+        connections = psutil.net_connections()
+        pid = None
+        list(filter(lambda con: con.laddr and con.laddr.port == int(port), connections))
+        for con in connections:
+            if con.laddr:
+                if con.laddr.port == int(port):
+                    pid = con.pid
+                    break
+        if pid is None:
+            return
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
 
     def assign_port(self, port=0):
         if self.sock:

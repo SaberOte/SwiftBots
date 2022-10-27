@@ -10,7 +10,7 @@ class SuperPlugin:
     '''
 
     def __init__(self, bot):
-        self.bot = bot
+        self._bot = bot
         vars_v = vars(bot)
         for var in vars_v:
             if not var.startswith('_'):
