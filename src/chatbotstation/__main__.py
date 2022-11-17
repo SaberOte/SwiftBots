@@ -1,17 +1,25 @@
-# this script enters flags and commands and does anything
-import os, sys
-
-argv = sys.argv[1:]  # skip this file's name
-flags = list(filter(lambda arg: arg.startswith('-'), argv))
-args = list(filter(lambda arg: not arg.startswith('-') and not arg.startswith('{'), argv))
-
-is_debug = False
-is_machine_start = False
-from_reboot = False
+"""This script is an entry point to app.
+Starts with commands and flags"""
+import os
+import sys
+from traceback import format_exc
+import core
 
 
-def process_flags():
-    if '-h' in flags or '-help' in flags or '--help' in flags:
+def get_resources_path() -> str:
+    """obtain directory path with project data"""
+    # full path's smth like ~/FOLDER/src/chatbotstation/__main__.py
+    # resources directory is ~/FOLDER/resources
+    get_prev = os.path.dirname
+    path = os.path.join(get_prev(get_prev(get_prev(os.path.abspath(__file__)))), 'resources')
+    if not os.path.isdir(path):
+        os.makedirs(path)
+    return path
+
+
+def read_flags():
+    """pull out flags from flags variable"""
+    if '-h' in keys or '-help' in keys or '--help' in keys:
         print('''Usage: python3 [__main__.py | FILE'S DIRECTORY] [arguments] [flags]
 Arguments:
 start        : start this bot
@@ -20,24 +28,22 @@ start [view] : start view manually
 Flags:
 -d : print every log
 ''')
-        exit()
-    if '-d' in flags:
-        global is_debug
-        is_debug = True
-    if '-MS' in flags:
-        global is_machine_start
-        is_machine_start = True
-    if '-FR' in flags:
-        global from_reboot
-        from_reboot = True
+        sys.exit(0)
+    if '-d' in keys:
+        yield 'debug'
+    if '-MS' in keys:
+        yield 'machine_start'
+    if '-FR' in keys:
+        yield 'from_reboot'
 
 
 def process_arguments():
+    """get arguments in order and process (not necessarily each)"""
     i = 0
     args_len = len(args)
     if args_len == 0:
         print('No arguments')
-        exit()
+        sys.exit(0)
     while i < args_len:
         arg = args[i]
         if arg == 'start':
@@ -49,51 +55,49 @@ def process_arguments():
                 dirs = os.listdir()
                 if view not in dirs:
                     print('No such view in view folder')
-                    exit()
-                os.system('nohup python3 {} > ./{}/logs/launchlogs.txt 2>&1 &'.format(view, view))
+                    sys.exit(1)
+                os.system(f'nohup python3 {view} > '
+                          f'{res_path}/{view}_log.txt 2>&1 &')
             else:
-                if is_debug or is_machine_start:  # explicit start
+                if 'debug' in flags or 'machine_start' in flags:  # explicit start
                     launch_bot()
                 else:  # quite start
+                    # set directory src as main and call python3 THIS_MODULE
                     fullpath = os.path.dirname(os.path.abspath(__file__))
-                    fold = fullpath.split('/')[-1]
-                    path = os.path.dirname(fullpath)
-                    os.chdir(path)
-                    os.system('nohup python3 {} start -MS > ./{}/resources/launchlogs.txt 2>&1 &'.format(fold, fold))
-                    exit()
-
+                    proj_name = fullpath.split('/')[-1]
+                    work_path = os.path.dirname(proj_name)
+                    os.chdir(work_path)
+                    os.system(f'nohup python3 {proj_name} start -MS > '
+                              f'{res_path}/launch_log.txt 2>&1 &')
+                    sys.exit(0)
         i += 1
 
 
 def launch_bot():
-    path = os.path.dirname(os.path.abspath(__file__))
-    os.chdir(path)
-    sys.path.insert(0, os.path.join(path, 'src'))
-    sys.path.insert(0, os.path.join(path, 'plugins'))
-    sys.path.insert(0, os.path.join(path, 'templates'))
-    sys.path.insert(0, os.path.join(path, 'views'))
-    os.chdir(os.path.join(path, 'src'))
-
-    import botbase
-
-    bot = botbase.BotBase(is_debug)
+    """start core instance"""
+    bot = core.Core('debug' in flags)
     try:
-        if from_reboot:
+        if 'from_reboot' in flags:
             bot.views_manager.report('Бот перезапущен')
-    except: pass
+    except:
+        pass
     try:
-        bot._start_()
-    except Exception as e:
-        msg = 'Exception in unknown place:\n' + str(type(e)) + '\n' + str(e)
+        bot.start()
+    except:
+        msg = format_exc()
         if bot.error:
             bot.error(msg)
         else:
             print(msg)
-        exit()
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    process_flags()
-    process_arguments()
-    exit()
+    argv = sys.argv[1:]  # skip this file's name
+    keys = list(filter(lambda arg: arg.startswith('-'), argv))
+    args = list(filter(lambda arg: not arg.startswith('-') and not arg.startswith('{'), argv))
+    res_path = get_resources_path()
 
+    flags = list(read_flags())
+    process_arguments()
+    sys.exit(0)
