@@ -1,8 +1,7 @@
 **/__pycache__
-**/config
 **/logs
 resources/*
 .env
 .idea/
-plugins/
-views/
+# **/plugins/
+# **/views/

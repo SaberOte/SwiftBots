@@ -1,0 +1,28 @@
+{
+    "inline": true,
+    "buttons": [
+        [{
+            "action" : {
+            "type" : "text",
+            "label" : "Статус"
+            },
+            "color" : "primary"
+        }],
+		[
+            {
+                "action": {
+                    "type": "text",
+                    "label": "Запустить helper"
+                },
+                "color": "default"
+            }
+        ],
+        [{
+            "action": {
+            "type": "text",
+            "label": "Выход"
+            },
+            "color": "negative"
+        }]
+    ]
+  }
