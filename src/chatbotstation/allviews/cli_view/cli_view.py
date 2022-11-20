@@ -1,5 +1,5 @@
-from superview import SuperView
-from communicator import Communicator
+from ...templates.super_view import SuperView
+from ...communicators import Communicator
 
 
 class CliView(SuperView):

@@ -1,5 +1,5 @@
 import crontab, getpass, os, uuid
-from config import readconfig, writeconfig
+from .config import read_config, write_config
 
 
 def add(plugin, task, freq):
@@ -8,9 +8,9 @@ def add(plugin, task, freq):
 
     # добавить задачу в конфиг
     task_id = str(uuid.uuid4())
-    config = readconfig()
+    config = read_config()
     config['Tasks'][task_name] = task_id
-    writeconfig(config)
+    write_config(config)
 
     # очистить старые задачи с таким же именем
     for job in cron:
@@ -41,12 +41,12 @@ def remove(plugin, task):
     cron.write()
 
     # убрать задачу из конфигa
-    config = readconfig()
+    config = read_config()
     del config['Tasks'][task_name]
-    writeconfig(config)
+    write_config(config)
 
 
 def get():
-    config = readconfig()
+    config = read_config()
     tasks = config.items('Tasks')
     return list(map(lambda x: x[0].split('|')[1], tasks))

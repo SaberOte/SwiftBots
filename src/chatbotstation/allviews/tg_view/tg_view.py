@@ -1,4 +1,4 @@
-from superview import SuperView
+from ...templates.super_view import SuperView
 import requests, os
 
 

@@ -5,11 +5,11 @@ os.chdir(path)
 sys.path.insert(0, os.path.join(path, '../../src'))
 sys.path.insert(0, os.path.join(path, '../../templates'))
 sys.path.insert(0, os.path.join(path, '.'))
-from superview import SuperView
+from super_view import SuperView
 
 
 def send_ex(e, place):
-    from communicator import Communicator
+    from communicators import Communicator
     import logger
     log = logger.Logger('-d' in sys.argv, './logs/').log
     comm = Communicator(__file__[:-3], log)

@@ -1,7 +1,7 @@
-import time, superview, vk_api, configparser, os
+import time, super_view, vk_api, configparser, os
 from vk_api.bot_longpoll import VkBotEventType
 
-class VkView(superview.SuperView):
+class VkView():
     def __init__(self, bot):
         super().__init__(bot)
         self.keys = self._load_keys('data.ini')
@@ -40,7 +40,7 @@ class VkView(superview.SuperView):
         try:
             self.__listen__()
         except requests.exceptions.ConnectionError:
-            self.log('Connection ERROR in botbase')
+            self.log('Connection ERROR in core')
             time.sleep(60)
             self.listen(3)
 

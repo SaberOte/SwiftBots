@@ -1,4 +1,14 @@
-import os, inspect, superplugin
+import os, inspect
+from .templates import super_plugin
+
+
+def import_plugin(name: str) -> super_plugin.SuperPlugin:
+    module = __import__(f'{__package__}.allplugins.{name}')
+    instance = getattr(getattr(getattr(module,
+                                       'chatbotstation'),
+                               'allplugins'),
+                       name)
+    return instance
 
 
 class PluginManager:
@@ -10,17 +20,20 @@ class PluginManager:
         self.log = bot.log
 
     def init_plugins(self):
-        modules = [x[:-3] for x in os.listdir('./../plugins') if x.endswith('.py')]
+        modules = [x[:-3] for x in os.listdir('src/chatbotstation/allplugins')
+                   if x.endswith('.py')
+                   and not x.startswith('__')]
         imports = []
         for x in modules:
             try:
-                imports.append(__import__(x))
+                imports.append(import_plugin(x))
+                # imports.append(__import__(f'chatbotstation.src.allplugins.{x}'))
             except Exception as e:
                 self.error(f'Exception in the import module({x}):\n{str(type(e))}\n{str(e)}')
         classes = []
         for x in imports:
             for cls in inspect.getmembers(x, inspect.isclass):
-                if superplugin.SuperPlugin in cls[1].__bases__:
+                if super_plugin.SuperPlugin in cls[1].__bases__:
                     try:
                         classes.append(cls[1](self._bot))
                     except Exception as e:
@@ -30,17 +43,18 @@ class PluginManager:
         self.log(f'Loaded plugins: {str([x.__class__.__name__ for x in classes])}')
 
     def update_plugin(self, plugin: str) -> int:
-        module = [x[:-3] for x in os.listdir('./../plugins') if x == f'{plugin}.py']
+        module = [x[:-3] for x in os.listdir('src/chatbotstation/allplugins') if x == f'{plugin}.py']
         if len(module) == 0:
-            return 0
+            return 1
         module = module[0]
         try:
-            imported = __import__(module)
+            # imported = __import__(f'src.allplugins.{module}')
+            imported = import_plugin(module)
         except Exception as e:
             raise Exception(f'Exception in the import module ({module}):\n{str(type(e))}\n{str(e)}')
         entity = None
         for cls in inspect.getmembers(imported, inspect.isclass):
-            if superplugin.SuperPlugin in cls[1].__bases__:
+            if super_plugin.SuperPlugin in cls[1].__bases__:
                 try:
                     entity = cls[1](self._bot)
                 except Exception as e:

@@ -1,4 +1,5 @@
-import cronmanager, ast, threading, traceback
+import ast, threading, traceback
+from . import crons
 
 
 class Listener:
@@ -63,7 +64,7 @@ class Listener:
             if task in plug.tasks:
                 plugin = plug
         if not plugin:
-            cronmanager.remove(plugin_name, task)
+            crons.remove(plugin_name, task)
             self.log(f'Message {task} is not recognized. Then removed')
             return
         task_info = plugin.tasks[task]

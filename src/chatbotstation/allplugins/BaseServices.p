@@ -1,5 +1,5 @@
-from superplugin import SuperPlugin, admin_only
-import os, datetime, subprocess, cronmanager
+from super_plugin import SuperPlugin, admin_only
+import os, datetime, subprocess, crons
 from sys import platform
 
 class BaseServices(SuperPlugin):
@@ -54,7 +54,7 @@ class BaseServices(SuperPlugin):
         self.sender.send(self.user_id, status)
     
     def _get_tasks_status(self):
-        tasks = cronmanager.get('../resources/config.ini')
+        tasks = crons.get('../resources/config.ini')
         respond = ''
         all_tasks = []
         for x in self.bot.plugins:
@@ -70,7 +70,7 @@ class BaseServices(SuperPlugin):
 
     @admin_only
     def show_tasks(self):
-        tasks = cronmanager.get('../resources/config.ini')
+        tasks = crons.get('../resources/config.ini')
         respond = ''
         all_tasks = []
         for x in self.bot.plugins:
@@ -141,7 +141,7 @@ class BaseServices(SuperPlugin):
         return
       delay = plugin.tasks[task][1]
       path = os.path.split(os.getcwd())[0]
-      cronmanager.add(plugin.__class__.__name__, task, delay, path)
+      crons.add(plugin.__class__.__name__, task, delay, path)
       self.log(f'Task {task} is scheduled')
       self.sender.send(self.user_id, 'Задача запущена')
 
@@ -161,7 +161,7 @@ class BaseServices(SuperPlugin):
         self.log(f'Unknown task {task} is called')
         return
       path = os.path.split(os.getcwd())[0]
-      cronmanager.remove(plugin.__class__.__name__, task, path)
+      crons.remove(plugin.__class__.__name__, task, path)
       self.log(f'Task {task} is unscheduled')
       self.sender.send(self.user_id, 'Задача удалена')
 

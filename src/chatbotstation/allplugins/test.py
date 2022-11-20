@@ -1,4 +1,4 @@
-from superplugin import SuperPlugin
+from ..templates.super_plugin import SuperPlugin
 
 
 class Test(SuperPlugin):

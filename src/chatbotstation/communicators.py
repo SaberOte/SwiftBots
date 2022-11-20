@@ -1,37 +1,45 @@
-import socket, random, re, psutil, signal, os
-from config import readconfig, writeconfig
+"""Makes work with sockets easier.
+No ports but only names and cool api"""
+import socket
+import random
+import re
+import psutil
+import signal
+import os
+from .config import read_config, write_config
 
 
 class Communicator:
     BUFFER_AMOUNT = 8192
     sock = None
 
-    def __init__(self, name, log=print):
+    def __init__(self, name: str, log=print):
         name = name.lower()
         if not re.match(r'^[0-9a-z_]+$', name):
-            raise Exception('Name of communicator ' + str(name) + " can only contain letters or digits or '_'")
+            raise Exception('Name of communicator ' + str(name) +
+                            " can only contain letters or digits or '_'")
         self.log = log
         self.name = name
-        
-    def get_name(self, port):
-        config = readconfig()
+
+    def get_name(self, port: int):
+        config = read_config()
         for i in config.items("Names"):
             if i[1] == port:
                 return i[0]
         raise Exception('No such port in Names config')
 
-    def get_port(self, name):
-        config = readconfig()
+    def get_port(self, name: str):
+        config = read_config()
         return int(config["Names"][name])
 
     def set_name(self):
         if not self.port:
             raise Exception("Port is not assigned")
-        config = readconfig()
+        config = read_config()
         if self.name in config['Names']:
             self.kill_process(config['Names'][self.name])
         config["Names"][self.name] = str(self.port)
-        writeconfig(config)
+        write_config(config)
 
     def kill_process(self, port):  # radical but awesome
         connections = psutil.net_connections()
@@ -44,10 +52,12 @@ class Communicator:
                     break
         if pid is None:
             return
+        self.log(f'Communicator {self.name} already launched with pid {pid}')
         try:
             os.kill(pid, signal.SIGKILL)
+            self.log(f'Killed {pid}')
         except ProcessLookupError:
-            pass
+            self.log("Can't kill. Exception ProcessLookupError")
 
     def assign_port(self, port=0):
         if self.sock:
@@ -87,67 +97,73 @@ class Communicator:
         self.log('Listening port %d...' % self.port)
         sliced_messages = {}
         sock = self.sock
-        #cleaning
+        # cleaning
         sock.settimeout(0.001)
         while True:
             try:
                 sock.recv(self.BUFFER_AMOUNT)
-            except: break
+            except:
+                break
 
         if requested:
             requested_ses_id = self.send(*requested)
-        #listening
+        # listening
         try:
-          while True:
-              if requested:
-                  sock.settimeout(1)
-              else:
-                  sock.settimeout(60*60*6)
-              try:
-                  msg, addr = sock.recvfrom(self.BUFFER_AMOUNT)
-              except socket.timeout:
-                  if requested:
-                      yield None
-                  continue
-              msg = msg
-              # strict check
-              try:
-                assert msg.startswith(b'SES'), 'Corrupted pattern of message in socket listener (SES...) - ' + msg
+            while True:
+                if requested:
+                    sock.settimeout(1)
+                else:
+                    sock.settimeout(60*60*6)
                 try:
-                    session_id = int(msg[3:9])
-                except ValueError:
-                    raise Exception('Corrupted pattern of message in socket listener (ses_number[3:9]) - ' + msg)
-                assert msg[9:11] == b'NM', 'Corrupted pattern of message in socket listener (no first NM) - ' + msg
-                second_NM = msg.find(b'NM', 11)
-                if second_NM in (-1, 11):
-                    raise Exception('Corrupted pattern of message in socket listener (no second NM or it is no name: ...NMNM...)' + msg)
-                sender_name = msg[11:second_NM]
-                assert msg.endswith(b'END') or msg.endswith(b'SLC'), 'Corrupted pattern of message in socket listener (wrong end) - ' + msg
-              except Exception as e:
-                self.close()
-                raise e
+                    msg, addr = sock.recvfrom(self.BUFFER_AMOUNT)
+                except socket.timeout:
+                    if requested:
+                        yield None
+                    continue
+                msg = msg
+                # strict check
+                try:
+                    assert msg.startswith(b'SES'), \
+                        'Corrupted pattern of message in socket listener (SES...) - ' + msg
+                    try:
+                        session_id = int(msg[3:9])
+                    except ValueError:
+                        raise Exception('Corrupted pattern of message '
+                                        'in socket listener (ses_number[3:9]) - ' + msg)
+                    assert msg[9:11] == b'NM', \
+                        'Corrupted pattern of message in socket listener (no first NM) - ' + msg
+                    second_NM = msg.find(b'NM', 11)
+                    if second_NM in (-1, 11):
+                        raise Exception('Corrupted pattern of message in socket listener '
+                                        '(no second NM or it is no name: ...NMNM...)' + msg)
+                    sender_name = msg[11:second_NM]
+                    assert msg.endswith(b'END') or msg.endswith(b'SLC'), \
+                        'Corrupted pattern of message in socket listener (wrong end) - ' + msg
+                except Exception as e:
+                    self.close()
+                    raise e
 
-              final_msg = ''
-              if msg.endswith(b'END'):
-                  if session_id in sliced_messages:
-                      final_msg = sliced_messages.pop(session_id) + msg[second_NM+2:-3]
-                  else:
-                      final_msg = msg[second_NM+2:-3]
-                  if not requested or requested and session_id == requested_ses_id:
-                      yield {
-                        'message': final_msg.decode('utf-8'),
-                        'sender': sender_name.decode('utf-8'),
-                        'address': addr,
-                        'session_id': session_id,
-                      }
-              elif msg.endswith(b'SLC'):
-                  if session_id in sliced_messages:
-                      sliced_messages[session_id] += msg[second_NM+2:-3]
-                  else:
-                      sliced_messages[session_id] = msg[second_NM+2:-3]
+                final_msg = ''
+                if msg.endswith(b'END'):
+                    if session_id in sliced_messages:
+                        final_msg = sliced_messages.pop(session_id) + msg[second_NM+2:-3]
+                    else:
+                        final_msg = msg[second_NM+2:-3]
+                    if not requested or requested and session_id == requested_ses_id:
+                        yield {
+                            'message': final_msg.decode('utf-8'),
+                            'sender': sender_name.decode('utf-8'),
+                            'address': addr,
+                            'session_id': session_id,
+                        }
+                elif msg.endswith(b'SLC'):
+                    if session_id in sliced_messages:
+                        sliced_messages[session_id] += msg[second_NM+2:-3]
+                    else:
+                        sliced_messages[session_id] = msg[second_NM+2:-3]
         except Exception as e:
-          self.close()
-          raise e
+            self.close()
+            raise e
 
     def send(self, msg, name, session_id=0):
         name = name.lower()
@@ -158,7 +174,7 @@ class Communicator:
         # session_id generating
         if session_id == 0:
             session_id = random.randint(100000, 999999)
-                
+
         # cutting message on slices. If message size isn't greater than the buffer, then message won't be cut
         slice_size = self.BUFFER_AMOUNT - 16 - len(self.name)  # SES123456NM...NM...END + [NAME]
         slices = []
@@ -195,6 +211,6 @@ class Communicator:
     def close(self):
         if self.sock:
             self.sock.close()
-        config = readconfig()
+        config = read_config()
         if config.remove_option("Names", self.name):
-            writeconfig(config)
+            write_config(config)

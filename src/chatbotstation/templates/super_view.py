@@ -1,6 +1,7 @@
-import os, threading, logger, sys
-from communicator import Communicator
-from config import readconfig, writeconfig
+import os, threading, sys
+from .. import logger
+from ..communicators import Communicator
+from ..config import read_config, write_config
 from abc import ABC, abstractmethod
 '''
 что вьюшка должна уметь делать?
@@ -17,7 +18,7 @@ class SuperView(ABC):
 
     def __init__(self, is_daemon=True):
         self.view_name = type(self).__name__.lower()
-        self.log = logger.Logger('-d' in sys.argv, './logs/').log
+        self.log = logger.Logger(self.view_name, '-d' in sys.argv).log
         if is_daemon:
             self.comm = Communicator(self.view_name, self.log)
             self.core_listener = threading.Thread(target=self.listen_port, daemon=True)
@@ -48,10 +49,10 @@ class SuperView(ABC):
 
     # дальше методы для внутреннего пользования
     def enable_in_config(self):
-        config = readconfig()
+        config = read_config()
         if self.view_name in config['Disabled_Views']:
             del config['Disabled_Views'][self.view_name]
-            writeconfig(config)
+            write_config(config)
 
     def init_listen(self):  # listens the outer resource
         while 1:
@@ -85,9 +86,9 @@ class SuperView(ABC):
                         command = message
                         if command == 'exit':
                             self.log('View is exited')
-                            config = readconfig()
+                            config = read_config()
                             config["Disabled_Views"][self.view_name] = ''
-                            writeconfig(config)
+                            write_config(config)
                             self.comm.send('exited', data['sender'], data['session_id'])
                             self.comm.close()
                             os._exit(1)
