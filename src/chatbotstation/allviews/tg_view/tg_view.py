@@ -1,11 +1,9 @@
+from traceback import format_exc
 from ...templates.super_view import SuperView
-import requests, os
+import requests, os, sys
 
 
 class TgView(SuperView):
-    def __init__(self, is_daemon=True):
-        super().__init__(is_daemon)
-
     token = '1745687697:AAEKSGiWm6iTc_lfzRj32HVvWLKzvkzase0'
     admin = '367363759'
     plugins = ['test', 'adminpanel']
@@ -60,8 +58,8 @@ class TgView(SuperView):
                     }
                 else:
                     print('UNHANDLED', update)
-        except Exception as e:
-            self.log('Exception inside listen ' + str(type(e)) + str(e))
+        except:
+            self.log(format_exc())
 
     def send(self, message, chat_id):
         return self.get('sendMessage', f'chat_id={chat_id}&text={message}')

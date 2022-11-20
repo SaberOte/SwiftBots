@@ -3,6 +3,8 @@ from .. import logger
 from ..communicators import Communicator
 from ..config import read_config, write_config
 from abc import ABC, abstractmethod
+from .super_plugin import SuperPlugin
+from typing import Optional, Callable
 '''
 что вьюшка должна уметь делать?
 - слушать и передавать всю инфу о сообщении ядру
@@ -12,32 +14,32 @@ from abc import ABC, abstractmethod
 
 
 class SuperView(ABC):
-    plugins = []  # "подписка" на плагины. Каждое вьюшке соответствуют какие-то плагины. Команда будет искаться в них
-    any = None  # если ни один плагин не подошёл, будет вызван плагин, который записан в any
-    inner_commands = []  # команды от ядра бота конкретно для этой вьюшки
+    plugins: list[str] = []  # "подписка" на плагины. Каждое вьюшке соответствуют какие-то плагины. Команда будет искаться в них
+    any: Optional[SuperPlugin] = None  # если ни один плагин не подошёл, будет вызван плагин, который записан в any
+    inner_commands: {str: str} = {}  # команды от ядра бота конкретно для этой вьюшки
+    name: str
+    log: Callable[[str], None]
 
-    def __init__(self, is_daemon=True):
-        self.view_name = type(self).__name__.lower()
-        self.log = logger.Logger(self.view_name, '-d' in sys.argv).log
-        if is_daemon:
-            self.comm = Communicator(self.view_name, self.log)
+    def init(self, flags: list[str]):
+        self.name = self.__module__.split('.')[-1]
+        if 'launch' in flags:
+            self.log = logger.Logger(self.name, 'debug' in flags).log
+            self.comm = Communicator(self.name, self.log)
             self.core_listener = threading.Thread(target=self.listen_port, daemon=True)
-            self.core_listener.start()
-            self.enable_in_config()
 
     @abstractmethod
     def listen(self):  # должен быть определён. Чтобы слушать внешний источник команд
-        raise NotImplementedError('Not implemented method listen in ' + self.view_name)
+        raise NotImplementedError('Not implemented method listen in ' + self.name)
 
     @abstractmethod
     def report(self, message):  # должен быть определён. Будет отсылаться администратору важные сообщения
-        raise NotImplementedError('Not implemented method report in ' + self.view_name)
+        raise NotImplementedError('Not implemented method report in ' + self.name)
 
     def error(self):  # сообщить пользователю, что произошла внутренняя ошибка. Необязательно
         pass
 
     def reply(self, message):  # ответить тому же пользователю, который прислал сообщение
-        raise NotImplementedError('Not implemented method reply in ' + self.view_name)
+        raise NotImplementedError('Not implemented method reply in ' + self.name)
 
     def unknown_command(self):  # если пользователь прислал непонятно чо, ему нужно об этом сказать
         pass
@@ -50,11 +52,13 @@ class SuperView(ABC):
     # дальше методы для внутреннего пользования
     def enable_in_config(self):
         config = read_config()
-        if self.view_name in config['Disabled_Views']:
-            del config['Disabled_Views'][self.view_name]
+        if self.name in config['Disabled_Views']:
+            del config['Disabled_Views'][self.name]
             write_config(config)
 
     def init_listen(self):  # listens the outer resource
+        self.core_listener.start()
+        self.enable_in_config()
         while 1:
             try:
                 for data in self.listen():  # calls overridden listen()
@@ -87,7 +91,7 @@ class SuperView(ABC):
                         if command == 'exit':
                             self.log('View is exited')
                             config = read_config()
-                            config["Disabled_Views"][self.view_name] = ''
+                            config["Disabled_Views"][self.name] = ''
                             write_config(config)
                             self.comm.send('exited', data['sender'], data['session_id'])
                             self.comm.close()

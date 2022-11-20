@@ -90,11 +90,12 @@ class Listener:
 
     def handle_message(self, raw_data):
         try:
-            # могут прийти 3 типа сообщения:
+            # Могут прийти 3 типа сообщения:
             # com|... - сообщение формата com|команда|информация. Приходит от вьюшки
             # any|... - сообщение сразу с информацией. Не является командой, тупо пересылается плагину, ответственному
             #   за вьюшку, из которой сообщение прилетело
             # cron|... - сообщение от крона. имеет формат plugin_name|task
+            # report|... - сообщение от какого то компонента. Переслать одмену
             # Если ни один не подходит, то считается, что это сообщение от внутренних компонентов бота (дебил????)
 
             raw_message = raw_data['message']
@@ -107,6 +108,8 @@ class Listener:
                 if plugin_name is None or task is None:
                     self.error('Unknown form of cron task' + str(plugin_name) + ' ' + str(task))
                 self.do_cron(plugin_name, task)
+            elif raw_message.startswith('report|'):
+                self.report(raw_message[7:])
             else:
                 self.report('Unknown message from ' + raw_data['sender'] + ' in listener:\n'+str(raw_message))
 

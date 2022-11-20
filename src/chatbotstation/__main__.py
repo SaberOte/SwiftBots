@@ -1,18 +1,35 @@
 """Script's processing commands and flags"""
 import os
 import sys
+from traceback import format_exc
 from . import core
+from . import views
+from .config import fill_config
 
 
 def main():
     """entry point"""
-    set_working_dir()
-    argv = sys.argv[1:]  # skip this file's name
-    keys = list(filter(lambda arg: arg.startswith('-'), argv))
-    args = list(filter(lambda arg: not arg.startswith('-') and not arg.startswith('{'), argv))
-    flags = list(read_flags(keys))
-    process_arguments(args, flags)
-    sys.exit(0)
+    try:
+        set_working_dir()
+        prepare_project()
+        argv = sys.argv[1:]  # skip this file's name
+        keys = list(filter(lambda arg: arg.startswith('-'), argv))
+        args = list(filter(lambda arg: not arg.startswith('-') and not arg.startswith('@'), argv))
+        flags = list(read_flags(keys))
+        process_arguments(args, flags)
+    except:
+        print(format_exc())
+
+
+def prepare_project():
+    """Create all needed directories"""
+    res_path = os.path.join(os.getcwd(), 'resources')
+    if not os.path.isdir(res_path):
+        os.makedirs(res_path)
+    logs_path = os.path.join(os.getcwd(), 'logs')
+    if not os.path.isdir(logs_path):
+        os.makedirs(logs_path)
+    fill_config()
 
 
 def set_working_dir():
@@ -37,18 +54,15 @@ Flags:
 ''')
         sys.exit(0)
     if '-d' in keys:
-        yield 'debug'
+        yield 'debug'  # output debug also through print()
     if '-MS' in keys:
-        yield 'machine_start'
+        yield 'machine start'  # launched programmatically. Start instance directly
     if '-FR' in keys:
-        yield 'from_reboot'
+        yield 'from reboot'  # send message 'restarted' to admin
 
 
 def process_arguments(args: list[str], flags: list[str]):
     """get arguments in order and process (not necessarily each)"""
-    res_path = os.path.join(os.getcwd(), 'resources')
-    if not os.path.isdir(res_path):
-        os.makedirs(res_path)
     i = 0
     args_len = len(args)
     if args_len == 0:
@@ -59,18 +73,11 @@ def process_arguments(args: list[str], flags: list[str]):
         if arg == 'start':
             if i + 1 != args_len:  # start VIEW
                 i += 1
-                view = args[i]
-                path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'allviews')
-                os.chdir(path)
-                dirs = os.listdir()
-                if view not in dirs:
-                    print(f'No {view} in view folder')
-                    sys.exit(1)
-                os.system(f'nohup python3 -m {view} > '
-                          f'{res_path}/{view}_log.txt 2>&1 &')
-                sys.exit(0)
+                views.launch_view(args[i], flags)
             else:  # start only bot instance
                 core.launch_bot(flags)
+        else:
+            print(f'Argument {arg} is not recognized')
         i += 1
 
 

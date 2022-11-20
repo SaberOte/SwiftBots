@@ -3,8 +3,8 @@ from ...communicators import Communicator
 
 
 class CliView(SuperView):
-    def __init__(self, is_daemon=True):
-        super().__init__(is_daemon)
+    def __init__(self, flags):
+        super().__init__(flags)
 
     plugins = ['test', 'adminpanel']
 
