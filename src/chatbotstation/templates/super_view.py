@@ -101,9 +101,14 @@ class SuperView(ABC):
                         else:
                             self.comm.send('unknown command', data['sender'], data['session_id'])
             except Exception as e:
-                msg = 'EXCEPTION ' + str(e)
-                self.comm.send(msg, 'core')
-                self.log(msg)
-                self.comm.close()
-                self.report('THIS view dies with ' + msg)
-                os._exit(1)
+                try:
+                    msg = 'EXCEPTION ' + str(e)
+                    self.comm.send(msg, 'core')
+                    self.log(msg)
+                finally:
+                    try:
+                        self.report('This is super_view error: ' + str(e))
+                        # self.comm.close()
+                        # self.report('THIS view dies with ' + msg)
+                    except:
+                        os._exit(1)

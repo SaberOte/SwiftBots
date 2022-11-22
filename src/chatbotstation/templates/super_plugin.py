@@ -17,10 +17,6 @@ class SuperPlugin:
         self._bot = bot
 
     '''
-    def __init__(self):
-        pass
-    '''
-    '''
     def __init__(self, bot):
     self._bot = bot
     vars_v = vars(bot)

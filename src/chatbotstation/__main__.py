@@ -20,6 +20,7 @@ def main():
     except:
         print(format_exc())
 
+
 def prepare_project():
     """Create all needed directories"""
     res_path = os.path.join(os.getcwd(), 'resources')

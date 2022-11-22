@@ -1,8 +1,9 @@
-import os, inspect
+import os, inspect, importlib
 from .templates import super_plugin
-############### почему то не апдейтися. хотя все работает как надо. видимо пайтон дурак
+from types import ModuleType
 
-def import_plugin(name: str) -> super_plugin.SuperPlugin:
+
+def import_plugin(name: str) -> ModuleType:
     module = __import__(f'{__package__}.allplugins.{name}')
     instance = getattr(getattr(getattr(module,
                                        'chatbotstation'),
@@ -49,6 +50,7 @@ class PluginManager:
         module = module[0]
         try:
             imported = import_plugin(module)
+            importlib.reload(imported)
         except Exception as e:
             raise Exception(f'Exception in the import module ({module}):\n{str(type(e))}\n{str(e)}')
         entity = None
@@ -61,10 +63,7 @@ class PluginManager:
                 break
         if entity is None:
             raise ModuleNotFoundError(f'Plugin {module} has no class inheriting SuperPlugin')
-        print(self.plugins)
         self.plugins = list(filter(lambda plg: plg.__class__.__name__ != entity.__class__.__name__, self.plugins))
-        print(self.plugins)
         self.plugins.append(entity)
-        print(self.plugins)
         self.log(f'Updated plugin {entity.__class__.__name__}')
         return 1

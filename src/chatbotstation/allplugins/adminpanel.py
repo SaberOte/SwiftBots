@@ -10,16 +10,19 @@ class AdminPanel(SuperPlugin):
     def reboot(self, view):
         view.report('Начался перезапуск...')
         self.log('Program is rebooting by admin')
-        os.system('nohup python3 ../__main__.py -FR -MS start > ../resources/launchlogs.txt 2>&1 &')
+        res_path = os.path.join(os.getcwd(), 'logs')
+        os.system(f'nohup python3 main.py @chatbotstation_core@ '
+                  f'start -MS > {res_path}/core_launch_log.txt 2>&1 &')
+        print(res_path)
         time.sleep(10)
         # класс Communicator должен насильно закрыть этот процесс. Если не закроет, значит что то пошло не так
         self.log('Program was not rebooted')
         view.report('Бот не перезапустился.')
 
     def exit(self, view):
-        view.report('Бот остановлен.')
+        self._bot.communicator.close()
         self.log('Program is suspended by admin')
-        self.comm.close()
+        view.report('Бот остановлен.')
         os._exit(1)
 
     def update_module(self, view):
@@ -28,6 +31,7 @@ class AdminPanel(SuperPlugin):
         if updated > 0:
             view.reply(f'Плагин {module} обновлён в оперативной памяти')
             return
+        view.reply('Обновление view Пока недоступно')
         updated = self._bot.views_manager.update_view(module)
         if updated == 1:
             view.reply(f'Вьюшка {module} обновлена в оперативной памяти, но не запущена')

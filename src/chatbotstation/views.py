@@ -6,6 +6,12 @@ from .config import read_config, write_config
 from .communicators import Communicator
 import subprocess
 
+'''
+проблемы:
+main_view назначается до запуска остальных
+update view пока не работает
+'''
+
 
 class _RawView:
     def __init__(self, log):
