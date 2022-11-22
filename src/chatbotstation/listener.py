@@ -27,9 +27,11 @@ class Listener:
             for prefix in plugin.prefixes:
                 if command.startswith(prefix):
                     if len(prefix) == len(command):
-                        view.data['command'] = command
+                        view.data['command'] = ''
                     elif command[len(prefix)] == ' ':
                         view.data['command'] = command[len(prefix)+1:]
+                    else:
+                        continue
                     return plugin.prefixes[prefix], plugin
         return None, None
 

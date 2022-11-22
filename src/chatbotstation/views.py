@@ -4,6 +4,7 @@ from traceback import format_exc
 from .templates.super_view import SuperView
 from .config import read_config, write_config
 from .communicators import Communicator
+import subprocess
 
 
 class _RawView:
@@ -21,17 +22,20 @@ def launch_view(name: str, flags: list[str]):
             module = import_view(name)
             clas = get_class(module)
             inst = clas()
+            flags.append('launch')
             inst.init(flags)
             inst.init_listen()
         except:
-            comm = Communicator(name, print)
-            msg = f'Exception in view launching:\n{format_exc()}'
-            comm.send('report|' + msg, 'core')
-            comm.close()
+            comm = Communicator(name+'ghost', print)
+            try:
+                msg = f'Exception in view launching:\n{format_exc()}'
+                comm.send('report|' + msg, 'core')
+            finally:
+                comm.close()
     else:  # start as daemon
         res_path = os.path.join(os.getcwd(), 'logs')
         if 'debug' in flags:
-            try:
+            '''try:
                 module = import_view(name)
                 clas = get_class(module)
                 inst = clas()
@@ -39,11 +43,15 @@ def launch_view(name: str, flags: list[str]):
                 inst.init_listen()
             except:
                 print(format_exc())
+            '''
             # os.system(f'python3 main.py @chatbotstation_{name}@ '
-            #          f'start -MS -d > {res_path}/{name}_launch_log.txt')
+            #          f'start {name} -MS -d')
+            cmd = f'python3 main.py @chatbotstation_{name}@ ' \
+                  f'start {name} -MS -d'
+            subprocess.Popen(cmd.split(' '))
         else:
             os.system(f'nohup python3 main.py @chatbotstation_{name}@ '
-                      f'start -MS > {res_path}/{name}_launch_log.txt 2>&1 &')
+                      f'start {name} -MS > {res_path}/{name}_launch_log.txt 2>&1 &')
 
 
 def check_valid(name: str):

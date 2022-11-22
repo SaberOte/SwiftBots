@@ -5,6 +5,7 @@ from .views import ViewsManager
 from .plugins import PluginManager
 from .logger import Logger
 from .listener import Listener
+from typing import Callable
 
 
 def launch_bot(flags: list[str]):
@@ -32,7 +33,14 @@ def launch_bot(flags: list[str]):
 
 
 class Core:
+    """keks"""
     __listener: Listener
+    plugin_manager: PluginManager
+    views_manager: ViewsManager
+    report: Callable
+    error: Callable
+    log: Callable
+
 
     def __init__(self, flags: list[str]):
         self.flags = flags

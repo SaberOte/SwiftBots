@@ -9,7 +9,7 @@ class Test(SuperPlugin):
         view.report('chat works')
 
     def pong(self, view):
-        view.reply('pong')
+        view.reply('pong 2')
 
     def lego(self, view):
         view.reply('poshel nahui')
