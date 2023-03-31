@@ -1,7 +1,6 @@
 import ast, threading, traceback
 from . import crons
 
-
 class Listener:
     def __init__(self, bot):
         self._bot = bot
@@ -10,43 +9,39 @@ class Listener:
         self.error = bot.error
         self.communicator = bot.communicator
 
-    def check_cmds(self, command, view):
+    def check_handlers(self, command, view):
         plugins = self._bot.plugin_manager.plugins
         accepted_plugins = [x.lower() for x in view.plugins]
         plugins = filter(lambda plug: plug.__class__.__name__.lower() in accepted_plugins, plugins)
+        # check "cmds"
         for plugin in plugins:
             if command in plugin.cmds:
                 return plugin.cmds[command], plugin
-        return None, None
-
-    def check_prefixes(self, command, view):
-        plugins = self._bot.plugin_manager.plugins
-        accepted_plugins = [x.lower() for x in view.plugins]
-        plugins = filter(lambda plug: plug.__class__.__name__.lower() in accepted_plugins, plugins)
+        # then check "prefixes"
         for plugin in plugins:
             for prefix in plugin.prefixes:
                 if command.startswith(prefix):
                     if len(prefix) == len(command):
-                        view.data['command'] = ''
+                        view.context['message'] = ''
                     elif command[len(prefix)] == ' ':
-                        view.data['command'] = command[len(prefix)+1:]
+                        view.context['message'] = command[len(prefix)+1:]
                     else:
                         continue
                     return plugin.prefixes[prefix], plugin
+        # finally check "any"
+        for plugin in plugins:
+            if callable(plugin.any):
+                return plugin.any, plugin
         return None, None
 
-    def do_command(self, raw, sender):
-        command = raw.split('|')[0]
-        data = raw[1+len(command):]
-        data = ast.literal_eval(data)
-        view = self._bot.views_manager.views[sender]
-        view.data = data
-        method, plugin = self.check_cmds(command, view)
+    def handle_message(self, data, view_sender):
+        context = ast.literal_eval(data)
+        message = context['message']
+        view = self._bot.views_manager.views[view_sender]
+        method, plugin = self.check_handlers(message, view)
         if not plugin:
-            method, plugin = self.check_prefixes(command, view)
-            if not plugin:
-                view.unknown_command()
-                return
+            view.unknown_command(context)
+            return
         if not callable(method):
             self.error(
                 f'There\'s fatal error! "{str(method)}" from class "{type(plugin).__name__}" is not a method '
@@ -54,13 +49,14 @@ class Listener:
             return
         self.log(f'Method "{method.__name__}" from class "{type(plugin).__name__}" is called')
         try:
-            method(plugin, view)
+            method(plugin, view, context)
         except Exception as e:
             self.error(
                 f'Exception in "{method.__name__}" from "{type(plugin).__name__}":\n{str(type(e))}\n{str(e)}\n{traceback.format_exc()}')
             view.error()
 
     def do_cron(self, plugin_name, task):
+        raise Exception("Сейчас не работает. ИЗ за изменения контекста")
         plugin = None
         for plug in self._bot.plugin_manager.plugins:
             if task in plug.tasks:
@@ -90,21 +86,19 @@ class Listener:
             self.error(
                 f'Exception in "{method.__name__}" from "{type(plugin).__name__}":\n{str(type(e))}\n{str(e)}')
 
-    def handle_message(self, raw_data):
+    def handle_signal(self, raw_data):
         try:
             # Могут прийти 3 типа сообщения:
-            # com|... - сообщение формата com|команда|информация. Приходит от вьюшки
-            # any|... - сообщение сразу с информацией. Не является командой, тупо пересылается плагину, ответственному
-            #   за вьюшку, из которой сообщение прилетело
+            # mes|... - сообщение формата mes|информация. Приходит от вьюшки
             # cron|... - сообщение от крона. имеет формат plugin_name|task
             # report|... - сообщение от какого то компонента. Переслать одмену
             # Если ни один не подходит, то считается, что это сообщение от внутренних компонентов бота (дебил????)
 
             raw_message = raw_data['message']
             self.log(f'Came message: {raw_message}')
-            if raw_message.startswith('com|'):
-                sender = raw_data['sender']
-                self.do_command(raw_message[4:], sender)
+            if raw_message.startswith('mes|'):
+                sender_view = raw_data['sender_view']
+                self.handle_message(raw_message[4:], sender_view)
             elif raw_message.startswith('cron|'):
                 plugin_name, task = raw_message[5:].split('|')
                 if plugin_name is None or task is None:
@@ -118,12 +112,11 @@ class Listener:
         except Exception as e:
             self.error(f'Exception in handling message:\n{str(type(e))}\n{str(e)}')
 
-
     def listen(self):
         self.log('Start listening...')
         while 1:
             try:
                 for raw_data in self.communicator.listen():
-                    threading.Thread(target=self.handle_message, args=(raw_data,), daemon=True).start()
+                    threading.Thread(target=self.handle_signal, args=(raw_data,), daemon=True).start()
             except Exception as e:
                 self.error(f'Exception in Listener:\n{str(type(e))}\n{str(e)}')

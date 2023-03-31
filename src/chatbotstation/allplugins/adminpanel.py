@@ -26,7 +26,7 @@ class AdminPanel(SuperPlugin):
         os._exit(1)
 
     def update_module(self, view):
-        module = view.data['command']
+        module = view.context['command']
         updated = self._bot.plugin_manager.update_plugin(module)
         if updated > 0:
             view.reply(f'Плагин {module} обновлён в оперативной памяти')

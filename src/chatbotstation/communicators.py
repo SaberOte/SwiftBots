@@ -124,21 +124,21 @@ class Communicator:
                 # strict check
                 try:
                     assert msg.startswith(b'SES'), \
-                        'Corrupted pattern of message in socket listener (SES...) - ' + msg
+                        'Corrupted pattern of message in socket listener (SES...) - ' + str(msg)
                     try:
                         session_id = int(msg[3:9])
                     except ValueError:
                         raise Exception('Corrupted pattern of message '
-                                        'in socket listener (ses_number[3:9]) - ' + msg)
+                                        'in socket listener (ses_number[3:9]) - ' + str(msg))
                     assert msg[9:11] == b'NM', \
-                        'Corrupted pattern of message in socket listener (no first NM) - ' + msg
-                    second_NM = msg.find(b'NM', 11)
+                        'Corrupted pattern of message in socket listener (no first NM) - ' + str(msg)
+                    second_NM = str(msg).find('NM', 11)
                     if second_NM in (-1, 11):
                         raise Exception('Corrupted pattern of message in socket listener '
-                                        '(no second NM or it is no name: ...NMNM...)' + msg)
+                                        '(no second NM or it is no name: ...NMNM...)' + str(msg))
                     sender_name = msg[11:second_NM]
                     assert msg.endswith(b'END') or msg.endswith(b'SLC'), \
-                        'Corrupted pattern of message in socket listener (wrong end) - ' + msg
+                        'Corrupted pattern of message in socket listener (wrong end) - ' + str(msg)
                 except Exception as e:
                     self.close()
                     raise e
@@ -152,7 +152,7 @@ class Communicator:
                     if not requested or requested and session_id == requested_ses_id:
                         yield {
                             'message': final_msg.decode('utf-8'),
-                            'sender': sender_name.decode('utf-8'),
+                            'sender_view': sender_name.decode('utf-8'),
                             'address': addr,
                             'session_id': session_id,
                         }

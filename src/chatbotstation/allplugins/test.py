@@ -13,7 +13,7 @@ class Test(SuperPlugin):
 
     def lego(self, view):
         view.reply('poshel nahui')
-        view.reply(view.data['message'])
+        view.reply(view.context['message'])
 
     tasks = {
         # 'task_name' : (function_name, frequency_seconds)

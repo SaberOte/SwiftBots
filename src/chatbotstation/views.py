@@ -18,6 +18,7 @@ class _RawView:
         self.log = log
 
     def report(self, message: str):
+        message = '---Raw View report:\n' + message + '\n---'
         self.log(message)
 
 
@@ -88,14 +89,15 @@ def import_view(name: str):
 
 
 class ViewsManager:
-    main_view: Union[SuperView, _RawView]
+    main_view: Union[SuperView, _RawView, None]
     views: {str: SuperView} = {}
 
     def __init__(self, log, communicator, flags):
         self.communicator = communicator
         self.log = log
         self.flags = flags
-        self.main_view = _RawView(lambda x: None if 'debug' in flags else log)
+        # self.main_view = _RawView(lambda x: None if 'debug' in flags else log)
+        self.main_view = None # _RawView(log)
 
     def error(self, message: str):
         self.log('!!!ERROR!!!\n'+str(message))
@@ -110,7 +112,8 @@ class ViewsManager:
 
     def assign_main_view(self):
         if len(self.views) == 0:
-            self.main_view = _RawView(lambda x: None if 'debug' in self.flags else self.log)
+            # self.main_view = _RawView(lambda x: None if 'debug' in self.flags else self.log)
+            self.main_view = _RawView(self.log)
             return
         config = read_config()
         disabled_views = set(config['Disabled_Views'])

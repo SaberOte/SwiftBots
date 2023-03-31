@@ -3,15 +3,22 @@ from ...templates.super_view import SuperView
 import requests, os, sys
 
 
-class TgView(SuperView):
-    token = '1745687697:AAEKSGiWm6iTc_lfzRj32HVvWLKzvkzase0'
+class AITgView(SuperView):
+    token = 
     admin = '367363759'
-    plugins = ['adminpanel']
+    plugins = ['gptai']
     authentic_style = True
+    error_message = 'Произошла какая-то ошибка. Исправляем'
 
     def get(self, method, data=''):
         answer = requests.get(f'https://api.telegram.org/bot{self.token}/{method}?{data}')
         return answer.json()
+
+    def update_message(self):
+        raise
+
+    def send(self, message, chat_id):
+        return self.get('sendMessage', f'chat_id={chat_id}&text={message}')
 
     def skip_old_updates(self):
         ans = self.get('getUpdates', f'timeout=0&limit=1&offset=-1')
@@ -42,7 +49,7 @@ class TgView(SuperView):
             return 22
 
     def listen(self):
-        self.report('TGView запущен')
+        self.report('AI Tg View запущен')
         try:
             for update in self.get_updates():
                 update = update['result'][0]
@@ -55,12 +62,10 @@ class TgView(SuperView):
                         continue
                     yield {
                         'message': text,
-                        'sender': sender,
+                        'sender': sender
                     }
                 else:
                     self.log('UNHANDLED' + str(update))
         except:
             self.log(format_exc())
 
-    def send(self, message, chat_id):
-        return self.get('sendMessage', f'chat_id={chat_id}&text={message}')
