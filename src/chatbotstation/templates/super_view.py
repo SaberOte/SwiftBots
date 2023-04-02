@@ -1,4 +1,5 @@
 import os, threading, sys, inspect
+from traceback import format_exc
 from .. import logger
 from ..communicators import Communicator
 from ..config import read_config, write_config
@@ -40,42 +41,64 @@ class SuperView(ABC):
     def listen(self):  # Должен быть определён. Чтобы слушать внешний источник команд
         raise NotImplementedError('Not implemented method listen in ' + self.name)
 
-    def report(self, message):  # Будет отсылаться администратору важные сообщения
+    def report(self, message: str):
+        """
+        Send important message to admin
+        :param message: report message
+        :return: any
+        """
         if self.authentic_style:
-            self.send(message, self.admin)
             self.log(f'Reported "{message}"')
-            return
+            return self.send(message, self.admin)
         raise NotImplementedError('Not implemented method report in ' + self.name)
 
-    def error(self, message, context):  # Сообщить пользователю, что произошла внутренняя ошибка. Дублируется админу
+    def error(self, message: str, context: dict):
+        """
+        Inform user it is internal error. Admin's notifying too
+        :param message: message is only for admin. User's looking at default message
+        :param context: needs to have 'sender' property
+        :return: any
+        """
         if self.authentic_style:
-            if context.sender != self.admin:
-                self.reply(self.error_message, context)
-            self.report(str(message))
-            self.log('ERROR\n' + str(message))
-            return
+            try:
+                if context.sender != self.admin:
+                    self.reply(self.error_message, context)
+                    self.log('ERROR\n' + str(message))
+            finally:
+                return self.report(str(message))
         raise NotImplementedError('Not implemented method error in ' + self.name)
 
-    def reply(self, message, context):  # Ответить тому же пользователю, который прислал сообщение
+    def reply(self, message: str, context: dict):
+        """
+        Reply the sender
+        :param message: reply message
+        :param context: needs to have 'sender' property
+        :return: any
+        """
         if self.authentic_style:
             assert 'sender' in context, 'Authentic style needs "sender" defined in context!'
-            self.send(message, context['sender'])
             self.log(f'''Replied "{message}" to "{context['sender']}"''')
-            return
+            return self.send(message, context['sender'])
         raise NotImplementedError('Not implemented method reply in ' + self.name)
 
-    def unknown_command(self, context):  # Если пользователь прислал непонятно чо, ему нужно об этом сказать
+    def unknown_command(self, context: dict):
+        """
+        If user sends some unknown shit, then say him about it
+        :param context: needs to have 'sender' property
+        """
         if self.authentic_style:
-            self.reply(self.unknown_error_message, context)
             self.log('Unknown command')
-            return
+            return self.reply(self.unknown_error_message, context)
         raise NotImplementedError('Not implemented method unknown_command in ' + self.name)
 
-    def refuse(self, context):  # Если пользователю нельзя использовать это, то вежливо отказать
+    def refuse(self, context: dict):
+        """
+        If user can't use it, then he must be aware
+        :param context: needs to have 'sender' property
+        """
         if self.authentic_style:
-            self.reply(self.refuse_message, context)
             self.log('Forbidden')
-            return
+            return self.reply(self.refuse_message, context)
         raise NotImplementedError('Not implemented method refuse in ' + self.name)
 
     # Дальше методы для внутреннего пользования
@@ -112,7 +135,7 @@ class SuperView(ABC):
                         if command in self.inner_commands:
                             self.inner_commands[command](self, data)
                         else:
-                            self.comm.send('unknown command', data['view_sender'], data['session_id'])
+                            self.comm.send('unknown command', data['sender_view'], data['session_id'])
                     else:
                         command = message
                         if command == 'exit':
@@ -120,13 +143,13 @@ class SuperView(ABC):
                             config = read_config()
                             config["Disabled_Views"][self.name] = ''
                             write_config(config)
-                            self.comm.send('exited', data['view_sender'], data['session_id'])
+                            self.comm.send('exited', data['sender_view'], data['session_id'])
                             self.comm.close()
                             os._exit(1)
                         elif command == 'ping':
-                            self.comm.send('pong', data['view_sender'], data['session_id'])
+                            self.comm.send('pong', data['sender_view'], data['session_id'])
                         else:
-                            self.comm.send('unknown command', data['view_sender'], data['session_id'])
+                            self.comm.send('unknown command', data['sender_view'], data['session_id'])
             except Exception as e:
                 try:
                     msg = 'EXCEPTION ' + str(e)
@@ -134,7 +157,7 @@ class SuperView(ABC):
                     self.log(msg)
                 finally:
                     try:
-                        self.report('This is super_view error: ' + str(e))
+                        self.report(format_exc())
                         # self.comm.close()
                         # self.report('THIS view dies with ' + msg)
                     except:

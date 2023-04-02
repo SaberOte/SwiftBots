@@ -26,6 +26,8 @@ class TgView(SuperView):
         while 1:
             ans = self.get('getUpdates', f'timeout={timeout}&limit=1&offset={offset}&allowed_updates=["message"]')
             if not ans['ok']:
+                if ans['error_code'] == 409:
+                    os._exit(1)
                 raise Exception(str(ans['error_code']) + ' ' + ans['description'])
             if len(ans['result']) != 0:
                 offset = ans['result'][0]['update_id']+1

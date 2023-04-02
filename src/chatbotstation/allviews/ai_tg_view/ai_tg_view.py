@@ -1,27 +1,54 @@
 from traceback import format_exc
 from ...templates.super_view import SuperView
-import requests, os, sys
+import requests, os, sys, time
 
 
 class AITgView(SuperView):
-    token = 
+    token = '5724561112:AAG6S6XjSOwwyKntffU64lEoYR1c780N3WI'
     admin = '367363759'
     plugins = ['gptai']
     authentic_style = True
     error_message = 'Произошла какая-то ошибка. Исправляем'
 
-    def get(self, method, data=''):
-        answer = requests.get(f'https://api.telegram.org/bot{self.token}/{method}?{data}')
-        return answer.json()
+    def post(self, method: str, data: dict):
+        response = requests.get(f'https://api.telegram.org/bot{self.token}/{method}', json=data)
+        answer = response.json()
+        if not answer['ok']:
+            self.handle_error(answer)
+        return answer
 
-    def update_message(self):
-        raise
+    def update_message(self, message, chat_id, message_id):
+        data = {
+            "chat_id": chat_id,
+            "text": message,
+            "message_id": message_id
+        }
+        return self.post('editMessageText', data)
 
     def send(self, message, chat_id):
-        return self.get('sendMessage', f'chat_id={chat_id}&text={message}')
+        data = {
+            "chat_id": chat_id,
+            "text": message
+        }
+        return self.post('sendMessage', data)
+
+    def handle_error(self, error):
+        code = error['error_code']
+        if code == 409:
+            for i in range(2):
+                self.report(str(i))
+                time.sleep(1)
+            os._exit(1)
+        self.report(f"Error {error['error_code']} from TG API: {error['description']}")
+        raise Exception('Some error occured in ai tg view')
 
     def skip_old_updates(self):
-        ans = self.get('getUpdates', f'timeout=0&limit=1&offset=-1')
+        data = {
+            "timeout": 0,
+            "limit": 1,
+            "offset": -1
+        }
+        ans = self.post('getUpdates', data)
         result = ans['result']
         if len(result) > 0:
             return result[0]['update_id']+1
@@ -30,12 +57,16 @@ class AITgView(SuperView):
     def get_updates(self):
         timeout = 1000
         offset = self.skip_old_updates()
+        data={
+            "timeout": timeout,
+            "limit": 1,
+            "offset": offset,
+            "allowed_updates": ["messages"]
+        }
         while 1:
-            ans = self.get('getUpdates', f'timeout={timeout}&limit=1&offset={offset}&allowed_updates=["message"]')
-            if not ans['ok']:
-                raise Exception(str(ans['error_code']) + ' ' + ans['description'])
+            ans = self.post('getUpdates', data)
             if len(ans['result']) != 0:
-                offset = ans['result'][0]['update_id']+1
+                data['offset'] = ans['result'][0]['update_id']+1
                 yield ans
 
     def hard_code(self, text):
@@ -68,4 +99,3 @@ class AITgView(SuperView):
                     self.log('UNHANDLED' + str(update))
         except:
             self.log(format_exc())
-
