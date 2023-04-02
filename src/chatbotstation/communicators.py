@@ -132,7 +132,7 @@ class Communicator:
                                         'in socket listener (ses_number[3:9]) - ' + str(msg))
                     assert msg[9:11] == b'NM', \
                         'Corrupted pattern of message in socket listener (no first NM) - ' + str(msg)
-                    second_NM = str(msg).find('NM', 11)
+                    second_NM = msg.find(b'NM', 11)
                     if second_NM in (-1, 11):
                         raise Exception('Corrupted pattern of message in socket listener '
                                         '(no second NM or it is no name: ...NMNM...)' + str(msg))

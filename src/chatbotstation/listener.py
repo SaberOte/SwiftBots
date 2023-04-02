@@ -1,3 +1,4 @@
+from traceback import format_exc
 import ast, threading, traceback
 from . import crons
 
@@ -9,10 +10,10 @@ class Listener:
         self.error = bot.error
         self.communicator = bot.communicator
 
-    def check_handlers(self, command, view):
+    def check_handlers(self, command, view, context):
         plugins = self._bot.plugin_manager.plugins
         accepted_plugins = [x.lower() for x in view.plugins]
-        plugins = filter(lambda plug: plug.__class__.__name__.lower() in accepted_plugins, plugins)
+        plugins = list(filter(lambda plug: plug.__class__.__name__.lower() in accepted_plugins, plugins))
         # check "cmds"
         for plugin in plugins:
             if command in plugin.cmds:
@@ -22,23 +23,24 @@ class Listener:
             for prefix in plugin.prefixes:
                 if command.startswith(prefix):
                     if len(prefix) == len(command):
-                        view.context['message'] = ''
+                        context['message'] = ''
                     elif command[len(prefix)] == ' ':
-                        view.context['message'] = command[len(prefix)+1:]
+                        context['message'] = command[len(prefix)+1:]
                     else:
                         continue
                     return plugin.prefixes[prefix], plugin
         # finally check "any"
         for plugin in plugins:
+            # raise Exception(str(callable(plugin.any)) + str(plugin.any))
             if callable(plugin.any):
-                return plugin.any, plugin
+                return plugin.any.__func__, plugin
         return None, None
 
-    def handle_message(self, data, view_sender):
+    def handle_message(self, data, sender_view):
         context = ast.literal_eval(data)
         message = context['message']
-        view = self._bot.views_manager.views[view_sender]
-        method, plugin = self.check_handlers(message, view)
+        view = self._bot.views_manager.views[sender_view]
+        method, plugin = self.check_handlers(message, view, context)
         if not plugin:
             view.unknown_command(context)
             return
@@ -51,9 +53,7 @@ class Listener:
         try:
             method(plugin, view, context)
         except Exception as e:
-            self.error(
-                f'Exception in "{method.__name__}" from "{type(plugin).__name__}":\n{str(type(e))}\n{str(e)}\n{traceback.format_exc()}')
-            view.error()
+            view.error(format_exc(), context)
 
     def do_cron(self, plugin_name, task):
         raise Exception("Сейчас не работает. ИЗ за изменения контекста")
@@ -110,7 +110,8 @@ class Listener:
                 self.report('Unknown message from ' + raw_data['sender'] + ' in listener:\n'+str(raw_message))
 
         except Exception as e:
-            self.error(f'Exception in handling message:\n{str(type(e))}\n{str(e)}')
+            self.error(format_exc())
+            # self.error(f'Exception in handling message:\n{str(type(e))}\n{str(e)}')
 
     def listen(self):
         self.log('Start listening...')
