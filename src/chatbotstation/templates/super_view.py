@@ -82,7 +82,7 @@ class SuperView(ABC):
         """
         if self.authentic_style:
             assert 'sender' in context, 'Authentic style needs "sender" defined in context!'
-            self.log(f'''Replied "{message}" to "{context['sender']}"''')
+            self.log(f'''Replied "{context['sender']}":\n"{message}"''')
             return self.send(message, context['sender'])
         raise NotImplementedError('Not implemented method reply in ' + self.name)
 

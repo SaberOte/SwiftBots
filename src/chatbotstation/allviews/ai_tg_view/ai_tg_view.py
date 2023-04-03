@@ -4,7 +4,7 @@ import requests, os, time
 
 
 class AITgView(SuperView):
-    token = '5724561112:AAG6S6XjSOwwyKntffU64lEoYR1c780N3WI'
+    token = ''
     admin = '367363759'
     plugins = ['gptai']
     authentic_style = True
@@ -32,13 +32,20 @@ class AITgView(SuperView):
         }
         return self.post('sendMessage', data)
 
+    def custom_send(self, data):
+        self.log(f'''Replied "{data['chat_id']}":\n"{data['text']}"''')
+        return self.post('sendMessage', data)
+
     def __handle_error(self, error):
         code = error['error_code']
+        description = error['description']
         if code == 409:
             for i in range(2):
                 self.report(str(i))
                 time.sleep(1)
             os._exit(1)
+        if code == 400 and "can't parse" in description:  # markdown не смог спарситься. Значит отправить в голом виде
+            raise Exception('markdown is down')
         self.report(f"Error {error['error_code']} from TG API: {error['description']}")
         raise Exception('Some error occured in ai tg view')
 

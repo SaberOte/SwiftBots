@@ -5,6 +5,26 @@ from ..templates.super_plugin import SuperPlugin
 from ..templates.super_view import SuperView
 
 
+def escape_markdown_chars(string: str) -> str:
+    """Escape characters '_', '*', '['. Bot don't escape these in code. Code is block with '`' characters by sides"""
+    code_block = False
+    escaped_string = ''
+    for i in range(len(string)):
+        if string[i] == '`':
+            code_block = not code_block
+            escaped_string += '`'
+        elif code_block:
+            escaped_string += string[i]
+        elif string[i] in ['_', '*', '[']:
+            escaped_string += '\\' + string[i]
+        else:
+            escaped_string += string[i]
+    if code_block:
+        # if it's odd number of '`' chars, code will be ruined, so add to the end
+        escaped_string += '`'
+    return escaped_string
+
+
 class GPTAI(SuperPlugin):
     organization = "org-bsuVkr4uk7FuZ6v7B9xqidnk"
     api_key = ''
@@ -69,7 +89,18 @@ class GPTAI(SuperPlugin):
                     view.error(format_exc(), context)
                     view.report('Ответ непонятного формата: ' + str(res))
                     return
-                view.reply(res, context)
+                data = {
+                    "chat_id": context['sender'],
+                    "text": escape_markdown_chars(res),
+                    "parse_mode": 'Markdown'
+                }
+                try:
+                    view.custom_send(data)
+                except Exception as e:
+                    if str(e) == 'markdown is down':
+                        view.reply(res, context)
+                    else:
+                        raise e
         except:
             view.error(format_exc(), context)
 

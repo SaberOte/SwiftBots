@@ -250,7 +250,7 @@ class ViewsManager:
         :return: int, 0 - nothing updated, 1 - updated in the core, but it's not launched, 2 - updated in the core and itself
         """
         check_name_valid(view)
-        updated = self.__fill_views_dict([view])
+        updated = self.__fill_views_dict([view], True)
         if updated:
             if self.ping_view(view):
                 self.communicator.send('update', view)
