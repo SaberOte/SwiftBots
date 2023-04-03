@@ -1,6 +1,7 @@
 """Script's processing commands and flags"""
 import os
 import sys
+import signal
 from traceback import format_exc
 from . import core
 from . import views
@@ -79,6 +80,18 @@ def process_arguments(args: list[str], flags: list[str]):
         else:
             print(f'Argument {arg} is not recognized')
         i += 1
+
+
+def signal_usr1(signum, frame):
+    """
+    Calls just in SuperView when it's needed to update the current view.
+    So main calls again without rebooting all program.
+    Due to python features all imported modules are cached, so it force reloads only view
+    """
+    main()
+
+
+signal.signal(signal.SIGUSR1, signal_usr1)
 
 
 if __name__ != '__main__':

@@ -1,13 +1,14 @@
 from ..templates.super_plugin import SuperPlugin
 import os, datetime, time
 from .. import crons
+from ..templates.super_view import SuperView
 
 
 class AdminPanel(SuperPlugin):
     def __init__(self, bot):
         super().__init__(bot)
 
-    def reboot(self, view, context):
+    def reboot(self, view: SuperView, context):
         """Reboot the core bot. """
         view.report('Начался перезапуск...')
         self.log('Program is rebooting by admin')
@@ -19,26 +20,32 @@ class AdminPanel(SuperPlugin):
         # Класс Communicator другой вьюшки должен насильно закрыть этот процесс.
         # Если не закроет, значит что-то пошло не так
         self.log('Program was not rebooted')
-        view.report("Bot isn't rebooted")
+        view.report("Core isn't rebooted")
 
-    def exit(self, view, context):
+    def exit(self, view: SuperView, context):
         self._bot.communicator.close()
         self.log('Program is suspended by admin')
-        view.report('Бот остановлен.')
+        view.report('Core stopped.')
         os._exit(1)
 
-    def update_module(self, view, context):
-        module = context['message']
+    def update_module(self, view: SuperView, context):
+        module: str = context['message']
+        if len(module) == 0:
+            view.reply('Нельзя обновить все плагины сразу. Нужно указать название определенного', context)
+            return
         updated = self._bot.plugin_manager.update_plugin(module)
         if updated > 0:
             view.reply(f'Плагин {module} обновлён в оперативной памяти', context)
             return
-        view.reply('Обновление view Пока недоступно', context)
-        updated = self._bot.views_manager.update_view(module)
+        try:
+            updated = self._bot.views_manager.update_view(module)
+        except Exception as e:
+            view.reply(str(e), context)
+            return
         if updated == 1:
-            view.reply(f'Вьюшка {module} обновлена в оперативной памяти, но не запущена', context)
+            view.reply(f'Вьюшка {module} обновлена в оперативной памяти, но она не запущена', context)
         elif updated == 2:
-            view.reply(f'Вьюшка {module} обновлена в оперативной памяти и запущена', context)
+            view.reply(f'Вьюшка {module} обновлена в оперативной памяти полностью', context)
         elif updated == 0:
             view.reply('Не найдено модулей с таким именем', context)
 

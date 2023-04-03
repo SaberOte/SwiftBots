@@ -1,11 +1,11 @@
 import os, threading, sys, inspect
+from signal import SIGKILL, SIGUSR1
 from traceback import format_exc
 from .. import logger
 from ..communicators import Communicator
 from ..config import read_config, write_config
 from abc import ABC, abstractmethod
-from .super_plugin import SuperPlugin
-from typing import Optional, Callable
+from typing import Callable
 '''
 что вьюшка должна уметь делать?
 - слушать и передавать всю инфу о сообщении ядру
@@ -16,7 +16,6 @@ from typing import Optional, Callable
 
 class SuperView(ABC):
     plugins: list[str] = []  # "подписка" на плагины. Каждое вьюшке соответствуют какие-то плагины. Команда будет искаться в них
-    any: Optional[SuperPlugin] = None  # если ни один плагин не подошёл, будет вызван плагин, который записан в any
     inner_commands: {str: str} = {}  # команды от ядра бота конкретно для этой вьюшки
     name: str
     log: Callable[[str], None]
@@ -26,6 +25,12 @@ class SuperView(ABC):
     refuse_message = 'Access forbidden'
 
     def init(self, flags: list[str]):
+        """
+        Preparing a view for execution or serving by core.
+        Launches with its own communicator, logger and thread with port listening if that's 'launch' flag
+        If it launchs not as process, it's only name property processing
+        :param flags: flags describing is in the file __main__.py
+        """
         self.name = self.__module__.split('.')[-1]
         if self.authentic_style:
             assert 'send' in dir(self), 'Authentic style needs to exist "send" method!'
@@ -108,7 +113,11 @@ class SuperView(ABC):
             del config['Disabled_Views'][self.name]
             write_config(config)
 
-    def init_listen(self):  # listens the outer resource
+    def init_listen(self):
+        """
+        Starts to listen own port and starts to listen outer resources with view.listen method.
+        This method starts infinite loop and never returns anything
+        """
         self.core_listener.start()
         self.enable_in_config()
         while 1:
@@ -118,11 +127,11 @@ class SuperView(ABC):
                     self.comm.send(f"mes|{str(data)}", 'core')
             except Exception as e:
                 msg = 'EXCEPTION ' + str(e)
-                self.comm.send(msg, 'core')
                 self.log(msg)
                 self.report('Exception in listen: ' + msg)
 
-    def listen_port(self):  # waits commands from core bot
+    def listen_port(self):
+        """Waits commands from core bot. Executing in another thread"""
         self.log('start listening')
         while 1:
             try:
@@ -145,20 +154,25 @@ class SuperView(ABC):
                             write_config(config)
                             self.comm.send('exited', data['sender_view'], data['session_id'])
                             self.comm.close()
-                            os._exit(1)
+                            os.kill(os.getpid(), SIGKILL)
                         elif command == 'ping':
                             self.comm.send('pong', data['sender_view'], data['session_id'])
+                        elif command == 'update':
+                            # Code execution transfers to __main__.py to the signal handler.
+                            # This thread will be stacked
+                            os.kill(os.getpid(), SIGUSR1)
+                            self.comm.close()
+                            return
                         else:
-                            self.comm.send('unknown command', data['sender_view'], data['session_id'])
+                            self.comm.send(f'unknown|{command}', 'core')
+                            if data['sender_view'] != 'core':
+                                self.comm.send(f'unknown|{command}', data['sender_view'], data['session_id'])
             except Exception as e:
                 try:
-                    msg = 'EXCEPTION ' + str(e)
-                    self.comm.send(msg, 'core')
-                    self.log(msg)
+                    msg = 'EXCEPTION ' + format_exc()
+                    self.report(msg)
                 finally:
                     try:
-                        self.report(format_exc())
-                        # self.comm.close()
-                        # self.report('THIS view dies with ' + msg)
+                        self.log('This view is gonna die right after this message\n' + format_exc())
                     except:
-                        os._exit(1)
+                        os.kill(os.getpid(), SIGKILL)

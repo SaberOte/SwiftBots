@@ -1,16 +1,11 @@
-import os, inspect, sys
+import os, inspect, sys, importlib
+from types import ModuleType
 from typing import Union
 from traceback import format_exc
 from .templates.super_view import SuperView
 from .config import read_config, write_config
 from .communicators import Communicator
 import subprocess
-
-'''
-проблемы:
-main_view назначается до запуска остальных
-update view пока не работает
-'''
 
 
 class _RawView:
@@ -23,15 +18,21 @@ class _RawView:
 
 
 def launch_view(name: str, flags: list[str]):
-    check_valid(name)
+    """
+    Looking at flags, launches a view as a daemon or as a main thread (LOCKS FURTHER CODE)
+    :param name: exact view name
+    :param flags: see flags description in __main__.py
+    """
+    check_name_valid(name)
     if 'machine start' in flags:  # direct start
         try:
             module = import_view(name)
+            module = importlib.reload(module)  # if program was updated and restarted
             clas = get_class(module)
-            inst = clas()
+            inst: SuperView = clas()
             flags.append('launch')
             inst.init(flags)
-            inst.init_listen()
+            inst.init_listen()  # Starts infinite loop and never return
         except:
             comm = Communicator(name+'ghost', print)
             try:
@@ -61,15 +62,17 @@ def launch_view(name: str, flags: list[str]):
                       f'start {name} -MS > {res_path}/{name}_launch_log.txt 2>&1 &')
 
 
-def check_valid(name: str):
+def check_name_valid(name: str):
     """Check existence view file and its correct name"""
-    if name not in os.listdir('src/chatbotstation/allviews'):
-        raise Exception(f"Directory src/chatbotstation/{name} doesn't exist")
-    if f'{name}.py' not in os.listdir(f'src/chatbotstation/allviews/{name}'):
-        raise Exception(f"Module src/shatbostation/{name}/{name} doesn't exist")
+    assert name in os.listdir('src/chatbotstation/allviews'), \
+        f"Directory src/chatbotstation/allviews/{name} doesn't exist"
+    assert f'{name}.py' in os.listdir(f'src/chatbotstation/allviews/{name}'), \
+        f"Module src/shatbostation/allviews/{name}/{name} doesn't exist"
+    assert name.islower(), 'View name must be lowercase'
+    assert name.endswith('view'), 'View name must end with "view"'
 
 
-def get_class(module) -> any:
+def get_class(module: ModuleType):
     for cls in inspect.getmembers(module, inspect.isclass):
         if SuperView in cls[1].__bases__:
             return cls[1]
@@ -78,7 +81,7 @@ def get_class(module) -> any:
     raise ImportError(msg)
 
 
-def import_view(name: str):
+def import_view(name: str) -> ModuleType:
     module = __import__(f'{__package__}.allviews.{name}.{name}')
     instance = getattr(getattr(getattr(getattr(module,
                                                'chatbotstation'),
@@ -92,7 +95,7 @@ class ViewsManager:
     main_view: Union[SuperView, _RawView, None]
     views: {str: SuperView} = {}
 
-    def __init__(self, log, communicator, flags):
+    def __init__(self, log, communicator: Communicator, flags):
         self.communicator = communicator
         self.log = log
         self.flags = flags
@@ -133,13 +136,21 @@ class ViewsManager:
             return
         self.main_view = _RawView(lambda x,y: None if 'debug' in self.flags else self.log)  # если ну прям вообще ничего нет, то всё уйдёт в логи
 
-    def ping_view(self, view: str):
+    def ping_view(self, view: str) -> bool:
+        """
+        Pings a view to detect it's active and responds
+        :param view: view name
+        :return: False if view isn't the list in cofing, or it doesn't respond. True if it responds
+        """
         config = read_config()
         if view not in config['Names']:
             return False
-        ans = self.communicator.request('ping', view)
+        comm = Communicator('core' + 'ghost', self.log)
+        ans = comm.request('ping', view)
+        comm.close()
         if ans and ans['message'] == 'pong':
             return True
+        # View is not responded. Then delete it from config
         config = read_config()
         if view in config['Names']:
             del config['Names'][view]
@@ -161,43 +172,26 @@ class ViewsManager:
         disabled_views = set(config['Disabled_Views'])
         self.log(f'Disabled views: {str(disabled_views)}')
 
-        views_dir = \
+        # receiving modules NAMES
+        views_dir: list[str] = \
             [x for x in os.listdir('src/chatbotstation/allviews')
              if x.endswith('_view')
              and x.islower()
              and x not in disabled_views
-             and not x.startswith('__')]
-        imports = []
+             and not x.startswith('!')]
 
-        for x in views_dir:
-            try:
-                imports.append(import_view(x))
-            except Exception as e:
-                # msg = f'Exception in the import view module({x}):\n{str(type(e))}\n{str(e)}'
-                msg = format_exc()
-                self.error(msg)
-
-        for x in imports:
-            view_name = x.__name__.split('.')[-1]
-            try:
-                clas = get_class(x)()
-                clas.init([])
-                clas.log = self.log
-                # составляется словарь вьюшек вида { название : класс }
-                self.views[view_name] = clas
-            except Exception as e:
-                self.log(str(e))
-                self.error(f'Module {view_name} failed to import: {e}')
-
+        self.__fill_views_dict(views_dir)
         self.log(f'Loaded views: {[x for x in self.views]}')
 
-        running_views = self.ping_views()
+        # Detecting of already running views
+        running_views: set[str] = self.ping_views()
         if len(running_views) > 0:
             self.log(f'Running views now: {running_views}')
         else:
             self.log('No running views now. Using Raw View from ViewsManager')
-        views_to_start = set(self.views.keys()) - running_views - disabled_views - {'cliview'}
 
+        # Starting of instances as daemons
+        views_to_start: set[str] = set(self.views.keys()) - running_views - disabled_views - {'cliview'}
         started = []
         for view in views_to_start:
             view_flags = []
@@ -214,52 +208,53 @@ class ViewsManager:
         else:
             self.log(str(started) + ' started')
 
-    def update_view(self, view: str) -> int:
-        module = [x for x in os.listdir('/views') if x.endswith('view') and x.islower() and x == view]
-        if len(module) == 0:
-            return 0
-        module = module[0]
-        try:
-            imported = import_view(module)
-            # imported = getattr(__import__(f'{module}.{module}'), module)
-        except Exception as e:
-            msg = f'Exception in the import view module({module}):\n{str(type(e))}\n{str(e)}'
-            raise Exception(msg)
-        config = read_config()
-        disabled_views = set(config['Disabled_Views'])
-        self.log(f'Disabled views: {str(disabled_views)}')
-        found = False
-        view_key = None
-        for cls in inspect.getmembers(imported, inspect.isclass):
-            view_name = imported.__name__.split('.')[0]
-            if SuperView in cls[1].__bases__ and cls[0].lower() == view_name:
-                try:
-                    self.views[view_name] = cls[1](is_daemon=False)
-                except Exception as e:
-                    raise Exception(f'Failed to instantiate view {view}:\n{str(type(e))}\n{str(e)}')
-                found = True
-                break
-        if not found:
-            msg = 'Can\'t import view ' + view + '. This file does not contain class that inherited from SuperView and names like view folder'
-            self.error(msg)
-        self.log(f'Updated internal view: {view}')
-
-        running_views = self.ping_views()
-        if len(running_views):
-            self.log(f'Running views now: {str(running_views)}')
-        else:
-            self.log('No running views now')
-        if view in running_views:
-            old_path = os.getcwd()
-            os.chdir('./../views/')  #######################
+    def __fill_views_dict(self, views_dir: list[str], should_reload=False) -> int:
+        """
+        Fills self.views dict with views from views_dir list
+        :param views_dir: names of views to instantiate
+        :param should_reload: if view instantiates not first time it should be reloaded
+        :return: number of inserted views
+        """
+        # importing as MODULES
+        imports: list[ModuleType] = []
+        for x in views_dir:
             try:
-                os.system(f'nohup python3 {view} > ./{view}/logs/launchlogs.txt 2>&1 &')
+                imported = import_view(x)
+                if should_reload:
+                    importlib.reload(imported)
+                imports.append(imported)
             except Exception as e:
-                os.chdir(old_path)
-                raise Exception(f'View {view} failed to start!!\n{type(str(e))}\n{e}')
-            os.chdir(old_path)
-            self.log(str(view) + ' started')
-            return 2
-        else:
-            self.log('View is not needed to start')
+                msg = "Exception in the import view module:\n" + format_exc()
+                self.error(msg)
+
+        # Filling self.views with view instances
+        counter = 0
+        for x in imports:
+            view_name = x.__name__.split('.')[-1]
+            try:
+                clas: SuperView = get_class(x)()
+                clas.init([])  # with no flags
+                clas.log = self.log
+                # Setting dict of views as { name : class }
+                self.views[view_name] = clas
+                counter += 1
+            except Exception as e:
+                self.log(str(e))
+                self.error(f'Module {view_name} failed to import: {e}')
+        return counter
+
+    def update_view(self, view: str) -> int:
+        """
+        Updates all methods for core and sends request for view to be updated itself. It's no any reboots
+        :param view: view name
+        :return: int, 0 - nothing updated, 1 - updated in the core, but it's not launched, 2 - updated in the core and itself
+        """
+        check_name_valid(view)
+        updated = self.__fill_views_dict([view])
+        if updated:
+            if self.ping_view(view):
+                self.communicator.send('update', view)
+                return 2
             return 1
+        return 0
+

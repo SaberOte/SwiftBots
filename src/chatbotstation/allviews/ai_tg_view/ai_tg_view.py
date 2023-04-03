@@ -1,6 +1,6 @@
 from traceback import format_exc
 from ...templates.super_view import SuperView
-import requests, os, sys, time
+import requests, os, time
 
 
 class AITgView(SuperView):
@@ -14,7 +14,7 @@ class AITgView(SuperView):
         response = requests.get(f'https://api.telegram.org/bot{self.token}/{method}', json=data)
         answer = response.json()
         if not answer['ok']:
-            self.handle_error(answer)
+            self.__handle_error(answer)
         return answer
 
     def update_message(self, message, chat_id, message_id):
@@ -32,7 +32,7 @@ class AITgView(SuperView):
         }
         return self.post('sendMessage', data)
 
-    def handle_error(self, error):
+    def __handle_error(self, error):
         code = error['error_code']
         if code == 409:
             for i in range(2):
@@ -42,7 +42,7 @@ class AITgView(SuperView):
         self.report(f"Error {error['error_code']} from TG API: {error['description']}")
         raise Exception('Some error occured in ai tg view')
 
-    def skip_old_updates(self):
+    def __skip_old_updates(self):
         data = {
             "timeout": 0,
             "limit": 1,
@@ -54,9 +54,9 @@ class AITgView(SuperView):
             return result[0]['update_id']+1
         return -1
 
-    def get_updates(self):
+    def __get_updates(self):
         timeout = 1000
-        offset = self.skip_old_updates()
+        offset = self.__skip_old_updates()
         data={
             "timeout": timeout,
             "limit": 1,
@@ -69,7 +69,7 @@ class AITgView(SuperView):
                 data['offset'] = ans['result'][0]['update_id']+1
                 yield ans
 
-    def hard_code(self, text):
+    def __hard_code(self, text):
         if text == 'selfexit':
             self.report('exited')
             self.comm.close()
@@ -82,14 +82,15 @@ class AITgView(SuperView):
     def listen(self):
         self.report('AI Tg View запущен')
         try:
-            for update in self.get_updates():
+            for update in self.__get_updates():
                 update = update['result'][0]
                 if 'message' in update:
                     message = update['message']
                     text = message['text']
                     sender = message['from']['id']
-                    self.log(f"Came message: '{text}' from {sender} ({message['from']['username']})")
-                    if self.hard_code(text) == 22:
+                    username = message['from']['username'] if 'username' in message['from'] else 'no username'
+                    self.log(f"Came message: '{text}' from {sender} ({username})")
+                    if self.__hard_code(text) == 22:
                         continue
                     yield {
                         'message': text,
@@ -98,4 +99,6 @@ class AITgView(SuperView):
                 else:
                     self.log('UNHANDLED' + str(update))
         except:
-            self.log(format_exc())
+            msg = format_exc()
+            self.log(msg)
+            self.report(msg)

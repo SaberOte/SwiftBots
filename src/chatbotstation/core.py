@@ -41,7 +41,6 @@ class Core:
     error: Callable
     log: Callable
 
-
     def __init__(self, flags: list[str]):
         self.flags = flags
         self.__init_base_services()

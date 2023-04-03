@@ -20,10 +20,11 @@ class PluginManager:
         self.error = bot.error
         self.log = bot.log
 
+    # TODO: init_plugins and update_plugin are almost the same. Fix it
     def init_plugins(self):
         modules = [x[:-3] for x in os.listdir('src/chatbotstation/allplugins')
                    if x.endswith('.py')
-                   and not x.startswith('__')]
+                   and not x.startswith('!')]
         imports = []
         for x in modules:
             try:
@@ -50,7 +51,7 @@ class PluginManager:
         module = module[0]
         try:
             imported = import_plugin(module)
-            importlib.reload(imported)
+            imported = importlib.reload(imported)
         except Exception as e:
             raise Exception(f'Exception in the import module ({module}):\n{str(type(e))}\n{str(e)}')
         entity = None

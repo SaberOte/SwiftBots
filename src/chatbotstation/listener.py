@@ -2,6 +2,7 @@ from traceback import format_exc
 import ast, threading, traceback
 from . import crons
 
+
 class Listener:
     def __init__(self, bot):
         self._bot = bot
@@ -31,7 +32,6 @@ class Listener:
                     return plugin.prefixes[prefix], plugin
         # finally check "any"
         for plugin in plugins:
-            # raise Exception(str(callable(plugin.any)) + str(plugin.any))
             if callable(plugin.any):
                 return plugin.any.__func__, plugin
         return None, None
@@ -92,7 +92,7 @@ class Listener:
             # mes|... - сообщение формата mes|информация. Приходит от вьюшки
             # cron|... - сообщение от крона. имеет формат plugin_name|task
             # report|... - сообщение от какого то компонента. Переслать одмену
-            # Если ни один не подходит, то считается, что это сообщение от внутренних компонентов бота (дебил????)
+            # Если ни один не подходит, то считается, что это сообщение от внутренних компонентов бота
 
             raw_message = raw_data['message']
             self.log(f'Came message: {raw_message}')
@@ -106,8 +106,10 @@ class Listener:
                 self.do_cron(plugin_name, task)
             elif raw_message.startswith('report|'):
                 self.report(raw_message[7:])
+            elif raw_message.startswith('unknown|'):
+                self.report('View received unknown message: ' + raw_message[8:])
             else:
-                self.report('Unknown message from ' + raw_data['sender'] + ' in listener:\n'+str(raw_message))
+                self.report('Unknown message from ' + raw_data['sender_view'] + ' in listener:\n'+str(raw_message))
 
         except Exception as e:
             self.error(format_exc())
