@@ -66,7 +66,7 @@ class SuperView(ABC):
         """
         if self.authentic_style:
             try:
-                if context.sender != self.admin:
+                if context['sender'] != self.admin:
                     self.reply(self.error_message, context)
                     self.log('ERROR\n' + str(message))
             finally:
