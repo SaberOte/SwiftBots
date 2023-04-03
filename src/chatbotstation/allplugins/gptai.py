@@ -2,7 +2,7 @@ from traceback import format_exc
 import requests
 import json
 from ..templates.super_plugin import SuperPlugin
-
+from ..templates.super_view import SuperView
 
 
 class GPTAI(SuperPlugin):
@@ -10,7 +10,7 @@ class GPTAI(SuperPlugin):
     api_key = ''
     url = 'https://api.openai.com/'
     model = "gpt-3.5-turbo"
-    is_stream = False
+    is_stream = False  # временно, потом включи
 
     def __init__(self, bot):
         super().__init__(bot)
@@ -24,7 +24,7 @@ class GPTAI(SuperPlugin):
         }
         return requests.post(self.url+parameters, json=body, headers=headers)
 
-    def handle(self, view, context):
+    def handle(self, view: SuperView, context):
         try:
             message = context['message']
             body = {
@@ -72,6 +72,19 @@ class GPTAI(SuperPlugin):
                 view.reply(res, context)
         except:
             view.error(format_exc(), context)
+
+    def disable_stream(self, view: SuperView, context):
+        self.is_stream = False
+        view.reply('stream disabled', context)
+
+    def enable_stream(self, view: SuperView, context):
+        self.is_stream = True
+        view.reply('stream enabled!', context)
+
+    cmds = {
+        "stream disable": disable_stream,
+        "stream enable": enable_stream
+    }
 
     any = handle
 
