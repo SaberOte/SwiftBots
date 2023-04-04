@@ -2,11 +2,20 @@ from traceback import format_exc
 import requests
 import json
 from ..templates.super_plugin import SuperPlugin
-from ..templates.super_view import SuperView
+from ..allviews.ai_tg_view.ai_tg_view import AITgView
 
 
 def escape_markdown_chars(string: str) -> str:
     """Escape characters '_', '*', '['. Bot don't escape these in code. Code is block with '`' characters by sides"""
+    """
+        Внутри блока кода, обособленного '```' ничего не должно быть экранировано
+        Внутри встроенного кода, обособленного '`' ничего не должно быть экранировано
+        Экранировать символы '_', '*', '['
+
+        Если нет закрывающего '```', то он должен быть добавлен в конец
+        Если нет закрывающего '`', то он должен быть добавлен в конец
+        Если активно состояние встроенного кода, то может быть открыто состояние блока кода. Наоборот - нет!
+    """
     code_block = False
     escaped_string = ''
     for i in range(len(string)):
@@ -25,12 +34,80 @@ def escape_markdown_chars(string: str) -> str:
     return escaped_string
 
 
+def receive_non_stream(response, view: AITgView, context: dict):
+    try:
+        message = response.json()
+        message = message['choices'][0]['message']['content']
+    except:
+        view.error(format_exc(), context)
+        view.report('Ответ непонятного формата: ' + str(response))
+        return
+    data = {
+        "chat_id": context['sender'],
+        "text": escape_markdown_chars(message),
+        "parse_mode": 'Markdown'
+    }
+    try:
+        view.custom_send(data)
+    except Exception as e:
+        if str(e) == 'markdown is down':
+            view.reply(message, context)
+        else:
+            raise e
+
+
+def update_stream(message, message_id, view, context):
+    data = {
+        "chat_id": context['sender'],
+        "text": escape_markdown_chars(message),
+        "message_id": message_id,
+        "parse_mode": 'Markdown'
+    }
+    try:
+        view.update_message(data)
+    except Exception as e:
+        if str(e) == 'markdown is down':
+            data = {
+                "chat_id": context['sender'],
+                "text": message,
+                "message_id": message_id,
+            }
+            view.update_message(data)
+        else:
+            raise e
+
+
+def receive_stream(response, view: AITgView, context: dict):
+    whole_message = ''
+    message_id = -1
+    for line in response.iter_lines():
+        if line:
+            line = line.decode('utf-8')
+            assert line.startswith('data: '), 'corrupted json from openai. It is not "data: "'
+            if line == 'data: [DONE]':
+                update_stream(whole_message, message_id, view, context)
+                return 'cool'
+            line = json.loads(line[6:])
+            line = line['choices'][0]['delta']
+            if 'content' in line and len(str(line['content'])) != 0:
+                whole_message += str(line['content'])
+            else:
+                continue
+        else:
+            continue
+        if message_id == -1:
+            resp = view.reply(whole_message + '....', context)
+            message_id = resp['result']['message_id']
+        else:
+            update_stream(whole_message+'....', message_id, view, context)
+
+
 class GPTAI(SuperPlugin):
-    organization = "org-bsuVkr4uk7FuZ6v7B9xqidnk"
-    api_key = ''
-    url = 'https://api.openai.com/'
-    model = "gpt-3.5-turbo"
-    is_stream = False  # временно, потом включи
+    ORGANIZATION = "org-bsuVkr4uk7FuZ6v7B9xqidnk"
+    API_KEY = 'sk-'
+    OPENAI_URL = 'https://api.openai.com/'
+    GPT_MODEL = "gpt-3.5-turbo"
+    is_stream = True
 
     def __init__(self, bot):
         super().__init__(bot)
@@ -39,76 +116,31 @@ class GPTAI(SuperPlugin):
 
     def post(self, parameters, body):
         headers = {
-            'Authorization': 'Bearer ' + self.api_key,
-            'OpenAI-Organization': self.organization
+            'Authorization': 'Bearer ' + self.API_KEY,
+            'OpenAI-Organization': self.ORGANIZATION
         }
-        return requests.post(self.url+parameters, json=body, headers=headers)
+        return requests.post(self.OPENAI_URL + parameters, json=body, headers=headers)
 
-    def handle(self, view: SuperView, context):
-        try:
-            message = context['message']
-            body = {
-                "model": self.model,
-                "messages": [{
-                    "role": "user",
-                    "content": message}],
-                "stream": self.is_stream
-            }
-            res = self.post('v1/chat/completions', body)
-            if self.is_stream:
-                whole_message = ''
-                sender = context['sender']
-                message_id = -1
-                for line in res.iter_lines():
-                    if line:
-                        line = line.decode('utf-8')
-                        assert line.startswith('data: '), 'corrupted json from openai. It is not "data: "'
-                        if line == 'data: [DONE]':
-                            view.update_message(message=whole_message, chat_id=sender, message_id=message_id)
-                            return 'cool'
-                        line = json.loads(line[6:])
-                        line = line['choices'][0]['delta']
-                        if 'content' in line and len(str(line['content'])) != 0:
-                            whole_message += str(line['content'])
-                        else:
-                            continue
-                    else:
-                        continue
-                    if message_id == -1:
-                        resp = view.reply(whole_message+'....', context)
-                        if not 'result' in resp:
-                            raise Exception(str(resp))
-                        message_id = resp['result']['message_id']
-                    else:
-                        view.update_message(message=whole_message+'....', chat_id=sender, message_id=message_id)
-            else:
-                try:
-                    res = res.json()
-                    res = res['choices'][0]['message']['content']
-                except:
-                    view.error(format_exc(), context)
-                    view.report('Ответ непонятного формата: ' + str(res))
-                    return
-                data = {
-                    "chat_id": context['sender'],
-                    "text": escape_markdown_chars(res),
-                    "parse_mode": 'Markdown'
-                }
-                try:
-                    view.custom_send(data)
-                except Exception as e:
-                    if str(e) == 'markdown is down':
-                        view.reply(res, context)
-                    else:
-                        raise e
-        except:
-            view.error(format_exc(), context)
+    def handle(self, view: AITgView, context):
+        message = context['message']
+        body = {
+            "model": self.GPT_MODEL,
+            "messages": [{
+                "role": "user",
+                "content": message}],
+            "stream": self.is_stream
+        }
+        res = self.post('v1/chat/completions', body)
+        if self.is_stream:
+            receive_stream(res, view, context)
+        else:
+            receive_non_stream(res, view, context)
 
-    def disable_stream(self, view: SuperView, context):
+    def disable_stream(self, view: AITgView, context):
         self.is_stream = False
         view.reply('stream disabled', context)
 
-    def enable_stream(self, view: SuperView, context):
+    def enable_stream(self, view: AITgView, context):
         self.is_stream = True
         view.reply('stream enabled!', context)
 
@@ -118,4 +150,3 @@ class GPTAI(SuperPlugin):
     }
 
     any = handle
-

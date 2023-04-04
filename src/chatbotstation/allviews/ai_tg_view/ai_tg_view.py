@@ -4,7 +4,7 @@ import requests, os, time
 
 
 class AITgView(SuperView):
-    token = ''
+    token = '5724561112:AAG6S6XjSOwwyKntffU64lEoYR1c780N3WI'
     admin = '367363759'
     plugins = ['gptai']
     authentic_style = True
@@ -17,12 +17,7 @@ class AITgView(SuperView):
             self.__handle_error(answer)
         return answer
 
-    def update_message(self, message, chat_id, message_id):
-        data = {
-            "chat_id": chat_id,
-            "text": message,
-            "message_id": message_id
-        }
+    def update_message(self, data):
         return self.post('editMessageText', data)
 
     def send(self, message, chat_id):
