@@ -1,8 +1,9 @@
 from traceback import format_exc
 import requests
 import json
+from ..config import read_config
 from ..templates.super_plugin import SuperPlugin
-from ..allviews.ai_tg_view.ai_tg_view import AITgView
+from ..allviews.ai_tg_view.ai_tg_view import AiTgView
 
 
 def escape_markdown_chars(string: str) -> str:
@@ -34,7 +35,7 @@ def escape_markdown_chars(string: str) -> str:
     return escaped_string
 
 
-def receive_non_stream(response, view: AITgView, context: dict):
+def receive_non_stream(response, view: AiTgView, context: dict):
     try:
         message = response.json()
         message = message['choices'][0]['message']['content']
@@ -77,7 +78,7 @@ def update_stream(message, message_id, view, context):
             raise e
 
 
-def receive_stream(response, view: AITgView, context: dict):
+def receive_stream(response, view: AiTgView, context: dict):
     whole_message = ''
     message_id = -1
     for line in response.iter_lines():
@@ -102,15 +103,16 @@ def receive_stream(response, view: AITgView, context: dict):
             update_stream(whole_message+'....', message_id, view, context)
 
 
-class GPTAI(SuperPlugin):
-    ORGANIZATION = "org-bsuVkr4uk7FuZ6v7B9xqidnk"
-    API_KEY = 'sk-'
+class GptAi(SuperPlugin):
     OPENAI_URL = 'https://api.openai.com/'
     GPT_MODEL = "gpt-3.5-turbo"
     is_stream = True
 
     def __init__(self, bot):
         super().__init__(bot)
+        config = read_config('credentials.ini')
+        self.ORGANIZATION = config['OpenAI']['organization']
+        self.API_KEY = config['OpenAI']['api_key']
         # если нужно посчитать количество токенов,
         #   есть готовый код https://platform.openai.com/docs/guides/chat/introduction
 
@@ -121,7 +123,7 @@ class GPTAI(SuperPlugin):
         }
         return requests.post(self.OPENAI_URL + parameters, json=body, headers=headers)
 
-    def handle(self, view: AITgView, context):
+    def handle(self, view: AiTgView, context):
         message = context['message']
         body = {
             "model": self.GPT_MODEL,
@@ -136,11 +138,11 @@ class GPTAI(SuperPlugin):
         else:
             receive_non_stream(res, view, context)
 
-    def disable_stream(self, view: AITgView, context):
+    def disable_stream(self, view: AiTgView, context):
         self.is_stream = False
         view.reply('stream disabled', context)
 
-    def enable_stream(self, view: AITgView, context):
+    def enable_stream(self, view: AiTgView, context):
         self.is_stream = True
         view.reply('stream enabled!', context)
 

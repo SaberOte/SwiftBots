@@ -1,17 +1,22 @@
 from traceback import format_exc
 from ...templates.super_view import SuperView
+from ...config import read_config
 import requests, os, time
 
 
-class AITgView(SuperView):
-    token = '5724561112:AAG6S6XjSOwwyKntffU64lEoYR1c780N3WI'
-    admin = '367363759'
+class AiTgView(SuperView):
+
     plugins = ['gptai']
     authentic_style = True
     error_message = 'Произошла какая-то ошибка. Исправляем'
 
+    def __init__(self):
+        config = read_config('credentials.ini')
+        self.TOKEN = config['AiTgView']['token']
+        self.admin = config['AiTgView']['admin']
+
     def post(self, method: str, data: dict):
-        response = requests.get(f'https://api.telegram.org/bot{self.token}/{method}', json=data)
+        response = requests.get(f'https://api.telegram.org/bot{self.TOKEN}/{method}', json=data)
         answer = response.json()
         if not answer['ok']:
             self.__handle_error(answer)

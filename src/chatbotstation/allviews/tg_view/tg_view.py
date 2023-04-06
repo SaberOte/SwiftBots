@@ -1,16 +1,21 @@
+import requests
+import os
 from traceback import format_exc
 from ...templates.super_view import SuperView
-import requests, os, sys
+from ...config import read_config
 
 
 class TgView(SuperView):
-    token = '1745687697:AAEKSGiWm6iTc_lfzRj32HVvWLKzvkzase0'
-    admin = '367363759'
     plugins = ['adminpanel']
     authentic_style = True
 
+    def __init__(self):
+        config = read_config('credentials.ini')
+        self.TOKEN = config['TgView']['token']
+        self.admin = config['TgView']['admin']
+
     def get(self, method, data=''):
-        answer = requests.get(f'https://api.telegram.org/bot{self.token}/{method}?{data}')
+        answer = requests.get(f'https://api.telegram.org/bot{self.TOKEN}/{method}?{data}')
         return answer.json()
 
     def skip_old_updates(self):
