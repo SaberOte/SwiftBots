@@ -24,14 +24,14 @@ def write_config(config, name: str):
     file.close()
 
 
-def fill_config(name: str):
-    path = __get_path(name)
+def fill_config_ini():
+    path = __get_path('config.ini')
     if not os.path.exists(path):
         if not os.path.isdir(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path))
         file = open(path, 'w')
         file.close()
-    config = read_config(name)
+    config = read_config('config.ini')
     changed = False
     if 'Disabled_Views' not in config.sections():
         config.add_section('Disabled_Views')
@@ -49,4 +49,4 @@ def fill_config(name: str):
         config.add_section('Main_View')
         changed = True
     if changed:
-        write_config(config, name)
+        write_config(config, 'config.ini')

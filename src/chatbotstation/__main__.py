@@ -5,7 +5,7 @@ import signal
 from traceback import format_exc
 from . import core
 from . import views
-from .config import fill_config
+from .config import fill_config_ini
 
 
 def main():
@@ -30,7 +30,7 @@ def prepare_project():
     logs_path = os.path.join(os.getcwd(), 'logs')
     if not os.path.isdir(logs_path):
         os.makedirs(logs_path)
-    fill_config('config.ini')
+    fill_config_ini()
 
 
 def set_working_dir():
