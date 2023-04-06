@@ -8,9 +8,9 @@ def add(plugin, task, freq):
 
     # добавить задачу в конфиг
     task_id = str(uuid.uuid4())
-    config = read_config()
+    config = read_config('config.ini')
     config['Tasks'][task_name] = task_id
-    write_config(config)
+    write_config(config, 'config.ini')
 
     # очистить старые задачи с таким же именем
     for job in cron:
@@ -41,12 +41,12 @@ def remove(plugin, task):
     cron.write()
 
     # убрать задачу из конфигa
-    config = read_config()
+    config = read_config('config.ini')
     del config['Tasks'][task_name]
-    write_config(config)
+    write_config(config, 'config.ini')
 
 
 def get():
-    config = read_config()
+    config = read_config('config.ini')
     tasks = config.items('Tasks')
     return list(map(lambda x: x[0].split('|')[1], tasks))

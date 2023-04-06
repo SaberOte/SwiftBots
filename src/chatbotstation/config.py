@@ -1,14 +1,16 @@
-import configparser, os, time
+import configparser
+import os
+import time
 
 
-def __get_path() -> str:
-    return os.path.join(os.getcwd(), 'resources', 'config.ini')
+def __get_path(name: str) -> str:
+    return os.path.join(os.getcwd(), 'resources', name)
 
 
-def read_config():
+def read_config(name: str):
     config = configparser.ConfigParser()
     for i in range(10):  # очень странная ошибка этой библы. иногда конфиг впустую читается. хуйня американская
-        config.read(__get_path())
+        config.read(__get_path(name))
         if len(config.sections()):
             break
         print('EMPTY CONFIG!!')
@@ -16,20 +18,20 @@ def read_config():
     return config
 
 
-def write_config(config):
-    file = open(__get_path(), 'w')
+def write_config(config, name: str):
+    file = open(__get_path(name), 'w')
     config.write(file)
     file.close()
 
 
-def fill_config():
-    path = __get_path()
+def fill_config(name: str):
+    path = __get_path(name)
     if not os.path.exists(path):
         if not os.path.isdir(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path))
         file = open(path, 'w')
         file.close()
-    config = read_config()
+    config = read_config(name)
     changed = False
     if 'Disabled_Views' not in config.sections():
         config.add_section('Disabled_Views')
@@ -47,4 +49,4 @@ def fill_config():
         config.add_section('Main_View')
         changed = True
     if changed:
-        write_config(config)
+        write_config(config, name)

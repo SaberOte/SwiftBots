@@ -4,7 +4,7 @@ from .config import read_config
 task_id = sys.argv[1]
 
 #получить имя плагина и задачи
-config = read_config()
+config = read_config('config.ini')
 task_name = None
 for i in config.items('Tasks'):
   if i[1] == task_id:

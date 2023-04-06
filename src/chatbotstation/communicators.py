@@ -22,24 +22,24 @@ class Communicator:
         self.name = name
 
     def get_name(self, port: int):
-        config = read_config()
+        config = read_config('config.ini')
         for i in config.items("Names"):
             if i[1] == port:
                 return i[0]
         raise Exception('No such port in Names config')
 
     def get_port(self, name: str):
-        config = read_config()
+        config = read_config('config.ini')
         return int(config["Names"][name])
 
     def set_name(self):
         if not self.port:
             raise Exception("Port is not assigned")
-        config = read_config()
+        config = read_config('config.ini')
         if self.name in config['Names']:
             self.kill_process(config['Names'][self.name])
         config["Names"][self.name] = str(self.port)
-        write_config(config)
+        write_config(config, 'config.ini')
 
     def kill_process(self, port):  # radical but awesome
         connections = psutil.net_connections()
@@ -211,6 +211,6 @@ class Communicator:
     def close(self):
         if self.sock:
             self.sock.close()
-        config = read_config()
+        config = read_config('config.ini')
         if config.remove_option("Names", self.name):
-            write_config(config)
+            write_config(config, 'config.ini')

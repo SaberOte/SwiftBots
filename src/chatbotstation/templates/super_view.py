@@ -108,10 +108,10 @@ class SuperView(ABC):
 
     # Дальше методы для внутреннего пользования
     def enable_in_config(self):
-        config = read_config()
+        config = read_config('config.ini')
         if self.name in config['Disabled_Views']:
             del config['Disabled_Views'][self.name]
-            write_config(config)
+            write_config(config, 'config.ini')
 
     def init_listen(self):
         """
@@ -149,9 +149,9 @@ class SuperView(ABC):
                         command = message
                         if command == 'exit':
                             self.log('View is exited')
-                            config = read_config()
+                            config = read_config('config.ini')
                             config["Disabled_Views"][self.name] = ''
-                            write_config(config)
+                            write_config(config, 'config.ini')
                             self.comm.send('exited', data['sender_view'], data['session_id'])
                             self.comm.close()
                             os.kill(os.getpid(), SIGKILL)

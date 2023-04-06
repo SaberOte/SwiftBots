@@ -118,7 +118,7 @@ class ViewsManager:
             # self.main_view = _RawView(lambda x: None if 'debug' in self.flags else self.log)
             self.main_view = _RawView(self.log)
             return
-        config = read_config()
+        config = read_config('config.ini')
         disabled_views = set(config['Disabled_Views'])
         main_views = list(config['Main_View'])
         loaded_views = self.views
@@ -142,7 +142,7 @@ class ViewsManager:
         :param view: view name
         :return: False if view isn't the list in cofing, or it doesn't respond. True if it responds
         """
-        config = read_config()
+        config = read_config('config.ini')
         if view not in config['Names']:
             return False
         comm = Communicator('core' + 'ghost', self.log)
@@ -151,14 +151,14 @@ class ViewsManager:
         if ans and ans['message'] == 'pong':
             return True
         # View is not responded. Then delete it from config
-        config = read_config()
+        config = read_config('config.ini')
         if view in config['Names']:
             del config['Names'][view]
-            write_config(config)
+            write_config(config, 'config.ini')
         return False
 
     def ping_views(self) -> set:
-        config = read_config()
+        config = read_config('config.ini')
         disabled_views = set(config['Disabled_Views'])
         active_views = set(filter(lambda x: x.endswith('view'), config['Names'])) - disabled_views
         running_views = set()
@@ -168,7 +168,7 @@ class ViewsManager:
         return running_views
 
     def init_views(self):
-        config = read_config()
+        config = read_config('config.ini')
         disabled_views = set(config['Disabled_Views'])
         self.log(f'Disabled views: {str(disabled_views)}')
 
