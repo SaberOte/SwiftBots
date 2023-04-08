@@ -1,3 +1,4 @@
 crontab
 psutil
 requests
+psycopg2
