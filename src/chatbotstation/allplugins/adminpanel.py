@@ -1,4 +1,4 @@
-from ..templates.super_plugin import SuperPlugin
+from ..templates.super_plugin import SuperPlugin, admin_only
 import os, datetime, time
 from .. import crons
 from ..templates.super_view import SuperView
@@ -8,6 +8,7 @@ class AdminPanel(SuperPlugin):
     def __init__(self, bot):
         super().__init__(bot)
 
+    @admin_only
     def reboot(self, view: SuperView, context):
         """Reboot the core bot. """
         view.report('Начался перезапуск...')
@@ -22,12 +23,14 @@ class AdminPanel(SuperPlugin):
         self.log('Program was not rebooted')
         view.report("Core isn't rebooted")
 
+    @admin_only
     def exit(self, view: SuperView, context):
         self._bot.communicator.close()
         self.log('Program is suspended by admin')
         view.report('Core stopped.')
         os._exit(1)
 
+    @admin_only
     def update_module(self, view: SuperView, context):
         module: str = context['message']
         if len(module) == 0:

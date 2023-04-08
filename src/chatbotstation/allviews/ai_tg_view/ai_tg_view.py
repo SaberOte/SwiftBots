@@ -64,7 +64,7 @@ class AiTgView(SuperView):
     def __get_updates(self):
         timeout = 1000
         offset = self.__skip_old_updates()
-        data={
+        data = {
             "timeout": timeout,
             "limit": 1,
             "offset": offset,
@@ -101,7 +101,9 @@ class AiTgView(SuperView):
                         continue
                     yield {
                         'message': text,
-                        'sender': sender
+                        'sender': sender,
+                        'username': username,
+                        'platform': 'telegram'
                     }
                 else:
                     self.log('UNHANDLED' + str(update))

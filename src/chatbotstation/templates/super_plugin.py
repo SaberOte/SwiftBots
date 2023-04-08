@@ -4,6 +4,19 @@ if TYPE_CHECKING:
     from ..core import Core
 
 
+def admin_only(func):
+    """Decorator. Should be with functions to prevent non admin user execution"""
+    def wrapper(self, view, context: dict):
+        if view.authentic_style:
+            if str(context['sender']) != str(view.admin):
+                view.refuse(context)
+            else:
+                func(self, view, context)
+        else:
+            view.error('admin_only decorator requires authentic style for view', context)
+    return wrapper
+
+
 class SuperPlugin:
     prefixes: {str: Callable} = {}
     cmds: {str: Callable} = {}
