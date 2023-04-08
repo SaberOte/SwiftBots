@@ -2,13 +2,26 @@ from ..templates.super_plugin import SuperPlugin, admin_only
 import os, datetime, time
 from .. import crons
 from ..templates.super_view import SuperView
+from typing import Callable
+
+
+def remember_request(func):
+    """Decorator for admin panel. Remembers last command, then it may be used to repeat this.
+    Must be BELOW @admin_only"""
+    def wrapper(self, view, context):
+        self.last_exec = (func, view, context)
+        func(self, view, context)
+    return wrapper
 
 
 class AdminPanel(SuperPlugin):
+    last_exec: tuple[Callable, SuperView, dict] = ()
+
     def __init__(self, bot):
         super().__init__(bot)
 
     @admin_only
+    @remember_request
     def reboot(self, view: SuperView, context):
         """Reboot the core bot. """
         view.report('Начался перезапуск...')
@@ -24,6 +37,7 @@ class AdminPanel(SuperPlugin):
         view.report("Core isn't rebooted")
 
     @admin_only
+    @remember_request
     def exit(self, view: SuperView, context):
         self._bot.communicator.close()
         self.log('Program is suspended by admin')
@@ -31,6 +45,7 @@ class AdminPanel(SuperPlugin):
         os._exit(1)
 
     @admin_only
+    @remember_request
     def update_module(self, view: SuperView, context):
         module: str = context['message']
         if len(module) == 0:
@@ -51,6 +66,14 @@ class AdminPanel(SuperPlugin):
             view.reply(f'Вьюшка {module} обновлена в оперативной памяти полностью', context)
         elif updated == 0:
             view.reply('Не найдено модулей с таким именем', context)
+
+    @admin_only
+    def repeat_cmd(self, view: SuperView, context: dict):
+        if self.last_exec:
+            func, view, context = self.last_exec
+            func(self, view, context)
+        else:
+            view.reply('There is no command in memory', context)
 
     def common_status(self):
         status = ''
@@ -200,4 +223,5 @@ class AdminPanel(SuperPlugin):
         "перезапустить": reboot,
         "reboot": reboot,
         "ребут": reboot,
+        ".": repeat_cmd,
     }
