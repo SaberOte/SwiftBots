@@ -15,7 +15,9 @@ def launch_bot(flags: list[str]):
         bot.init()
         try:
             if 'from reboot' in flags:
-                bot.views_manager.report('Бот перезапущен')
+                bot.views_manager.report('Core is restarted!')
+            else:
+                bot.views_manager.report('Core is launched')
         except:
             pass
         try:

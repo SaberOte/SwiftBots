@@ -79,7 +79,12 @@ class TelegramView(SuperView, ABC):
 
     def listen(self):
         assert self.admin and self.TOKEN, 'No defined TOKEN and admin fields'
-        self.report(self.__module__.split('.')[-1] + ' запущен')
+        if 'from reboot' in self._flags:
+            self.report('View is restarted')
+        else:
+            self.report('View is launched')
+            self.report(str(self._flags))
+
         try:
             for update in self.__get_updates():
                 update = update['result'][0]

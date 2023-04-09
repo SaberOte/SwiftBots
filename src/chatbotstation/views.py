@@ -43,24 +43,17 @@ def launch_view(name: str, flags: list[str]):
                 comm.close()
     else:  # start as daemon
         res_path = os.path.join(os.getcwd(), 'logs')
+        new_flags = ["-MS"]
+        if 'from reboot' in flags:
+            new_flags.append('-FR')
         if 'debug' in flags:
-            '''try:
-                module = import_view(name)
-                clas = get_class(module)
-                inst = clas()
-                inst.init(['launch', 'debug'])
-                inst.init_listen()
-            except:
-                print(format_exc())
-            '''
-            # os.system(f'python3 main.py @chatbotstation_{name}@ '
-            #          f'start {name} -MS -d')
+            new_flags.append("-d")
             cmd = f'python3 main.py @chatbotstation_{name}@ ' \
-                  f'start {name} -MS -d'
+                  f'start {name} {" ".join(new_flags)}'
             subprocess.Popen(cmd.split(' '))
         else:
             os.system(f'nohup python3 main.py @chatbotstation_{name}@ '
-                      f'start {name} -MS > {res_path}/{name}_launch_log.txt 2>&1 &')
+                      f'start {name} {" ".join(new_flags)} > {res_path}/{name}_launch_log.txt 2>&1 &')
 
 
 def check_name_valid(name: str):

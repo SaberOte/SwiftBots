@@ -33,6 +33,7 @@ class SuperView(ABC):
         :param flags: flags describing is in the file __main__.py
         """
         self.name = self.__module__.split('.')[-1]
+        self._flags = flags
         if self.authentic_style:
             assert 'send' in dir(self), 'Authentic style needs to exist "send" method!'
             assert len(inspect.getfullargspec(self.send)[0]) == 3, \

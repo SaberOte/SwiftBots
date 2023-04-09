@@ -3,6 +3,7 @@ import os, datetime, time
 from .. import crons
 from ..templates.super_view import SuperView
 from typing import Callable
+from ..views import launch_view
 
 
 def remember_request(func):
@@ -24,11 +25,11 @@ class AdminPanel(SuperPlugin):
     @remember_request
     def reboot(self, view: SuperView, context):
         """Reboot the core bot. """
-        view.report('Now rebooting...')
+        view.report('Now restarting...')
         self.log('Program is rebooting by admin')
         res_path = os.path.join(os.getcwd(), 'logs')
         os.system(f'nohup python3 main.py @chatbotstation_core@ '
-                  f'start -MS > {res_path}/core_launch_log.txt 2>&1 &')
+                  f'start -MS -FR > {res_path}/core_launch_log.txt 2>&1 &')
         time.sleep(10)
         # Class Communicator another view must force kill this process.
         # If it won't, something's wrong
@@ -68,9 +69,19 @@ class AdminPanel(SuperPlugin):
 
     @admin_only
     @remember_request
+    def reboot_view(self, view: SuperView, context):
+        module: str = context['message']
+        if module not in self._bot.views_manager.views:
+            view.reply(f'{module} is not launched yet', context)
+        view_flags = ['from reboot']
+        launch_view(module, view_flags)
+        view.reply(f'{module} is asked to restart', context)
+
+    @admin_only
+    @remember_request
     def kill_view(self, view: SuperView, context):
         module: str = context['message']
-        if view not in self._bot.views_manager.views:
+        if module not in self._bot.views_manager.views:
             view.reply(f'{module} not found', context)
             return
         killed: int = self._bot.views_manager.kill_view(module)
@@ -170,7 +181,9 @@ class AdminPanel(SuperPlugin):
         "update": update_module,
         "stop": kill_view,
         "exit": kill_view,
-        "kill": kill_view
+        "kill": kill_view,
+        "reboot": reboot_view,
+        "restart": reboot_view,
     }
     cmds = {
         # "tasks": show_tasks,
