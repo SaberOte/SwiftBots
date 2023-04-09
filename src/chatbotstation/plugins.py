@@ -35,7 +35,7 @@ class PluginManager:
         classes = []
         for x in imports:
             for cls in inspect.getmembers(x, inspect.isclass):
-                if super_plugin.SuperPlugin in cls[1].__bases__:
+                if issubclass(cls[1], super_plugin.SuperPlugin):
                     try:
                         classes.append(cls[1](self._bot))
                     except Exception as e:
@@ -56,7 +56,7 @@ class PluginManager:
             raise Exception(f'Exception in the import module ({module}):\n{str(type(e))}\n{str(e)}')
         entity = None
         for cls in inspect.getmembers(imported, inspect.isclass):
-            if super_plugin.SuperPlugin in cls[1].__bases__:
+            if issubclass(cls[1], super_plugin.SuperPlugin):
                 try:
                     entity = cls[1](self._bot)
                 except Exception as e:
