@@ -5,7 +5,7 @@ if TYPE_CHECKING:
 
 
 def admin_only(func):
-    """Decorator. Should be with functions to prevent non admin user execution"""
+    """Decorator. Should be with functions to prevent non admin execution"""
     def wrapper(self, view, context: dict):
         if view.authentic_style:
             if str(context['sender']) != str(view.admin):
