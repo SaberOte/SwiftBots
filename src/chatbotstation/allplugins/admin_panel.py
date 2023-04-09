@@ -69,11 +69,25 @@ class AdminPanel(SuperPlugin):
 
     @admin_only
     @remember_request
+    def start_view(self, view: SuperView, context):
+        module: str = context['message']
+        if module in self._bot.views_manager.views:
+            view.reply(f'{module} is already launched', context)
+            return
+        launch_view(module, [])
+        view.reply(f'{module} is asked to start', context)
+
+    @admin_only
+    @remember_request
     def reboot_view(self, view: SuperView, context):
         module: str = context['message']
         if module not in self._bot.views_manager.views:
             view.reply(f'{module} is not launched yet', context)
         view_flags = ['from reboot']
+        try:
+            del self._bot.views_manager.views[module]
+        except KeyError:
+            pass
         launch_view(module, view_flags)
         view.reply(f'{module} is asked to restart', context)
 
@@ -82,21 +96,38 @@ class AdminPanel(SuperPlugin):
     def kill_view(self, view: SuperView, context):
         module: str = context['message']
         if module not in self._bot.views_manager.views:
-            view.reply(f'{module} not found', context)
+            view.reply(f'{module} is not launched', context)
             return
         killed: int = self._bot.views_manager.kill_view(module)
         if killed == 0:
-            view.reply(f'View {module}\'s not launched yet!', context)
+            view.reply(f'View {module}\'s not launched!', context)
         elif killed == 1:
             view.reply(f'View {module} sent unexpected answer. Its destiny is unknown', context)
         elif killed == 2:
             view.reply(f'{module} stopped', context)
+        del self._bot.views_manager.views[module]
 
     @admin_only
     def total_exit(self, view: SuperView, context):
         for module in self._bot.views_manager.views:
             self._bot.views_manager.kill_view(module)
         self.exit(view, context)
+
+    @admin_only
+    @remember_request
+    def send_status(self, view: SuperView, context):
+        views = self._bot.views_manager.ping_views()
+        report = ''
+        if len(views) > 0:
+            report += 'Launched views:\n- ' + '\n- '.join(views) + '\n'
+        else:
+            report += 'No launched views'
+        if len(self._bot.plugin_manager.plugins) > 0:
+            report += 'Loaded plugins:\n- ' + \
+                  '\n- '.join([x.__module__.split('.')[-1] for x in self._bot.plugin_manager.plugins])
+        else:
+            report += 'No loaded plugins'
+        view.reply(report, context)
 
     @admin_only
     def repeat_cmd(self, view: SuperView, context: dict):
@@ -184,6 +215,8 @@ class AdminPanel(SuperPlugin):
         "kill": kill_view,
         "reboot": reboot_view,
         "restart": reboot_view,
+        "launch": start_view,
+        "start": start_view,
     }
     cmds = {
         # "tasks": show_tasks,
@@ -196,5 +229,6 @@ class AdminPanel(SuperPlugin):
         "перезапустить": reboot,
         "reboot": reboot,
         "ребут": reboot,
+        "status": send_status,
         ".": repeat_cmd,
     }

@@ -83,7 +83,6 @@ class TelegramView(SuperView, ABC):
             self.report('View is restarted')
         else:
             self.report('View is launched')
-            self.report(str(self._flags))
 
         try:
             for update in self.__get_updates():

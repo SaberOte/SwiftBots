@@ -4,7 +4,6 @@ from .templates import super_plugin
 from types import ModuleType
 
 
-
 def import_plugin(name: str) -> ModuleType:
     module = __import__(f'{__package__}.allplugins.{name}')
     instance = getattr(getattr(getattr(module,
@@ -22,7 +21,7 @@ class PluginManager:
         self.error = bot.error
         self.log = bot.log
 
-    # TODO: init_plugins and update_plugin are almost the same. Fix it
+    # init_plugins and update_plugin are almost the same. Fix it
     def init_plugins(self):
         modules = [x[:-3] for x in os.listdir('src/chatbotstation/allplugins')
                    if x.endswith('.py')
