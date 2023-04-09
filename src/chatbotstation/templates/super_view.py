@@ -23,6 +23,7 @@ class SuperView(ABC):
     error_message = 'Error occurred'
     unknown_error_message = 'Unknown command'
     refuse_message = 'Access forbidden'
+    exit_message = 'View exited.'
 
     def init(self, flags: list[str]):
         """
@@ -118,6 +119,10 @@ class SuperView(ABC):
         Starts to listen own port and starts to listen outer resources with view.listen method.
         This method starts infinite loop and never returns anything
         """
+        try:
+            self.comm.send('started', 'core')
+        except KeyError:
+            pass  # core is not launched
         self.core_listener.start()
         self.enable_in_config()
         while 1:
@@ -154,6 +159,10 @@ class SuperView(ABC):
                             write_config(config, 'config.ini')
                             self.comm.send('exited', data['sender_view'], data['session_id'])
                             self.comm.close()
+                            if self.authentic_style:
+                                try:
+                                    self.report(self.exit_message)
+                                except: pass
                             os.kill(os.getpid(), SIGKILL)
                         elif command == 'ping':
                             self.comm.send('pong', data['sender_view'], data['session_id'])

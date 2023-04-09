@@ -183,7 +183,7 @@ class ViewsManager:
              and x not in disabled_views
              and not x.startswith('!')]
 
-        self.__fill_views_dict(views_dir)
+        self.fill_views_dict(views_dir)
         self.log(f'Loaded views: {[x for x in self.views]}')
 
         # Detecting of already running views
@@ -211,7 +211,7 @@ class ViewsManager:
         else:
             self.log(str(started) + ' started')
 
-    def __fill_views_dict(self, views_dir: list[str], should_reload=False) -> int:
+    def fill_views_dict(self, views_dir: list[str], should_reload=False) -> int:
         """
         Fills self.views dict with views from views_dir list
         :param views_dir: names of views to instantiate
@@ -253,7 +253,7 @@ class ViewsManager:
         :return: int, 0 - nothing updated, 1 - updated in the core, but it's not launched, 2 - updated in the core and itself
         """
         check_name_valid(view)
-        updated = self.__fill_views_dict([view], True)
+        updated = self.fill_views_dict([view], True)
         if updated:
             if self.ping_view(view):
                 self.communicator.send('update', view)

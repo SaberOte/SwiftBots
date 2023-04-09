@@ -106,6 +106,9 @@ class Listener:
                 self.do_cron(plugin_name, task)
             elif raw_message.startswith('report|'):
                 self.report(raw_message[7:])
+            elif raw_message.startswith('started'):
+                new_view = raw_data['sender_view']
+                self._bot.views_manager.fill_views_dict([new_view])
             elif raw_message.startswith('unknown|'):
                 self.report('View received unknown message: ' + raw_message[8:])
             else:

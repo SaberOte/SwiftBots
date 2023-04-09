@@ -24,15 +24,14 @@ class AdminPanel(SuperPlugin):
     @remember_request
     def reboot(self, view: SuperView, context):
         """Reboot the core bot. """
-        view.report('Начался перезапуск...')
+        view.report('Now rebooting...')
         self.log('Program is rebooting by admin')
         res_path = os.path.join(os.getcwd(), 'logs')
         os.system(f'nohup python3 main.py @chatbotstation_core@ '
                   f'start -MS > {res_path}/core_launch_log.txt 2>&1 &')
-        print(res_path)
         time.sleep(10)
-        # Класс Communicator другой вьюшки должен насильно закрыть этот процесс.
-        # Если не закроет, значит что-то пошло не так
+        # Class Communicator another view must force kill this process.
+        # If it won't, something's wrong
         self.log('Program was not rebooted')
         view.report("Core isn't rebooted")
 
@@ -49,11 +48,11 @@ class AdminPanel(SuperPlugin):
     def update_module(self, view: SuperView, context):
         module: str = context['message']
         if len(module) == 0:
-            view.reply('Нельзя обновить все плагины сразу. Нужно указать название определенного', context)
+            view.reply('You can\'t update all plugins at the time. Specify certain one', context)
             return
         updated = self._bot.plugin_manager.update_plugin(module)
         if updated > 0:
-            view.reply(f'Плагин {module} обновлён в оперативной памяти', context)
+            view.reply(f'Plugin {module}\'s updated in RAM', context)
             return
         try:
             updated = self._bot.views_manager.update_view(module)
@@ -61,11 +60,32 @@ class AdminPanel(SuperPlugin):
             view.reply(str(e), context)
             return
         if updated == 1:
-            view.reply(f'Вьюшка {module} обновлена в оперативной памяти, но она не запущена', context)
+            view.reply(f"View {module}'s updated in RAM, but it doesn't launched", context)
         elif updated == 2:
-            view.reply(f'Вьюшка {module} обновлена в оперативной памяти полностью', context)
+            view.reply(f"View {module}'s updated in RAM", context)
         elif updated == 0:
-            view.reply('Не найдено модулей с таким именем', context)
+            view.reply('No such name modules', context)
+
+    @admin_only
+    @remember_request
+    def kill_view(self, view: SuperView, context):
+        module: str = context['message']
+        if view not in self._bot.views_manager.views:
+            view.reply(f'{module} not found', context)
+            return
+        killed: int = self._bot.views_manager.kill_view(module)
+        if killed == 0:
+            view.reply(f'View {module}\'s not launched yet!', context)
+        elif killed == 1:
+            view.reply(f'View {module} sent unexpected answer. Its destiny is unknown', context)
+        elif killed == 2:
+            view.reply(f'{module} stopped', context)
+
+    @admin_only
+    def total_exit(self, view: SuperView, context):
+        for module in self._bot.views_manager.views:
+            self._bot.views_manager.kill_view(module)
+        self.exit(view, context)
 
     @admin_only
     def repeat_cmd(self, view: SuperView, context: dict):
@@ -74,27 +94,6 @@ class AdminPanel(SuperPlugin):
             func(self, view, context)
         else:
             view.reply('There is no command in memory', context)
-
-    def common_status(self):
-        status = ''
-        dt = datetime.datetime.utcnow()-self.start_time
-        if dt.days == 0:
-            if dt.seconds < 60:
-                dt = str(dt.seconds) + " секунд"
-            elif dt.seconds < 60*60:
-                dt = str(dt.seconds//60) + " минут"
-            else:
-                dt = str(dt.seconds//60//60) + " часов"
-        elif dt.days < 7:
-            dt = str(dt.days) + " дней"
-        elif dt.days < 30:
-            dt = str(dt.days // 7) + " недель"
-        elif dt.days < 365:
-            dt = str(dt.days//30) + " месяцев"
-        else: dt = str(dt.days//365) + " лет"
-        status += f'С запуска бота прошло {dt}\n'
-        status += self._get_tasks_status()
-        self.sender.send(self.user_id, status)
 
     def _get_tasks_status(self):
         tasks = crons.get('../resources/config.ini')
@@ -125,44 +124,6 @@ class AdminPanel(SuperPlugin):
             if t not in tasks:
                 respond += '- ' + t +' неактивен&#9898;\n'
         self.sender.send(self.user_id, respond)
-
-    def show_logs(self):
-        if self.message == '':
-            path_to_logs = './../logs/'
-            filename = path_to_logs + sorted(os.listdir(path_to_logs))[-1]
-            with open(filename, 'r') as file:
-                self.sender.send(self.user_id, file.read()[-12000:])
-            return
-        ''' ##############
-        app = None
-        for a in self.bot.apps:
-            if a.name == self.message:
-                app = a
-        if app == None:
-            self.log('No app with such name %s' % self.message)
-            self.sender.send(self.user_id, f'Нет приложения с названием "{self.message}"')
-            return
-        folder = app.folder
-        path_to_logs = f'./../apps/{folder}/logs/'
-        filename = path_to_logs + sorted(os.listdir(path_to_logs))[-1]
-        with open(filename, 'r', encoding='utf-8') as file:
-            self.sender.send(self.user_id, file.read()[-12000:])
-        '''
-
-    def auto_commands(self):
-        answer = ''
-        for x in self.bot.plugins:
-            answer += '- '+x.__class__.__name__+'\n'
-            if len(x.cmds) > 0:
-                answer += 'COMMANDS: '
-                answer += ', '.join(list(x.cmds.keys()))
-                answer += '\n'
-            if len(x.prefixes) > 0:
-                answer += 'PREFIXES: '
-                answer += ', '.join(list(x.prefixes.keys()))
-                answer += '\n'
-
-        self.sender.send(self.user_id, answer)
 
     def schedule_task(self):
         task = self.message
@@ -204,21 +165,20 @@ class AdminPanel(SuperPlugin):
         self.sender.send(self.user_id, 'Задача удалена')
 
     prefixes = {
-        "logs": show_logs,
-        "логи": show_logs,
-        "start": schedule_task,
-        "stop": unschedule_task,
+        # "start": schedule_task,
+        # "stop": unschedule_task,
         "update": update_module,
+        "stop": kill_view,
+        "exit": kill_view,
+        "kill": kill_view
     }
     cmds = {
-        "status": common_status,
-        "tasks": show_tasks,
-        "задачи": show_tasks,
+        # "tasks": show_tasks,
+        # "задачи": show_tasks,
         "выход": exit,
         "exit": exit,
-        "выключить": exit,
         "stop": exit,
-        "status": common_status,
+        "exit all": total_exit,
         "перезагрузить": reboot,
         "перезапустить": reboot,
         "reboot": reboot,
