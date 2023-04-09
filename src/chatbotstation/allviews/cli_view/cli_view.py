@@ -6,7 +6,7 @@ class CliView(SuperView):
     def __init__(self, flags):
         super().__init__(flags)
 
-    plugins = ['test', 'adminpanel']
+    plugins = ['test', 'admin_panel']
 
     def listen(self):
         print("Welcome in the command line chat! Good day, Friend!")

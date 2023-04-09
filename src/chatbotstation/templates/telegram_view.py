@@ -2,11 +2,12 @@ import requests
 import time
 import signal
 import os
+from abc import ABC
 from traceback import format_exc
 from .super_view import SuperView
 
 
-class TelegramView(SuperView):
+class TelegramView(SuperView, ABC):
     TOKEN: str
     admin: int
     authentic_style = True

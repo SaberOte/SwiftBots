@@ -14,7 +14,7 @@ class Listener:
     def check_handlers(self, command, view, context):
         plugins = self._bot.plugin_manager.plugins
         accepted_plugins = [x.lower() for x in view.plugins]
-        plugins = list(filter(lambda plug: plug.__class__.__name__.lower() in accepted_plugins, plugins))
+        plugins = list(filter(lambda plug: plug.__module__.split('.')[-1] in accepted_plugins, plugins))
         # check "cmds"
         for plugin in plugins:
             if command in plugin.cmds:

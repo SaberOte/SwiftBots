@@ -1,6 +1,7 @@
 import os, inspect, sys, importlib
 from types import ModuleType
 from typing import Union
+from abc import ABC
 from traceback import format_exc
 from .templates.super_view import SuperView
 from .config import read_config, write_config
@@ -74,7 +75,7 @@ def check_name_valid(name: str):
 
 def get_class(module: ModuleType):
     for cls in inspect.getmembers(module, inspect.isclass):
-        if issubclass(cls[1], SuperView):
+        if issubclass(cls[1], SuperView) and ABC not in cls[1].__bases__:
             return cls[1]
     msg = f"Can't import view {module.__name__.split('.')[0]}. This file does not contain " \
           'class that inherited from SuperView'
@@ -146,8 +147,10 @@ class ViewsManager:
         if view not in config['Names']:
             return False
         comm = Communicator('core' + 'ghost', self.log)
-        ans = comm.request('ping', view)
-        comm.close()
+        try:
+            ans = comm.request('ping', view)
+        finally:
+            comm.close()
         if ans and ans['message'] == 'pong':
             return True
         # View is not responded. Then delete it from config
@@ -254,6 +257,23 @@ class ViewsManager:
         if updated:
             if self.ping_view(view):
                 self.communicator.send('update', view)
+                return 2
+            return 1
+        return 0
+
+    def kill_view(self, view: str) -> int:
+        """
+        Sends view an asking to exit itself
+        :param view: view name
+        :return: int, 0 - view is not launched, 1 - not exited. Reason is unknown., 2 - exited succesfully
+        """
+        if self.ping_view(view):
+            comm = Communicator('core' + 'ghost', self.log)
+            try:
+                ans = comm.request('exit', view)
+            finally:
+                comm.close()
+            if ans and ans['message'] == 'exited':
                 return 2
             return 1
         return 0

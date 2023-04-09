@@ -1,6 +1,8 @@
 import os, inspect, importlib
+from abc import ABC
 from .templates import super_plugin
 from types import ModuleType
+
 
 
 def import_plugin(name: str) -> ModuleType:
@@ -35,7 +37,7 @@ class PluginManager:
         classes = []
         for x in imports:
             for cls in inspect.getmembers(x, inspect.isclass):
-                if issubclass(cls[1], super_plugin.SuperPlugin):
+                if issubclass(cls[1], super_plugin.SuperPlugin) and ABC not in cls[1].__bases__:
                     try:
                         classes.append(cls[1](self._bot))
                     except Exception as e:
@@ -56,7 +58,7 @@ class PluginManager:
             raise Exception(f'Exception in the import module ({module}):\n{str(type(e))}\n{str(e)}')
         entity = None
         for cls in inspect.getmembers(imported, inspect.isclass):
-            if issubclass(cls[1], super_plugin.SuperPlugin):
+            if issubclass(cls[1], super_plugin.SuperPlugin) and ABC not in cls[1].__bases__:
                 try:
                     entity = cls[1](self._bot)
                 except Exception as e:

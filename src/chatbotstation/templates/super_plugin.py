@@ -1,5 +1,6 @@
 from typing import Callable, Optional
 from typing import TYPE_CHECKING
+from abc import ABC
 if TYPE_CHECKING:
     from ..core import Core
 
@@ -17,7 +18,7 @@ def admin_only(func):
     return wrapper
 
 
-class SuperPlugin:
+class SuperPlugin(ABC):
     prefixes: {str: Callable} = {}
     cmds: {str: Callable} = {}
     tasks: {str: (Callable, int, str)} = {}

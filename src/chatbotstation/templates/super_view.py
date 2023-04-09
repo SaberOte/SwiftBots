@@ -106,7 +106,7 @@ class SuperView(ABC):
             return self.reply(self.refuse_message, context)
         raise NotImplementedError('Not implemented method refuse in ' + self.name)
 
-    # Дальше методы для внутреннего пользования
+    # Further methods for inner purposes
     def enable_in_config(self):
         config = read_config('config.ini')
         if self.name in config['Disabled_Views']:
