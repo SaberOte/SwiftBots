@@ -1,6 +1,8 @@
 from traceback import format_exc
 import requests
 import json
+import threading
+import time
 import psycopg2
 from ..config import read_config
 from ..templates.super_plugin import SuperPlugin, admin_only
@@ -36,11 +38,26 @@ def escape_markdown_chars(string: str) -> str:
     return escaped_string
 
 
+def handle_openai_error(response, view: AiTgView, context):
+    error = response['error']
+    if error['code'] == 'context_length_exceeded':
+        # delete current context
+        deactivate_gpt_context(context)
+        view.report('Контекст перегрузился. Удалён')
+        if str(context['sender']) != str(view.admin):
+            view.reply('Контекст перегружен. Если сообщение слишком большое, попробуйте спрашивать по частям', context)
+        return
+    view.error(str(error), context)
+
+
 def receive_non_stream(response, view: AiTgView, context: dict) -> str:
     try:
         message = response.json()
+        if 'error' in message:
+            handle_openai_error(message, view, context)
+            return ''
         message = message['choices'][0]['message']['content']
-    except:
+    except Exception:
         view.error(format_exc(), context)
         raise Exception('Ответ непонятного формата: ' + str(response.json()))
     data = {
@@ -79,7 +96,61 @@ def update_stream(message, message_id, view, context):
             raise e
 
 
+def iter_stream(response, stream: dict):
+    try:
+        for line in response.iter_lines():
+            if line:
+                line = line.decode('utf-8')
+                assert line.startswith('data: '), 'corrupted json from openai. It is not "data: "'
+                if line == 'data: [DONE]':
+                    stream['done'] = True
+                    return
+                line = json.loads(line[6:])
+                line = line['choices'][0]['delta']
+                if 'content' in line and len(str(line['content'])) != 0:
+                    stream['content'] += str(line['content'])
+                else:
+                    continue
+            else:
+                continue
+    except Exception as e:
+        stream['error_message'] = str(e)
+    finally:
+        stream['done'] = True
+
+
 def receive_stream(response, view: AiTgView, context: dict) -> str:
+    message_id = -1
+    delay = 0.01
+    stream = {"content": "", "done": False}  # packing in dict.
+    # It's an only way to not copy object when transfer via functions
+    threading.Thread(target=iter_stream, daemon=True, args=(response, stream)).start()
+    copy_message = ''
+    while 1:
+        done = stream['done']
+        content = stream['content']
+        if done and 'error_message' in stream:
+            view.error(stream['error_message'], context)
+            return ''
+        elif done:
+            if message_id == -1:
+                view.reply(content, context)
+            else:
+                update_stream(content, message_id, view, context)
+            return content
+        elif content == copy_message:
+            pass
+        elif message_id == -1:
+            resp = view.reply(content + '....', context)
+            message_id = resp['result']['message_id']
+        else:
+            update_stream(content+'....', message_id, view, context)
+        copy_message = content
+        time.sleep(delay)
+        view.reply('wait', context)
+
+
+def receive_stream_obsolete(response, view: AiTgView, context: dict) -> str:
     whole_message = ''
     message_id = -1
     for line in response.iter_lines():
@@ -120,11 +191,22 @@ def db_execute(cred: list, sql: str, is_commit=False):
     return result
 
 
-def load_user(db_cred, context) -> int:
+def deactivate_gpt_context(context):
+    user = load_user(context)
+    gpt_context_id = load_gpt_context(context, user)
+    sql = f"""UPDATE gpt_context 
+            SET is_deactivated=true,
+            is_current=false
+            WHERE id={gpt_context_id}"""
+    db_execute(context['db_credentials'], sql, is_commit=True)
+
+
+def load_user(context) -> int:
     """
     Registers if there is no such user
     :return: user id, int
     """
+    db_cred = context['db_credentials']
     for _ in range(2):
         sql = f"""SELECT id
         FROM gpt_user
@@ -142,11 +224,12 @@ def load_user(db_cred, context) -> int:
         return user_id[0][0]
 
 
-def save_context(db_cred, context, gpt_context_id, completion):
+def save_context(context, gpt_context_id, completion):
+    db_cred = context['db_credentials']
     msg1 = context["message"]
     msg2 = completion
-    msg1 = msg1.replace("'", "")
-    msg2 = msg2.replace("'", "") ##################### временное решение
+    msg1 = msg1.replace("'", "<SINGLE_QUOTE>")
+    msg2 = msg2.replace("'", "<SINGLE_QUOTE>")
     # user message at first
     sql = f"""INSERT INTO gpt_message (message, role, context)
                 VALUES ('{msg1}', 'user', '{gpt_context_id}')"""
@@ -157,15 +240,12 @@ def save_context(db_cred, context, gpt_context_id, completion):
     db_execute(db_cred, sql, True)
 
 
-def load_gpt_context(db_cred, context, user_id: int) -> (list, int):
+def load_gpt_context(context, user_id: int) -> (list, int):
     """
     Creates context if there is no active for this user
-    :return: (
-        list[{'role': 'user', 'content': 'hello'},
-             {'role': 'assistant', 'content': 'Hello! I'm stupid assistant!'}],
-        context_id, int
-    )
+    :return: context_id, int
     """
+    db_cred = context['db_credentials']
     for _ in range(2):
         sql = f"""SELECT id
         FROM gpt_context
@@ -181,15 +261,22 @@ def load_gpt_context(db_cred, context, user_id: int) -> (list, int):
             db_execute(db_cred, sql, True)
             continue  # try to receive id one more time
 
-        gpt_context_id = gpt_context_id[0][0]
-        # load context messages
-        sql = f"""SELECT role, message
-                FROM gpt_message
-                WHERE context={gpt_context_id}
-                ORDER BY id"""
-        messages = db_execute(db_cred, sql)
-        messages = list(map(lambda row: {'role': row[0], 'content': row[1]}, messages))
-        return messages, gpt_context_id
+        return gpt_context_id[0][0]
+
+
+def load_gpt_messages(context, gpt_context_id: int) -> list:
+    """
+    :return: list[{'role': 'user', 'content': 'hello'},
+                  {'role': 'assistant', 'content': 'Hello! I'm freaking assistant!'}]
+    """
+    db_cred = context['db_credentials']
+    sql = f"""SELECT role, message
+                    FROM gpt_message
+                    WHERE context={gpt_context_id}
+                    ORDER BY id"""
+    messages = db_execute(db_cred, sql)
+    messages = list(map(lambda row: {'role': row[0], 'content': row[1].replace('<SINGLE_QUOTE>', "'")}, messages))
+    return messages
 
 
 class GptAi(SuperPlugin):
@@ -216,11 +303,12 @@ class GptAi(SuperPlugin):
         return requests.post(self.OPENAI_URL + parameters, json=body, headers=headers)
 
     def handle(self, view: AiTgView, context):
-        user_id = load_user(self.get_cred(), context)
-        context_messages, gpt_context_id = load_gpt_context(self.get_cred(), context, user_id)
+        context['db_credentials'] = self.get_cred()
+        user_id = load_user(context)
+        gpt_context_id = load_gpt_context(context, user_id)
+        context_messages = load_gpt_messages(context, gpt_context_id)
         message = context['message']
         context_messages.append({'role': 'user', 'content': message})
-        context_messages = context_messages[-7:]
         body = {
             "model": self.GPT_MODEL,
             "messages": context_messages,
@@ -231,7 +319,8 @@ class GptAi(SuperPlugin):
             completion = receive_stream(res, view, context)
         else:
             completion = receive_non_stream(res, view, context)
-        save_context(self.get_cred(), context, gpt_context_id, completion)
+        if completion:
+            save_context(context, gpt_context_id, completion)
 
     @admin_only
     def disable_stream(self, view: AiTgView, context):

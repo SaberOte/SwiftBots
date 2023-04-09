@@ -5,7 +5,6 @@ import requests, os, time
 
 
 class AiTgView(SuperView):
-
     plugins = ['gptai']
     authentic_style = True
     error_message = 'Произошла какая-то ошибка. Исправляем'
