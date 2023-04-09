@@ -74,7 +74,7 @@ def check_name_valid(name: str):
 
 def get_class(module: ModuleType):
     for cls in inspect.getmembers(module, inspect.isclass):
-        if SuperView in cls[1].__bases__:
+        if issubclass(cls[1], SuperView):
             return cls[1]
     msg = f"Can't import view {module.__name__.split('.')[0]}. This file does not contain " \
           'class that inherited from SuperView'

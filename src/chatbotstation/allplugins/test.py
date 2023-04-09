@@ -1,19 +1,24 @@
 from ..templates.super_plugin import SuperPlugin
+from ..templates.super_view import SuperView
 
 
 class Test(SuperPlugin):
     def __init__(self, bot):
         super().__init__(bot)
 
-    def tasktest(self, view):
+    def tasktest(self, view: SuperView, context):
         view.report('chat works')
 
-    def pong(self, view):
-        view.reply('pong 2')
+    def pong(self, view: SuperView, context):
+        view.reply('pong 2', context)
 
-    def lego(self, view):
-        view.reply('poshel nahui')
-        view.reply(view.context['message'])
+    def lego(self, view: SuperView, context):
+        view.reply('poshel nahui', context)
+        view.reply(context['message'], context)
+
+    def do(self, view: SuperView, context):
+        msg = context['message']
+        view.reply(str(len(msg)), context)
 
     tasks = {
         # 'task_name' : (function_name, frequency_seconds)
@@ -21,12 +26,9 @@ class Test(SuperPlugin):
         'free': (tasktest, 5, 'tgview')
     }
     prefixes = {
-        # 'begin_of_command' : function_name
         'go': lego
-    } # view.message - get message
+    }
     cmds = {
         'ping': pong
-        # 'command' : function_name
     }
-    any = None  # чтобы пихнуть в плагин любое неструктурированное всё что угодно. Конечно же должно быть функцией
-
+    any = do
