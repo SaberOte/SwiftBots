@@ -1,4 +1,4 @@
-import os, threading, sys, inspect
+import os, threading, sys, inspect, time
 from signal import SIGKILL, SIGUSR1
 from traceback import format_exc
 from .. import logger
@@ -126,6 +126,8 @@ class SuperView(ABC):
             pass  # core is not launched
         self.core_listener.start()
         self.enable_in_config()
+        last_error_time = 0
+        error_count = 0
         while 1:
             try:
                 for data in self.listen():  # calls overridden listen()
@@ -135,6 +137,16 @@ class SuperView(ABC):
                 msg = 'EXCEPTION ' + str(e)
                 self.log(msg)
                 self.report('Exception in listen: ' + msg)
+                # prevent 1 billion looped error tracebacks per second
+                error_count += 1
+                elapsed_time = time.time() - last_error_time
+                last_error_time = time.time()
+                if elapsed_time > 60:
+                    error_count = 1  # reset counter because previous error was long ago
+                elif error_count > 5:
+                    self.report('Error rate is too high. Waiting for one minute...')
+                    time.sleep(60)
+                    error_count = 0
 
     def listen_port(self):
         """Waits commands from core bot. Executing in another thread"""

@@ -11,6 +11,7 @@ class TelegramView(SuperView, ABC):
     TOKEN: str
     admin: int
     authentic_style = True
+    first_time_launched = True
 
     def post(self, method: str, data: dict) -> dict:
         response = requests.get(f'https://api.telegram.org/bot{self.TOKEN}/{method}', json=data)
@@ -79,10 +80,13 @@ class TelegramView(SuperView, ABC):
 
     def listen(self):
         assert self.admin and self.TOKEN, 'No defined TOKEN and admin fields'
-        if 'from reboot' in self._flags:
+        if not self.first_time_launched:
+            self.report("It's back from error. Clean that message if it freaks you out")
+        elif 'from reboot' in self._flags:
             self.report('View is restarted')
         else:
             self.report('View is launched')
+        self.first_time_launched = False
 
         try:
             for update in self.__get_updates():
@@ -101,7 +105,10 @@ class TelegramView(SuperView, ABC):
                     }
                 else:
                     self.log('UNHANDLED' + str(update))
-        except:
-            msg = format_exc()
-            self.log(msg)
-            self.report(msg)
+                network_error_counter = 0
+        except requests.exceptions.ConnectionError:
+            self.log('Connection ERROR in telegram_view.py. Sleep a minute')
+            time.sleep(60)
+        except requests.exceptions.ReadTimeout:
+            self.log('Connection ERROR in telegram_view.py. Sleep a minute')
+            time.sleep(60)
