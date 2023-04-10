@@ -5,8 +5,8 @@ import threading
 import time
 import psycopg2
 from traceback import format_exc
-from src.chatbotstation.config import read_config
-from src.chatbotstation.templates.super_controller import SuperController, admin_only
+from src.botcore.config import read_config
+from src.botcore.templates.super_controller import SuperController, admin_only
 from views.ai_tg_view import AiTgView
 
 

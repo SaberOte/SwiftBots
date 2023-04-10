@@ -1,10 +1,10 @@
 import os
 import time
 from typing import Callable
-from src.chatbotstation import crons
-from src.chatbotstation.templates.super_view import SuperView
-from src.chatbotstation.templates.super_controller import SuperController, admin_only
-from src.chatbotstation.views import launch_view
+from src.botcore import crons
+from src.botcore.templates.super_view import SuperView
+from src.botcore.templates.super_controller import SuperController, admin_only
+from src.botcore.views import launch_view
 
 
 def remember_request(func):
@@ -29,7 +29,7 @@ class AdminPanel(SuperController):
         view.report('Now restarting...')
         self.log('Program is rebooting by admin')
         res_path = os.path.join(os.getcwd(), 'logs')
-        os.system(f'nohup python3 main.py @chatbotstation_core@ '
+        os.system(f'nohup python3 main.py @botcore_core@ '
                   f'start -MS -FR > {res_path}/core_launch_log.txt 2>&1 &')
         time.sleep(10)
         # Class Communicator another view must force kill this process.

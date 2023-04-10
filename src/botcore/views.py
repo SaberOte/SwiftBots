@@ -49,7 +49,7 @@ def launch_view(name: str, flags: list[str]):
         new_flags = ["-MS"]
         if 'from reboot' in flags:
             new_flags.append('-FR')
-        os.system(f'nohup python3 main.py @chatbotstation_{name}@ '
+        os.system(f'nohup python3 main.py @botcore_{name}@ '
                   f'start {name} {" ".join(new_flags)} > {res_path}/{name}_launch_log.txt 2>&1 &')
 
 

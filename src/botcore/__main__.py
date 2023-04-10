@@ -35,7 +35,7 @@ def prepare_project():
 
 def set_working_dir():
     """sets project root directory as a working directory"""
-    # full file path's smth like ~/FOLDER/src/chatbotstation/__main__.py
+    # full file path's smth like ~/FOLDER/src/botcore/__main__.py
     # work directory must be ~/FOLDER/
     get_prev = os.path.dirname
     path = get_prev(get_prev(get_prev(os.path.abspath(__file__))))

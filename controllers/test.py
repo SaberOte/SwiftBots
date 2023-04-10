@@ -1,5 +1,5 @@
-from src.chatbotstation.templates.super_controller import SuperController
-from src.chatbotstation.templates.super_view import SuperView
+from src.botcore.templates.super_controller import SuperController
+from src.botcore.templates.super_view import SuperView
 
 
 class Test(SuperController):

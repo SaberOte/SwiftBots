@@ -1,8 +1,8 @@
 import signal
 import os
 import time
-from src.chatbotstation.templates.telegram_view import TelegramView
-from src.chatbotstation.config import read_config
+from src.botcore.templates.telegram_view import TelegramView
+from src.botcore.config import read_config
 
 
 class AiTgView(TelegramView):
