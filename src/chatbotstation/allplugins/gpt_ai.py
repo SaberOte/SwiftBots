@@ -1,6 +1,7 @@
 from traceback import format_exc
 import requests
 import json
+import base64
 import threading
 import time
 import psycopg2
@@ -43,7 +44,7 @@ def handle_openai_error(response, view: AiTgView, context):
     if error['code'] == 'context_length_exceeded':
         # delete current context
         deactivate_gpt_context(context)
-        view.report('Контекст перегрузился. Удалён')
+        view.report(f'Контекст перегрузился у {context["username"]}. Удалён')
         if str(context['sender']) != str(view.admin):
             view.reply('Контекст перегружен. Если сообщение слишком большое, попробуйте спрашивать по частям', context)
         return
@@ -228,6 +229,8 @@ def save_context(context, gpt_context_id, completion):
     db_cred = context['db_credentials']
     msg1 = context["message"]
     msg2 = completion
+    msg1 = base64.b64encode(msg1.encode('utf-8')).decode('utf-8')
+    msg2 = base64.b64encode(msg2.encode('utf-8')).decode('utf-8')
     msg1 = msg1.replace("'", "<SINGLE_QUOTE>")
     msg2 = msg2.replace("'", "<SINGLE_QUOTE>")
     # user message at first
@@ -275,7 +278,12 @@ def load_gpt_messages(context, gpt_context_id: int) -> list:
                     WHERE context={gpt_context_id}
                     ORDER BY id"""
     messages = db_execute(db_cred, sql)
-    messages = list(map(lambda row: {'role': row[0], 'content': row[1].replace('<SINGLE_QUOTE>', "'")}, messages))
+
+    def decode(msg):
+        msg = msg.replace('<SINGLE_QUOTE>', "'")
+        msg = base64.b64decode(msg.encode('utf-8')).decode('utf-8')
+        return msg
+    messages = [{'role': row[0], 'content': decode(row[1])} for row in messages]
     return messages
 
 
@@ -309,6 +317,7 @@ class GptAi(SuperPlugin):
         context_messages = load_gpt_messages(context, gpt_context_id)
         message = context['message']
         context_messages.append({'role': 'user', 'content': message})
+        context_messages = context_messages[-8:]
         body = {
             "model": self.GPT_MODEL,
             "messages": context_messages,

@@ -1,7 +1,6 @@
 import signal
 import os
 import time
-from traceback import format_exc
 from ...templates.telegram_view import TelegramView
 from ...config import read_config
 
