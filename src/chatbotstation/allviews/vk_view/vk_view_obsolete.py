@@ -65,44 +65,44 @@ class VkView():
 
                 self.log(f'\nThe message from "{user_id}" is catched: "{message}"')
                 self._bot.last_msg = time.time()
-                plugin = None
-                #plugins
-                for x in self.plugins:
+                controller = None
+                #controllers
+                for x in self.controllers:
                     if message in x.cmds:
-                        plugin = x
-                if plugin != None:
-                    plugin.message = message
-                    plugin.user_id = user_id
-                    method = plugin.cmds.get(message)
+                        controller = x
+                if controller != None:
+                    controller.message = message
+                    controller.user_id = user_id
+                    method = controller.cmds.get(message)
                 else:
-                    #prefixes in plugins
-                    for plug in self.plugins:
-                        for pref in plug.prefixes:
+                    #prefixes in controllers
+                    for cont in self.controllers:
+                        for pref in cont.prefixes:
                             if message.startswith(pref) and (message == pref or message[len(pref)] == ' '):
-                                plugin = plug
+                                controller = cont
                                 if message == pref:
-                                    plug.message = ''
+                                    cont.message = ''
                                 else:
-                                    plug.message = message[len(pref)+1:]
-                                plugin.user_id = user_id
-                                method = plugin.prefixes.get(pref)
-                if plugin != None:
+                                    cont.message = message[len(pref)+1:]
+                                controller.user_id = user_id
+                                method = controller.prefixes.get(pref)
+                if controller != None:
                     if not callable(method):
                         if user_id in self.keys.oper_ids and user_id != self.keys.admin_id:
                             self.sender.send(user_id,
-                                             f'There\'s fatal error! "{str(method)}" from class "{type(plugin).__name__}" is not a method or a function!')
-                        self.sender.report(f'There\'s fatal error! "{str(method)}" from class "{type(plugin).__name__}" is not a method or a function!')
-                        self.log(f'!!ERROR!!\nThere\'s fatal error! "{str(method)}" from class "{type(plugin).__name__}" is not a method or a function!')
+                                             f'There\'s fatal error! "{str(method)}" from class "{type(controller).__name__}" is not a method or a function!')
+                        self.sender.report(f'There\'s fatal error! "{str(method)}" from class "{type(controller).__name__}" is not a method or a function!')
+                        self.log(f'!!ERROR!!\nThere\'s fatal error! "{str(method)}" from class "{type(controller).__name__}" is not a method or a function!')
                         continue
-                    self.log(f'Method "{method.__name__}" from class "{type(plugin).__name__}" is called')
+                    self.log(f'Method "{method.__name__}" from class "{type(controller).__name__}" is called')
                     try:
-                        method(plugin)
+                        method(controller)
                     except Exception as e:
                         if user_id in self.keys.oper_ids and user_id != self.keys.admin_id:
                             self.sender.send(user_id,
-                                             f'Exception in "{method.__name__}" from "{type(plugin).__name__}":\n{str(type(e))}\n{str(e)}')
-                        self.sender.report(f'Exception in "{method.__name__}" from "{type(plugin).__name__}":\n{str(type(e))}\n{str(e)}')
-                        self.log(f'!!ERROR!!\nException in "{method.__name__}" from "{type(plugin).__name__}":\n{str(type(e))}\n{str(e)}')
+                                             f'Exception in "{method.__name__}" from "{type(controller).__name__}":\n{str(type(e))}\n{str(e)}')
+                        self.sender.report(f'Exception in "{method.__name__}" from "{type(controller).__name__}":\n{str(type(e))}\n{str(e)}')
+                        self.log(f'!!ERROR!!\nException in "{method.__name__}" from "{type(controller).__name__}":\n{str(type(e))}\n{str(e)}')
                 else:
                     self.unknown_cmd(user_id)
 

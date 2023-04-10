@@ -6,7 +6,7 @@ from ...config import read_config
 
 
 class AiTgView(TelegramView):
-    plugins = ['gpt_ai']
+    controllers = ['gpt_ai']
     error_message = 'Произошла какая-то ошибка. Исправляем'
 
     def __init__(self):

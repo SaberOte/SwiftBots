@@ -6,7 +6,7 @@ import threading
 import time
 import psycopg2
 from ..config import read_config
-from ..templates.super_plugin import SuperPlugin, admin_only
+from ..templates.super_controller import SuperController, admin_only
 from ..allviews.ai_tg_view.ai_tg_view import AiTgView
 
 
@@ -287,7 +287,7 @@ def load_gpt_messages(context, gpt_context_id: int) -> list:
     return messages
 
 
-class GptAi(SuperPlugin):
+class GptAi(SuperController):
     OPENAI_URL = 'https://api.openai.com/'
     GPT_MODEL = "gpt-3.5-turbo"
     is_stream = False

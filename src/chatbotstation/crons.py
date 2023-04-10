@@ -2,9 +2,9 @@ import crontab, getpass, os, uuid
 from .config import read_config, write_config
 
 
-def add(plugin, task, freq):
+def add(controller, task, freq):
     cron = crontab.CronTab(user=getpass.getuser())
-    task_name = f'{plugin}|{task}'
+    task_name = f'{controller}|{task}'
 
     # добавить задачу в конфиг
     task_id = str(uuid.uuid4())
@@ -32,9 +32,9 @@ def add(plugin, task, freq):
     cron.write()
 
 
-def remove(plugin, task):
+def remove(controller, task):
     cron = crontab.CronTab(user=getpass.getuser())
-    task_name = f'{plugin}|{task}'
+    task_name = f'{controller}|{task}'
     for job in cron:
         if job.comment == task_name:
             cron.remove(job)

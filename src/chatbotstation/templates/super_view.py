@@ -15,7 +15,7 @@ from typing import Callable
 
 
 class SuperView(ABC):
-    plugins: list[str] = []  # "подписка" на плагины. Каждое вьюшке соответствуют какие-то плагины. Команда будет искаться в них
+    controllers: list[str] = []  # "подписка" на плагины. Каждое вьюшке соответствуют какие-то плагины. Команда будет искаться в них
     inner_commands: {str: str} = {}  # команды от ядра бота конкретно для этой вьюшки
     name: str
     log: Callable[[str], None]

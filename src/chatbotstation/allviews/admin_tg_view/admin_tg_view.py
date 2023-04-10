@@ -3,7 +3,7 @@ from ...config import read_config
 
 
 class AdminTgView(TelegramView):
-    plugins = ['admin_panel']
+    controllers = ['admin_panel']
 
     def __init__(self):
         config = read_config('credentials.ini')

@@ -1,4 +1,4 @@
-from ..templates.super_plugin import SuperPlugin, admin_only
+from ..templates.super_controller import SuperController, admin_only
 import os, datetime, time
 from .. import crons
 from ..templates.super_view import SuperView
@@ -15,7 +15,7 @@ def remember_request(func):
     return wrapper
 
 
-class AdminPanel(SuperPlugin):
+class AdminPanel(SuperController):
     last_exec: tuple[Callable, SuperView, dict] = ()
 
     def __init__(self, bot):
@@ -50,11 +50,11 @@ class AdminPanel(SuperPlugin):
         module: str = context['message']
         module = module.replace(' ', '_')
         if len(module) == 0:
-            view.reply('You can\'t update all plugins at the time. Specify certain one', context)
+            view.reply('You can\'t update all controllers at the time. Specify certain one', context)
             return
-        updated = self._bot.plugin_manager.update_plugin(module)
+        updated = self._bot.controller_manager.update_controller(module)
         if updated > 0:
-            view.reply(f'Plugin {module}\'s updated in RAM', context)
+            view.reply(f'Controller {module}\'s updated in RAM', context)
             return
         try:
             updated = self._bot.views_manager.update_view(module)
@@ -126,11 +126,11 @@ class AdminPanel(SuperPlugin):
             report += 'Launched views:\n- ' + '\n- '.join(views) + '\n\n'
         else:
             report += 'No launched views\n\n'
-        if len(self._bot.plugin_manager.plugins) > 0:
-            report += 'Loaded plugins:\n- ' + \
-                  '\n- '.join([x.__module__.split('.')[-1] for x in self._bot.plugin_manager.plugins])
+        if len(self._bot.controller_manager.controllers) > 0:
+            report += 'Loaded controllers:\n- ' + \
+                  '\n- '.join([x.__module__.split('.')[-1] for x in self._bot.controller_manager.controllers])
         else:
-            report += 'No loaded plugins'
+            report += 'No loaded controllers'
         view.reply(report, context)
 
     @admin_only
@@ -145,7 +145,7 @@ class AdminPanel(SuperPlugin):
         tasks = crons.get('../resources/config.ini')
         respond = ''
         all_tasks = []
-        for x in self.bot.plugin_manager.plugins:
+        for x in self.bot.controller_manager.controllers:
             for j in x.tasks:
                 all_tasks.append(j)
         for t in all_tasks:
@@ -160,7 +160,7 @@ class AdminPanel(SuperPlugin):
         tasks = crons.get('../resources/config.ini')
         respond = ''
         all_tasks = []
-        for x in self.bot.plugin_manager.plugins:
+        for x in self.bot.controller_manager.controllers:
             for j in x.tasks:
                 all_tasks.append(j)
         for t in all_tasks:
@@ -173,40 +173,40 @@ class AdminPanel(SuperPlugin):
 
     def schedule_task(self):
         task = self.message
-        plugin = None
-        for plug in self.bot.plugins:
-            if task in plug.tasks:
-                plugin = plug
-        if plugin == None:
+        controller = None
+        for cont in self.bot.controllers:
+            if task in cont.tasks:
+                controller = cont
+        if controller == None:
             all_tasks = []
-            for plug in self.bot.plugins:
-                for x in plug.tasks:
+            for cont in self.bot.controllers:
+                for x in cont.tasks:
                     all_tasks.append(x)
             self.sender.send(self.user_id, 'Такой задачи нет. Все задачи: ' + ', '.join(all_tasks))
             self.log(f'Unknown task {task} is called')
             return
-        delay = plugin.tasks[task][1]
+        delay = controller.tasks[task][1]
         path = os.path.split(os.getcwd())[0]
-        crons.add(plugin.__class__.__name__, task, delay, path)
+        crons.add(controller.__class__.__name__, task, delay, path)
         self.log(f'Task {task} is scheduled')
         self.sender.send(self.user_id, 'Задача запущена')
 
     def unschedule_task(self):
         task = self.message
-        plugin = None
-        for plug in self.bot.plugins:
-            if task in plug.tasks:
-                plugin = plug
-        if plugin == None:
+        controller = None
+        for cont in self.bot.controllers:
+            if task in cont.tasks:
+                controller = cont
+        if controller == None:
             all_tasks = []
-            for plug in self.bot.plugins:
-                for x in plug.tasks:
+            for cont in self.bot.controllers:
+                for x in cont.tasks:
                     all_tasks.append(x)
             self.sender.send(self.user_id, 'Такой задачи нет. Все задачи: ' + ', '.join(all_tasks))
             self.log(f'Unknown task {task} is called')
             return
         path = os.path.split(os.getcwd())[0]
-        crons.remove(plugin.__class__.__name__, task, path)
+        crons.remove(controller.__class__.__name__, task, path)
         self.log(f'Task {task} is unscheduled')
         self.sender.send(self.user_id, 'Задача удалена')
 

@@ -1,8 +1,8 @@
-from ..templates.super_plugin import SuperPlugin
+from ..templates.super_controller import SuperController
 from ..templates.super_view import SuperView
 
 
-class Test(SuperPlugin):
+class Test(SuperController):
     def __init__(self, bot):
         super().__init__(bot)
 

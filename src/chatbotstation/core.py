@@ -2,7 +2,7 @@ from traceback import format_exc
 import os
 from . import communicators
 from .views import ViewsManager
-from .plugins import PluginManager
+from .controllers import ControllerManager
 from .logger import Logger
 from .listener import Listener
 from typing import Callable
@@ -37,7 +37,7 @@ def launch_bot(flags: list[str]):
 class Core:
     """keks"""
     __listener: Listener
-    plugin_manager: PluginManager
+    controller_manager: ControllerManager
     views_manager: ViewsManager
     report: Callable
     error: Callable
@@ -49,7 +49,7 @@ class Core:
 
     def init(self):
         self.__init_views()
-        self.__init_plugins()
+        self.__init_controllers()
         self.__listener = Listener(self)
 
     def __init_base_services(self):
@@ -65,9 +65,9 @@ class Core:
         self.report = self.views_manager.report
         self.error = self.views_manager.error
 
-    def __init_plugins(self):
-        self.plugin_manager = PluginManager(self)
-        self.plugin_manager.init_plugins()
+    def __init_controllers(self):
+        self.controller_manager = ControllerManager(self)
+        self.controller_manager.init_controllers()
 
     def start(self):
         self.__listener.listen()

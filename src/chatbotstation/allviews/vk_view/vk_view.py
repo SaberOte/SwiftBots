@@ -3,7 +3,7 @@ from ...config import read_config
 
 
 class TestTgView(VkontakteView):
-    plugins = ['test']
+    controllers = ['test']
 
     def __init__(self):
         config = read_config('credentials.ini')
