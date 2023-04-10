@@ -7,11 +7,7 @@ def ExpCatcher(func):
         except Exception as e:
             try: 
                 self.log(f'!!ERROR!! It\'s try to send error to admin about exception in Sender: \n' + 'Exception in Sender:\n'+str(type(e))+'\n'+str(e))
-                self.api.messages.send(
-                            user_id=self.keys.admin_id,
-                            random_id=get_random_id(),
-                            message=('Exception in Sender:\n'+str(type(e))+'\n'+str(e))
-                        )
+                self.api.messages.send(message=('Exception in Sender:\n' + str(type(e)) + '\n' + str(e)), user_id=)
             except Exception as ex:
                 self.log('!!ERROR!! Sending is impossible. Critical error in Sender:\n'+str(type(ex))+'\n'+str(ex))
                 import os, sys
@@ -37,32 +33,17 @@ class Sender:
         for msg in messages:
             if len(msg)==0:
                 continue
-            self.api.messages.send(
-                        user_id=user_id,
-                        random_id=get_random_id(),
-                        message=msg,
-                        keyboard=self.static_keyboard
-                    )
+            self.api.messages.send(message=msg, user_id=)
             self.log(f'The message is sent to "{user_id}": "{msg[:100] + "..." if len(msg) > 100 else msg}"')
         
     @ExpCatcher
     def send_sticker(self, user_id, sticker_id):
-        self.api.messages.send(
-                    user_id=user_id,
-                    random_id=get_random_id(),
-                    sticker_id=sticker_id,
-                    keyboard=self.static_keyboard
-                )
+        self.api.messages.send(,
         self.log(f'The sticker "{sticker_id}" is sent to "{user_id}"')
 
     @ExpCatcher
     def send_menu(self, user_id):
-        self.api.messages.send(
-                    user_id=user_id,
-                    random_id=get_random_id(),
-                    message=open('./../resources/commands.txt', encoding="utf-8").read(),
-                    #keyboard=self.keyboard
-                )
+        self.api.messages.send(message=open('./../resources/commands.txt', encoding="utf-8").read(), user_id=)
         self.log(f'The menu is sent to "{user_id}"')
     
     def error(self, user_id, msg):
