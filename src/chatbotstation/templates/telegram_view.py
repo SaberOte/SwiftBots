@@ -14,7 +14,7 @@ class TelegramView(SuperView, ABC):
     first_time_launched = True
 
     def post(self, method: str, data: dict) -> dict:
-        response = requests.get(f'https://api.telegram.org/bot{self.TOKEN}/{method}', json=data)
+        response = requests.post(f'https://api.telegram.org/bot{self.TOKEN}/{method}', json=data)
         answer = response.json()
         if not answer['ok']:
             self.__handle_error(answer)
