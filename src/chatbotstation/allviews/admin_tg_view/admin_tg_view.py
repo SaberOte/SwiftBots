@@ -7,5 +7,5 @@ class AdminTgView(TelegramView):
 
     def __init__(self):
         config = read_config('credentials.ini')
-        self.TOKEN = config['AdminTgView']['token']
+        self.token = config['AdminTgView']['token']
         self.admin = config['AdminTgView']['admin']

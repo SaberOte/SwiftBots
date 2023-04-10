@@ -8,13 +8,13 @@ from .super_view import SuperView
 
 
 class TelegramView(SuperView, ABC):
-    TOKEN: str
+    token: str
     admin: int
     authentic_style = True
     first_time_launched = True
 
     def post(self, method: str, data: dict) -> dict:
-        response = requests.post(f'https://api.telegram.org/bot{self.TOKEN}/{method}', json=data)
+        response = requests.post(f'https://api.telegram.org/bot{self.token}/{method}', json=data)
         answer = response.json()
         if not answer['ok']:
             self.__handle_error(answer)
@@ -79,7 +79,7 @@ class TelegramView(SuperView, ABC):
                 yield ans
 
     def listen(self):
-        assert self.admin and self.TOKEN, 'No defined TOKEN and admin fields'
+        assert self.admin and self.token, 'No defined token and admin fields'
         if not self.first_time_launched:
             self.report("It's back from error. Clean that message if it freaks you out")
         elif 'from reboot' in self._flags:

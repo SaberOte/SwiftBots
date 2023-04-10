@@ -11,7 +11,7 @@ class AiTgView(TelegramView):
 
     def __init__(self):
         config = read_config('credentials.ini')
-        self.TOKEN = config['AiTgView']['token']
+        self.token = config['AiTgView']['token']
         self.admin = config['AiTgView']['admin']
 
     def __handle_error(self, error):
