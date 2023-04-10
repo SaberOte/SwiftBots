@@ -48,6 +48,7 @@ class AdminPanel(SuperPlugin):
     @remember_request
     def update_module(self, view: SuperView, context):
         module: str = context['message']
+        module = module.replace(' ', '_')
         if len(module) == 0:
             view.reply('You can\'t update all plugins at the time. Specify certain one', context)
             return
@@ -71,6 +72,7 @@ class AdminPanel(SuperPlugin):
     @remember_request
     def start_view(self, view: SuperView, context):
         module: str = context['message']
+        module = module.replace(' ', '_')
         if module in self._bot.views_manager.views:
             view.reply(f'{module} is already launched', context)
             return
@@ -81,6 +83,7 @@ class AdminPanel(SuperPlugin):
     @remember_request
     def reboot_view(self, view: SuperView, context):
         module: str = context['message']
+        module = module.replace(' ', '_')
         if module not in self._bot.views_manager.views:
             view.reply(f'{module} is not launched yet', context)
         view_flags = ['from reboot']
@@ -95,6 +98,7 @@ class AdminPanel(SuperPlugin):
     @remember_request
     def kill_view(self, view: SuperView, context):
         module: str = context['message']
+        module = module.replace(' ', '_')
         if module not in self._bot.views_manager.views:
             view.reply(f'{module} is not launched', context)
             return
@@ -119,9 +123,9 @@ class AdminPanel(SuperPlugin):
         views = self._bot.views_manager.ping_views()
         report = ''
         if len(views) > 0:
-            report += 'Launched views:\n- ' + '\n- '.join(views) + '\n'
+            report += 'Launched views:\n- ' + '\n- '.join(views) + '\n\n'
         else:
-            report += 'No launched views'
+            report += 'No launched views\n\n'
         if len(self._bot.plugin_manager.plugins) > 0:
             report += 'Loaded plugins:\n- ' + \
                   '\n- '.join([x.__module__.split('.')[-1] for x in self._bot.plugin_manager.plugins])
