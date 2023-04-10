@@ -7,7 +7,7 @@ import time
 import psycopg2
 from ..config import read_config
 from ..templates.super_controller import SuperController, admin_only
-from ..allviews.ai_tg_view.ai_tg_view import AiTgView
+from ..allviews.ai_tg_view import AiTgView
 
 
 def escape_markdown_chars(string: str) -> str:

@@ -58,10 +58,8 @@ def launch_view(name: str, flags: list[str]):
 
 def check_name_valid(name: str):
     """Check existence view file and its correct name"""
-    assert name in os.listdir('src/chatbotstation/allviews'), \
-        f"Directory src/chatbotstation/allviews/{name} doesn't exist"
-    assert f'{name}.py' in os.listdir(f'src/chatbotstation/allviews/{name}'), \
-        f"Module src/shatbostation/allviews/{name}/{name} doesn't exist"
+    assert f'{name}.py' in os.listdir(f'src/chatbotstation/allviews'), \
+        f"Module src/shatbostation/allviews/{name}.py doesn't exist"
     assert name.islower(), 'View name must be lowercase'
     assert name.endswith('view'), 'View name must end with "view"'
 
@@ -76,11 +74,10 @@ def get_class(module: ModuleType):
 
 
 def import_view(name: str) -> ModuleType:
-    module = __import__(f'{__package__}.allviews.{name}.{name}')
-    instance = getattr(getattr(getattr(getattr(module,
-                                               'chatbotstation'),
-                                       'allviews'),
-                               name),
+    module = __import__(f'{__package__}.allviews.{name}')
+    instance = getattr(getattr(getattr(module,
+                                       'chatbotstation'),
+                               'allviews'),
                        name)
     return instance
 
@@ -94,7 +91,7 @@ class ViewsManager:
         self.log = log
         self.flags = flags
         # self.main_view = _RawView(lambda x: None if 'debug' in flags else log)
-        self.main_view = None # _RawView(log)
+        self.main_view = None  # _RawView(log)
 
     def error(self, message: str):
         self.log('!!!ERROR!!!\n'+str(message))
@@ -170,8 +167,8 @@ class ViewsManager:
 
         # receiving modules NAMES
         views_dir: list[str] = \
-            [x for x in os.listdir('src/chatbotstation/allviews')
-             if x.endswith('_view')
+            [x[:-3] for x in os.listdir('src/chatbotstation/allviews')
+             if x.endswith('view.py')
              and x.islower()
              and x not in disabled_views
              and not x.startswith('!')]

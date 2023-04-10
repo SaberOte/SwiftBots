@@ -1,5 +1,5 @@
-from ...templates.telegram_view import TelegramView
-from ...config import read_config
+from ..templates.telegram_view import TelegramView
+from ..config import read_config
 
 
 class AdminTgView(TelegramView):
