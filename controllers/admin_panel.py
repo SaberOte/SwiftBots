@@ -1,5 +1,5 @@
 import os
-import time
+import signal
 from typing import Callable
 from src.botcore import crons
 from src.botcore.templates.super_view import SuperView
@@ -43,7 +43,7 @@ class AdminPanel(SuperController):
         self._bot.communicator.close()
         self.log('Program is suspended by admin')
         view.report('Core stopped.')
-        os._exit(1)
+        os.kill(os.getpid(), signal.SIGKILL)
 
     @admin_only
     @remember_request
