@@ -1,15 +1,14 @@
-import os, inspect, importlib
+import os
+import inspect
+import importlib
 from abc import ABC
-from .templates import super_controller
 from types import ModuleType
+from .templates import super_controller
 
 
 def import_controller(name: str) -> ModuleType:
-    module = __import__(f'{__package__}.allcontrollers.{name}')
-    instance = getattr(getattr(getattr(module,
-                                       'chatbotstation'),
-                               'allcontrollers'),
-                       name)
+    module = __import__(f'controllers.{name}')
+    instance = getattr(module, name)
     return instance
 
 
@@ -21,16 +20,15 @@ class ControllerManager:
         self.error = bot.error
         self.log = bot.log
 
-    # init_controllers and update_controller are almost the same. Fix it
+    # init_controllers and update_controller are almost the same. Fix it!!!!!!!
     def init_controllers(self):
-        modules = [x[:-3] for x in os.listdir('src/chatbotstation/allcontrollers')
+        modules = [x[:-3] for x in os.listdir('controllers')
                    if x.endswith('.py')
                    and not x.startswith('!')]
         imports = []
         for x in modules:
             try:
                 imports.append(import_controller(x))
-                # imports.append(__import__(f'chatbotstation.src.allcontrollers.{x}'))
             except Exception as e:
                 self.error(f'Exception in the import module({x}):\n{str(type(e))}\n{str(e)}')
         classes = []
@@ -46,7 +44,7 @@ class ControllerManager:
         self.log(f'Loaded controllers: {str([x.__class__.__name__ for x in classes])}')
 
     def update_controller(self, controller: str) -> int:
-        module = [x[:-3] for x in os.listdir('src/chatbotstation/allcontrollers') if x == f'{controller}.py']
+        module = [x[:-3] for x in os.listdir('controllers') if x == f'{controller}.py']
         if len(module) == 0:
             return 0
         module = module[0]

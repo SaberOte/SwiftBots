@@ -1,5 +1,5 @@
-from ..templates.telegram_view import TelegramView
-from ..config import read_config
+from src.chatbotstation.templates.telegram_view import TelegramView
+from src.chatbotstation.config import read_config
 
 
 class TestTgView(TelegramView):

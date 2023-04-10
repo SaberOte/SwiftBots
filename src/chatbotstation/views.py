@@ -1,4 +1,8 @@
-import os, inspect, sys, importlib
+import os
+import inspect
+import importlib
+import signal
+import subprocess
 from types import ModuleType
 from typing import Union
 from abc import ABC
@@ -6,7 +10,6 @@ from traceback import format_exc
 from .templates.super_view import SuperView
 from .config import read_config, write_config
 from .communicators import Communicator
-import subprocess
 
 
 class _RawView:
@@ -25,7 +28,7 @@ def launch_view(name: str, flags: list[str]):
     :param flags: see flags description in __main__.py
     """
     check_name_valid(name)
-    if 'machine start' in flags:  # direct start
+    if 'machine start' in flags or 'debug' in flags:  # direct start
         try:
             module = import_view(name)
             module = importlib.reload(module)  # if program was updated and restarted
@@ -46,20 +49,14 @@ def launch_view(name: str, flags: list[str]):
         new_flags = ["-MS"]
         if 'from reboot' in flags:
             new_flags.append('-FR')
-        if 'debug' in flags:
-            new_flags.append("-d")
-            cmd = f'python3 main.py @chatbotstation_{name}@ ' \
-                  f'start {name} {" ".join(new_flags)}'
-            subprocess.Popen(cmd.split(' '))
-        else:
-            os.system(f'nohup python3 main.py @chatbotstation_{name}@ '
-                      f'start {name} {" ".join(new_flags)} > {res_path}/{name}_launch_log.txt 2>&1 &')
+        os.system(f'nohup python3 main.py @chatbotstation_{name}@ '
+                  f'start {name} {" ".join(new_flags)} > {res_path}/{name}_launch_log.txt 2>&1 &')
 
 
 def check_name_valid(name: str):
     """Check existence view file and its correct name"""
-    assert f'{name}.py' in os.listdir(f'src/chatbotstation/allviews'), \
-        f"Module src/shatbostation/allviews/{name}.py doesn't exist"
+    assert f'{name}.py' in os.listdir(f'views'), \
+        f"Module views/{name}.py doesn't exist"
     assert name.islower(), 'View name must be lowercase'
     assert name.endswith('view'), 'View name must end with "view"'
 
@@ -74,11 +71,8 @@ def get_class(module: ModuleType):
 
 
 def import_view(name: str) -> ModuleType:
-    module = __import__(f'{__package__}.allviews.{name}')
-    instance = getattr(getattr(getattr(module,
-                                       'chatbotstation'),
-                               'allviews'),
-                       name)
+    module = __import__(f'views.{name}')
+    instance = getattr(module, name)
     return instance
 
 
@@ -167,10 +161,10 @@ class ViewsManager:
 
         # receiving modules NAMES
         views_dir: list[str] = \
-            [x[:-3] for x in os.listdir('src/chatbotstation/allviews')
+            [x[:-3] for x in os.listdir('views')
              if x.endswith('view.py')
              and x.islower()
-             and x not in disabled_views
+             and x[:-3] not in disabled_views
              and not x.startswith('!')]
 
         self.fill_views_dict(views_dir)

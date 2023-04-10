@@ -1,9 +1,10 @@
-from ..templates.super_controller import SuperController, admin_only
-import os, datetime, time
-from .. import crons
-from ..templates.super_view import SuperView
+import os
+import time
 from typing import Callable
-from ..views import launch_view
+from src.chatbotstation import crons
+from src.chatbotstation.templates.super_view import SuperView
+from src.chatbotstation.templates.super_controller import SuperController, admin_only
+from src.chatbotstation.views import launch_view
 
 
 def remember_request(func):

@@ -1,5 +1,4 @@
-from typing import Callable, Optional
-from typing import TYPE_CHECKING
+from typing import Callable, Optional, TYPE_CHECKING
 from abc import ABC
 if TYPE_CHECKING:
     from ..core import Core
@@ -29,13 +28,3 @@ class SuperController(ABC):
         self.error = bot.error
         self.report = bot.report
         self._bot = bot
-
-    '''
-    def __init__(self, bot):
-    self._bot = bot
-    vars_v = vars(bot)
-    for var in vars_v:
-        if not var.startswith('_'):
-            vars(self).update({var: vars_v.get(var)})
-
-    '''

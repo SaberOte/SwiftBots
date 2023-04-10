@@ -1,5 +1,5 @@
-from ..templates.vkontakte_view import VkontakteView
-from ..config import read_config
+from src.chatbotstation.templates.vkontakte_view import VkontakteView
+from src.chatbotstation.config import read_config
 
 
 class TestTgView(VkontakteView):
