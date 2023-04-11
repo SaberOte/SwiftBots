@@ -134,9 +134,9 @@ class SuperView(ABC):
                     assert isinstance(data, dict), 'View yields something not DICT'
                     self.comm.send(f"mes|{str(data)}", 'core')
             except Exception as e:
-                msg = 'EXCEPTION ' + str(e)
+                msg = format_exc()
                 self.log(msg)
-                self.report('Exception in listen: ' + msg)
+                self.report(msg)
                 # prevent 1 billion looped error tracebacks per second
                 error_count += 1
                 elapsed_time = time.time() - last_error_time
