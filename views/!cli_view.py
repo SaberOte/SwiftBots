@@ -1,4 +1,3 @@
-raise
 from ...templates.super_view import SuperView
 from ...communicators import Communicator
 

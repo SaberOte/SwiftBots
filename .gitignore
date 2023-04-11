@@ -3,6 +3,8 @@
 resources/*
 .env
 .idea/
+views/*
+controllers/*
 
 
 # Byte-compiled / optimized / DLL files
