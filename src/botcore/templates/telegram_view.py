@@ -3,8 +3,8 @@ import time
 import signal
 import os
 from abc import ABC
-from traceback import format_exc
 from .super_view import SuperView
+from src.botcore.config import read_config
 
 
 class TelegramView(SuperView, ABC):
@@ -19,6 +19,12 @@ class TelegramView(SuperView, ABC):
         if not answer['ok']:
             self.__handle_error(answer)
         return answer
+
+    def init_credentials(self):
+        name = self.__class__.__name__
+        config = read_config('credentials.ini')
+        self.token = config[name]['token']
+        self.admin = config[name]['admin']
 
     def update_message(self, data: dict) -> dict:
         """
