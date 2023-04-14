@@ -18,8 +18,10 @@ class Logger:
         file_path = os.path.join(log_path, f'logs_{start_time}.txt')
         self.file = open(file_path, 'w', encoding='utf-8')
 
-    def log(self, log: str):
-        log = str(log)
+    def log(self, *args):
+        assert len(args) > 0, 'No logs passed'
+        logs = (str(log) for log in args)
+        log = ' '.join(logs)
         time = (datetime.utcnow() + timedelta(hours=5)).strftime('%Y.%m.%d  %H:%M:%S')
         self.file.write(f'{time}:\t{log}\n')
         self.file.flush()
