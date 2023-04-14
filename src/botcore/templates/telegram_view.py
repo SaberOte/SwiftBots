@@ -111,11 +111,15 @@ class TelegramView(SuperView, ABC):
                     }
                 else:
                     self.log('UNHANDLED', str(update))
-        except requests.exceptions.ConnectionError:
+        except requests.exceptions.ConnectionError as e:
             self.log('Connection ERROR in telegram_view.py. Sleep a minute')
+            reported = self.try_report('connection error ' + str(e))
+            if reported != 1:
+                self.log('Not reported', reported)
             time.sleep(60)
-            self.try_report('connection error')
-        except requests.exceptions.ReadTimeout:
-            self.log('Connection ERROR in telegram_view.py. Sleep a minute')
+        except requests.exceptions.ReadTimeout as e:
+            self.log('Connection ERROR in telegram_view.py. Sleep a minute', e)
+            reported = self.try_report('read timeout error ' + str(e))
+            if reported != 1:
+                self.log('Not reported', reported)
             time.sleep(60)
-            self.try_report('read timeout error')

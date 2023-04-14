@@ -147,7 +147,9 @@ class SuperView(ABC):
             except Exception as e:
                 msg = format_exc()
                 self.log(msg)
-                self.try_report(msg)
+                reported = self.try_report(msg)
+                if reported != 1:
+                    self.log('Not reported', reported)
                 # prevent 1 billion looped error tracebacks per second
                 error_count += 1
                 elapsed_time = time.time() - last_error_time
