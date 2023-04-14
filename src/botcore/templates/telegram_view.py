@@ -12,6 +12,7 @@ class TelegramView(SuperView, ABC):
     admin: int
     authentic_style = True
     first_time_launched = True
+    receive_updates_runtime_only = False
 
     def post(self, method: str, data: dict) -> dict:
         response = requests.post(f'https://api.telegram.org/bot{self.token}/{method}', json=data)
@@ -76,7 +77,7 @@ class TelegramView(SuperView, ABC):
             "limit": 1,
             "allowed_updates": ["messages"]
         }
-        if self.first_time_launched:
+        if self.first_time_launched or self.receive_updates_runtime_only:
             self.first_time_launched = False
             data['offset'] = self.__skip_old_updates()
         while 1:
