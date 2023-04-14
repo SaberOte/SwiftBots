@@ -71,13 +71,14 @@ class TelegramView(SuperView, ABC):
 
     def __get_updates(self):
         timeout = 1000
-        offset = self.__skip_old_updates()
         data = {
             "timeout": timeout,
             "limit": 1,
-            "offset": offset,
             "allowed_updates": ["messages"]
         }
+        if self.first_time_launched:
+            self.first_time_launched = False
+            data['offset'] = self.__skip_old_updates()
         while 1:
             ans = self.post('getUpdates', data)
             if len(ans['result']) != 0:
@@ -92,7 +93,6 @@ class TelegramView(SuperView, ABC):
             self.report('View is restarted')
         else:
             self.report('View is launched')
-        self.first_time_launched = False
 
         try:
             for update in self.__get_updates():
@@ -116,10 +116,10 @@ class TelegramView(SuperView, ABC):
             reported = self.try_report('connection error ' + str(e))
             if reported != 1:
                 self.log('Not reported', reported)
-            time.sleep(60)
+            time.sleep(5)
         except requests.exceptions.ReadTimeout as e:
             self.log('Connection ERROR in telegram_view.py. Sleep a minute', e)
             reported = self.try_report('read timeout error ' + str(e))
             if reported != 1:
                 self.log('Not reported', reported)
-            time.sleep(60)
+            time.sleep(5)
