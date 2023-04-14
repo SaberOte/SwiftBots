@@ -18,7 +18,7 @@ class SuperView(ABC):
     controllers: list[str] = []  # "подписка" на плагины. Каждое вьюшке соответствуют какие-то плагины. Команда будет искаться в них
     inner_commands: {str: str} = {}  # команды от ядра бота конкретно для этой вьюшки
     name: str
-    log: Callable[[str], None]
+    log: Callable
     authentic_style = False
     error_message = 'Error occurred'
     unknown_error_message = 'Unknown command'
@@ -115,6 +115,17 @@ class SuperView(ABC):
             del config['Disabled_Views'][self.name]
             write_config(config, 'config.ini')
 
+    def try_report(self, msg):
+        """
+        Returns 1 if reported, Exception if not reported
+        """
+        try:
+            self.report(msg)
+            return 1
+        except Exception as e:
+            self.log("Couldn't report because of:", e)
+            return e
+
     def init_listen(self):
         """
         Starts to listen own port and starts to listen outer resources with view.listen method.
@@ -136,7 +147,7 @@ class SuperView(ABC):
             except Exception as e:
                 msg = format_exc()
                 self.log(msg)
-                self.report(msg)
+                self.try_report(msg)
                 # prevent 1 billion looped error tracebacks per second
                 error_count += 1
                 elapsed_time = time.time() - last_error_time
@@ -144,13 +155,15 @@ class SuperView(ABC):
                 if elapsed_time > 60:
                     error_count = 1  # reset counter because previous error was long ago
                 elif error_count > 5:
-                    self.report('Error rate is too high. Waiting for one minute...')
+                    self.try_report('Error rate is too high. Waiting for one minute...')
                     time.sleep(60)
                     error_count = 0
 
     def listen_port(self):
         """Waits commands from core bot. Executing in another thread"""
         self.log('start listening')
+        last_error_time = 0
+        error_count = 0
         while 1:
             try:
                 for data in self.comm.listen():
@@ -190,11 +203,17 @@ class SuperView(ABC):
                             if data['sender_view'] != 'core':
                                 self.comm.send(f'unknown|{command}', data['sender_view'], data['session_id'])
             except Exception as e:
-                try:
-                    msg = 'EXCEPTION ' + format_exc()
-                    self.report(msg)
-                finally:
-                    try:
-                        self.log('This view is gonna die right after this message\n' + format_exc())
-                    except:
+                # prevent invisible looped errors
+                self.try_report(format_exc())
+                error_count += 1
+                elapsed_time = time.time() - last_error_time
+                last_error_time = time.time()
+                if elapsed_time > 60:
+                    error_count = 1  # reset counter because previous error was long ago
+                elif error_count > 5:
+                    reported = self.try_report('Error rate is too high. Waiting for one minute...')
+                    if reported != 1:
+                        self.log('This view is gonna die right after this message\n' + str(reported))
                         os.kill(os.getpid(), SIGKILL)
+                    time.sleep(60)
+                    error_count = 0
