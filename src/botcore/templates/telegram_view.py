@@ -51,6 +51,13 @@ class TelegramView(SuperView, ABC):
         self.log(f"""Replied {data["chat_id"]}:\n'{data["text"]}'""")
         return self.post('sendMessage', data)
 
+    def delete_message(self, message_id, chat_id):
+        data = {
+            "chat_id": chat_id,
+            "message_id": message_id
+        }
+        return self.post('deleteMessage', data)
+
     def _handle_error(self, error):
         if error['error_code'] == 409:
             for i in range(2):

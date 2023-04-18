@@ -1,11 +1,11 @@
 import os, threading, sys, inspect, time
 from signal import SIGKILL, SIGUSR1
 from traceback import format_exc
+from abc import ABC, abstractmethod
+from typing import Callable
 from .. import logger
 from ..communicators import Communicator
 from ..config import read_config, write_config
-from abc import ABC, abstractmethod
-from typing import Callable
 '''
 что вьюшка должна уметь делать?
 - слушать и передавать всю инфу о сообщении ядру
