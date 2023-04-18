@@ -234,6 +234,7 @@ class AdminPanel(SuperController):
         "перезагрузить": reboot,
         "перезапустить": reboot,
         "reboot": reboot,
+        "restart": reboot,
         "ребут": reboot,
         "status": send_status,
         ".": repeat_cmd,

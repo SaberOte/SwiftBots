@@ -3,6 +3,7 @@ import time
 import signal
 import os
 from abc import ABC
+from traceback import format_exc
 from .super_view import SuperView
 from src.botcore.config import read_config
 
@@ -18,7 +19,7 @@ class TelegramView(SuperView, ABC):
         response = requests.post(f'https://api.telegram.org/bot{self.token}/{method}', json=data)
         answer = response.json()
         if not answer['ok']:
-            self.__handle_error(answer)
+            self._handle_error(answer)
         return answer
 
     def init_credentials(self):
@@ -47,10 +48,10 @@ class TelegramView(SuperView, ABC):
         This method can contain any fields in data
         :param data:
         """
-        self.log(f'''Replied "{data['chat_id']}":\n"{data['text']}"''')
+        self.log(f"""Replied {data["chat_id"]}:\n'{data["text"]}'""")
         return self.post('sendMessage', data)
 
-    def __handle_error(self, error):
+    def _handle_error(self, error):
         if error['error_code'] == 409:
             for i in range(2):
                 self.report(str(i))
@@ -70,7 +71,7 @@ class TelegramView(SuperView, ABC):
             return result[0]['update_id'] + 1
         return -1
 
-    def __get_updates(self):
+    def _get_updates(self):
         timeout = 1000
         data = {
             "timeout": timeout,
@@ -96,31 +97,39 @@ class TelegramView(SuperView, ABC):
             self.report('View is launched')
 
         try:
-            for update in self.__get_updates():
-                update = update['result'][0]
-                if 'message' in update:
-                    message = update['message']
-                    text = message['text']
-                    sender = message['from']['id']
-                    username = message['from']['username'] if 'username' in message['from'] else 'no username'
-                    self.log(f"Came message: '{text}' from {sender} ({username})")
-                    yield {
-                        'message': text,
-                        'sender': sender,
-                        'username': username,
-                        'platform': 'telegram'
-                    }
-                else:
-                    self.log('UNHANDLED', str(update))
+            for update in self._get_updates():
+                try:
+                    update = update['result'][0]
+                    if 'message' in update and 'text' in update['message']:
+                        message = update['message']
+                        text = message['text']
+                        sender = message['from']['id']
+                        username = message['from']['username'] if 'username' in message['from'] else 'no username'
+                        self.log(f"Came message from {sender} ({username}): '{text}'")
+                        yield {
+                            'message': text,
+                            'sender': sender,
+                            'username': username,
+                            'platform': 'telegram'
+                        }
+                    else:
+                        self.log('UNHANDLED\n', str(update))
+                except Exception as e:
+                    msg = 'Unhandled:' + '\nAnswer is:\n' + str(update) + '\n' + format_exc() 
+                    try:
+                        self.error(msg, update['message']['from']['id'])
+                    except:
+                        self.try_report(msg)
+                        self.try_report('error number 0x8923')
         except requests.exceptions.ConnectionError as e:
             self.log('Connection ERROR in telegram_view.py. Sleep a minute')
-            reported = self.try_report('connection error ' + str(e))
+            reported = self.try_report('connection error')
             if reported != 1:
                 self.log('Not reported', reported)
             time.sleep(5)
         except requests.exceptions.ReadTimeout as e:
             self.log('Connection ERROR in telegram_view.py. Sleep a minute', e)
-            reported = self.try_report('read timeout error ' + str(e))
+            reported = self.try_report('read timeout error')
             if reported != 1:
                 self.log('Not reported', reported)
             time.sleep(5)
