@@ -96,9 +96,7 @@ class TelegramView(SuperView, ABC):
 
     def listen(self):
         assert self.admin and self.token, 'No defined token and admin fields'
-        if not self.first_time_launched:
-            self.report("It's back from error. Clean that message if it freaks you out")
-        elif 'from reboot' in self._flags:
+        if 'from reboot' in self._flags:
             self.report('View is restarted')
         else:
             self.report('View is launched')
@@ -130,13 +128,13 @@ class TelegramView(SuperView, ABC):
                         self.try_report('error number 0x8923')
         except requests.exceptions.ConnectionError as e:
             self.log('Connection ERROR in telegram_view.py. Sleep a minute')
-            reported = self.try_report('connection error')
+            reported = 1 # = self.try_report('connection error')
             if reported != 1:
                 self.log('Not reported', reported)
             time.sleep(5)
         except requests.exceptions.ReadTimeout as e:
             self.log('Connection ERROR in telegram_view.py. Sleep a minute', e)
-            reported = self.try_report('read timeout error')
+            reported = 1 # = self.try_report('read timeout error')
             if reported != 1:
                 self.log('Not reported', reported)
             time.sleep(5)
