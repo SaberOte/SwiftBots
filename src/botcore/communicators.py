@@ -3,7 +3,7 @@ No ports but only names and cool api"""
 import socket
 import random
 import re
-import psutil
+# import psutil
 import signal
 import os
 from .config import read_config, write_config
@@ -42,6 +42,9 @@ class Communicator:
         write_config(config, 'config.ini')
 
     def kill_process(self, port):  # radical but awesome
+        ############
+        print('Killing is not supported there. Let it seem like killed')
+        return
         connections = psutil.net_connections()
         pid = None
         list(filter(lambda con: con.laddr and con.laddr.port == int(port), connections))
