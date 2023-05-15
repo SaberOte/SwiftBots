@@ -1,0 +1,7 @@
+# temporary file. Just for info
+# build and run core:
+docker build -t core --build-arg entity=core .
+docker run --rm -it -v $(pwd)/resources:/app/resources --network host core
+# build and run i.e. test_tg_view:
+docker build -t core --build-arg entity=test_tg_view .
+docker run --rm -it -v $(pwd)/resources:/app/resources --network host test_tg_view

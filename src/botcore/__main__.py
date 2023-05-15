@@ -72,11 +72,11 @@ def process_arguments(args: list[str], flags: list[str]):
     while i < args_len:
         arg = args[i]
         if arg == 'start':
-            if i + 1 != args_len:  # start VIEW
-                i += 1
-                views.launch_view(args[i], flags)
-            else:  # start only bot instance
+            entity = os.environ['ENTITY']
+            if entity == 'core':  # start only bot instance
                 core.launch_bot(flags)
+            else:  # start VIEW
+                views.launch_view(entity, flags)
         else:
             print(f'Argument {arg} is not recognized')
         i += 1
