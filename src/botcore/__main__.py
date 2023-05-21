@@ -2,84 +2,83 @@
 import os
 import sys
 import signal
-from traceback import format_exc
-from . import core
 from . import views
-from .config import fill_config_ini
 
 
 def main():
     """entry point"""
-    try:
-        set_working_dir()
-        prepare_project()
-        argv = sys.argv[1:]  # skip this file's name
-        keys = list(filter(lambda arg: arg.startswith('-'), argv))
-        args = list(filter(lambda arg: not arg.startswith('-') and not arg.startswith('@'), argv))
-        flags = list(read_flags(keys))
-        process_arguments(args, flags)
-    except:
-        print(format_exc())
+    set_working_dir()
+    prepare_project()
+    sys_args = sys.argv[1:]
+    keys = list(filter(lambda arg: arg.startswith('-'), sys_args))
+    args = list(filter(lambda arg: not arg.startswith('-') and not arg.startswith('@'), sys_args))
+    flags = read_flags(keys)
+    process_arguments(args, flags)
 
 
 def prepare_project():
     """Create all needed directories"""
-    res_path = os.path.join(os.getcwd(), 'resources')
-    if not os.path.isdir(res_path):
-        os.makedirs(res_path)
     logs_path = os.path.join(os.getcwd(), 'logs')
     if not os.path.isdir(logs_path):
         os.makedirs(logs_path)
-    fill_config_ini()
 
 
 def set_working_dir():
     """sets project root directory as a working directory"""
-    # full file path's smth like ~/FOLDER/src/botcore/__main__.py
-    # work directory must be ~/FOLDER/
+    # full file path's is PROJECT_PATH/src/botcore/__main__.py
+    # work directory must be PROJECT_PATH/
     get_prev = os.path.dirname
     path = get_prev(get_prev(get_prev(os.path.abspath(__file__))))
     os.chdir(path)
 
 
-def read_flags(keys: list[str]):
-    """pull out flags from keys"""
-    if '-h' in keys or '-help' in keys or '--help' in keys:
-        print('''Usage: python3 main.py [arguments] [flags]
+def write_reference():
+    """write to stdout help information"""
+    print('''Usage: python3 main.py [arguments] [flags]
 Arguments:
-start        : start this bot
-start [view] : start view manually
+start view: start certain view from ./views manually
 
 Flags:
--d : print every log
+--debug\t\t-d : print every log
 ''')
-        sys.exit(0)
-    if '-d' in keys:
-        yield 'debug'  # output debug also through print()
-    if '-MS' in keys:
-        yield 'machine start'  # launched programmatically. Start instance directly
-    if '-FR' in keys:
-        yield 'from reboot'  # send message 'restarted' to admin
+
+
+def read_flags(keys: list[str]) -> list[str]:
+    """pull out flags from keys"""
+    flags = []
+    for key in keys:
+        if key in ['-h', '--help']:
+            write_reference()
+            sys.exit(0)
+        elif key in ['-d', '--debug']:
+            flags.append('debug')  # write logs also in stdout
+        elif key in ['--ms', '--machine-start']:
+            flags.append('machine start')  # app launched programmatically. So start instance directly
+        elif key in ['--fr', '--from-reboot']:
+            flags.append('from reboot')  # let view know it's rebooting but not initial start
+        else:
+            print(f'No such key {key}')
+            write_reference()
+            sys.exit(1)
+    return flags
 
 
 def process_arguments(args: list[str], flags: list[str]):
-    """get arguments in order and process (not necessarily each)"""
-    i = 0
+    """get arguments in order and process"""
     args_len = len(args)
-    if args_len == 0:
+    if args_len <= 1:
         print('No arguments')
         sys.exit(0)
-    while i < args_len:
-        arg = args[i]
-        if arg == 'start':
-            entity = os.environ['ENTITY']
-            if entity == 'core':  # start only bot instance
-                core.launch_bot(flags)
-            else:  # start VIEW
-                views.launch_view(entity, flags)
-        else:
-            print(f'Argument {arg} is not recognized')
-        i += 1
+    arg = args[0]
+    if arg == 'start':
+        if len(args) < 2:
+            print('Need a view name to start!')
+            write_reference()
+            return
+        view = args[1]
+        views.launch_view(view, flags)
+    else:
+        print(f'Argument {arg} is not recognized')
 
 
 def signal_usr1(signum, frame):
