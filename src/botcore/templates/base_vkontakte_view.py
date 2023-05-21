@@ -11,7 +11,6 @@ from .base_view import BaseView
 class BaseVkontakteView(BaseView, ABC):
     token: str
     admin: int
-    authentic_style = True
     first_time_launched = True
     API_VERSION = '5.131'
 

@@ -1,29 +1,21 @@
-import os, threading, sys, inspect, time
+import os, threading, inspect, time
 from signal import SIGKILL, SIGUSR1
 from traceback import format_exc
 from abc import ABC, abstractmethod
 from typing import Callable
-from .. import logger
-from ..communicators import Communicator
-from ..config import read_config, write_config
-'''
-что вьюшка должна уметь делать?
-- слушать и передавать всю инфу о сообщении ядру
-- включаться, как процесс
-- выключаться, как процесс
-'''
+from src.botcore import logger
+from src.botcore.communicators import Communicator
+from src.botcore.config import read_config, write_config
 
 
 class BaseView(ABC):
-    controllers: list[str] = []  # "подписка" на плагины. Каждое вьюшке соответствуют какие-то плагины. Команда будет искаться в них
-    inner_commands: {str: str} = {}  # команды от ядра бота конкретно для этой вьюшки
+    # "subscription" for controllers. Each view has got some controllers to execute task or commands
+    controllers: list[str] = []
+    # commands not for user but for other views
+    inner_commands: {str: str} = {}
     name: str
+    _flags: list[str]
     log: Callable
-    authentic_style = False
-    error_message = 'Error occurred'
-    unknown_error_message = 'Unknown command'
-    refuse_message = 'Access forbidden'
-    exit_message = 'View exited.'
 
     def init(self, flags: list[str]):
         """
@@ -34,79 +26,26 @@ class BaseView(ABC):
         """
         self.name = self.__module__.split('.')[-1]
         self._flags = flags
-        if self.authentic_style:
-            assert 'send' in dir(self), 'Authentic style needs to exist "send" method!'
-            assert len(inspect.getfullargspec(self.send)[0]) == 3, \
-                'Authentic style needs method "send" to have 3 parameters'
-            assert 'admin' in dir(self), 'Authentic style needs to exist "admin" property'
         if 'launch' in flags:
             self.log = logger.Logger(self.name, 'debug' in flags).log
             self.comm = Communicator(self.name, self.log)
             self.core_listener = threading.Thread(target=self.listen_port, daemon=True)
 
     @abstractmethod
-    def listen(self):  # Должен быть определён. Чтобы слушать внешний источник команд
-        raise NotImplementedError('Not implemented method listen in ' + self.name)
+    def listen(self):
+        """
+        Input pipe for commands from user.
+        Method must use "yield" operator to give information and command
+        """
+        raise NotImplementedError(f'Not implemented method `listen` in {self.name}')
 
     def report(self, message: str):
         """
-        Send important message to admin
+        Send important message to admin.
+        Future is report broadcasts this message to views network or into master node of cluster
         :param message: report message
-        :return: any
         """
-        if self.authentic_style:
-            self.log(f'Reported "{message}"')
-            return self.send(message, self.admin)
-        raise NotImplementedError('Not implemented method report in ' + self.name)
-
-    def error(self, message: str, context: dict):
-        """
-        Inform user it is internal error. Admin's notifying too
-        :param message: message is only for admin. User's looking at default message
-        :param context: needs to have 'sender' property
-        :return: any
-        """
-        if self.authentic_style:
-            try:
-                if context['sender'] != self.admin:
-                    self.reply(self.error_message, context)
-                    self.log('ERROR\n' + str(message))
-            finally:
-                return self.report(str(message))
-        raise NotImplementedError('Not implemented method error in ' + self.name)
-
-    def reply(self, message: str, context: dict):
-        """
-        Reply the sender
-        :param message: reply message
-        :param context: needs to have 'sender' property
-        :return: any
-        """
-        if self.authentic_style:
-            assert 'sender' in context, 'Authentic style needs "sender" defined in context!'
-            self.log(f'''Replied "{context['sender']}":\n"{message}"''')
-            return self.send(message, context['sender'])
-        raise NotImplementedError('Not implemented method reply in ' + self.name)
-
-    def unknown_command(self, context: dict):
-        """
-        If user sends some unknown shit, then say him about it
-        :param context: needs to have 'sender' property
-        """
-        if self.authentic_style:
-            self.log('Unknown command')
-            return self.reply(self.unknown_error_message, context)
-        raise NotImplementedError('Not implemented method unknown_command in ' + self.name)
-
-    def refuse(self, context: dict):
-        """
-        If user can't use it, then he must be aware
-        :param context: needs to have 'sender' property
-        """
-        if self.authentic_style:
-            self.log('Forbidden')
-            return self.reply(self.refuse_message, context)
-        raise NotImplementedError('Not implemented method refuse in ' + self.name)
+        raise NotImplementedError('Not implemented method `report` in ' + self.name)
 
     # Further methods for inner purposes
     def enable_in_config(self):
@@ -117,7 +56,7 @@ class BaseView(ABC):
 
     def try_report(self, msg):
         """
-        Returns 1 if reported, Exception if not reported
+        Returns 1 if reported, Exception instance if not reported
         """
         try:
             self.report(msg)

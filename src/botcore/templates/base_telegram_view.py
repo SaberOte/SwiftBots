@@ -4,16 +4,14 @@ import signal
 import os
 from abc import ABC
 from traceback import format_exc
-from .base_view import BaseView
-from src.botcore.config import read_config
+from src.botcore.templates.base_multiple_users_view import BaseMultipleUsersView
 
 
-class BaseTelegramView(BaseView, ABC):
+class BaseTelegramView(BaseMultipleUsersView, ABC):
     token: str
-    admin: int
-    authentic_style = True
+    admin: str
     first_time_launched = True
-    receive_updates_runtime_only = False
+    skip_old_updates = False
 
     def post(self, method: str, data: dict) -> dict:
         response = requests.post(f'https://api.telegram.org/bot{self.token}/{method}', json=data)
@@ -23,10 +21,8 @@ class BaseTelegramView(BaseView, ABC):
         return answer
 
     def init_credentials(self):
-        name = self.__class__.__name__
-        config = read_config('credentials.ini')
-        self.token = config[name]['token']
-        self.admin = config[name]['admin']
+        self.token = os.environ['TELEGRAM_TOKEN']
+        self.admin = os.environ['ADMIN_ID']
 
     def update_message(self, data: dict) -> dict:
         """
@@ -44,7 +40,7 @@ class BaseTelegramView(BaseView, ABC):
 
     def custom_send(self, data: dict) -> dict:
         """
-        Standard send provides only message and chat_id properties.
+        Standard send provides only message and chat_id arguments.
         This method can contain any fields in data
         :param data:
         """
@@ -85,7 +81,7 @@ class BaseTelegramView(BaseView, ABC):
             "limit": 1,
             "allowed_updates": ["messages"]
         }
-        if self.first_time_launched or self.receive_updates_runtime_only:
+        if self.first_time_launched or self.skip_old_updates:
             self.first_time_launched = False
             data['offset'] = self.__skip_old_updates()
         while 1:
