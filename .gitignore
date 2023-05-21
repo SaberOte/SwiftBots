@@ -5,8 +5,10 @@ resources/*
 .idea/
 views/*
 controllers/*
-.run/
 
+# polkadott custom
+.run/
+test.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
