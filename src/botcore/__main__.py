@@ -2,7 +2,7 @@
 import os
 import sys
 import signal
-from . import views
+from src.botcore import views
 
 
 def main():
