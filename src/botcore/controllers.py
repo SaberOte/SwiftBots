@@ -3,7 +3,7 @@ import inspect
 import importlib
 from abc import ABC
 from types import ModuleType
-from .templates import base_controller
+from .bases import base_controller
 
 
 def import_controller(name: str) -> ModuleType:

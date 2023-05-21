@@ -7,7 +7,7 @@ from types import ModuleType
 from typing import Union
 from abc import ABC
 from traceback import format_exc
-from .templates.base_view import BaseView
+from .bases.base_view import BaseView
 from .config import read_config, write_config
 from .communicators import Communicator
 

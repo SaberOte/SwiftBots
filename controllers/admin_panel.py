@@ -3,8 +3,8 @@ import signal
 import time
 from typing import Callable
 from src.botcore import crons
-from src.botcore.templates.base_view import BaseView
-from src.botcore.templates.base_controller import BaseController, admin_only
+from src.botcore.bases.base_view import BaseView
+from src.botcore.bases.base_controller import BaseController, admin_only
 from src.botcore.views import launch_view
 
 

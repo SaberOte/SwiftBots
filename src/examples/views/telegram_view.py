@@ -12,7 +12,7 @@ Numeric id only allowed, but not username! Can be received with bot @getmyid_bot
 
 Class could have any name. File name is restricted only
 """
-from src.botcore.templates.base_telegram_view import BaseTelegramView
+from src.botcore.bases.base_telegram_view import BaseTelegramView
 
 
 class TelegramView(BaseTelegramView):

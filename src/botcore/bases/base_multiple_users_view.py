@@ -1,7 +1,7 @@
 """
 context must contain 'sender' and 'message' keys
 """
-from src.botcore.templates.base_view import BaseView
+from src.botcore.bases.base_view import BaseView
 from abc import abstractmethod
 
 

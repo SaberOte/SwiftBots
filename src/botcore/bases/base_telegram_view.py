@@ -4,7 +4,7 @@ import signal
 import os
 from abc import ABC
 from traceback import format_exc
-from src.botcore.templates.base_multiple_users_view import BaseMultipleUsersView
+from src.botcore.bases.base_multiple_users_view import BaseMultipleUsersView
 
 
 class BaseTelegramView(BaseMultipleUsersView, ABC):

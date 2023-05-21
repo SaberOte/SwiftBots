@@ -10,8 +10,8 @@ Example of some controller that can just send some dumb messages
 2. `any` is just a pipe to load there all of query's data.
 It's used by only when no one command is not accepted
 """
-from src.botcore.templates.base_multiple_users_view import BaseMultipleUsersView
-from src.botcore.templates.base_controller import BaseController
+from src.botcore.bases.base_multiple_users_view import BaseMultipleUsersView
+from src.botcore.bases.base_controller import BaseController
 
 class SayHello(BaseController):
     def __init__(self, bot):
