@@ -46,9 +46,9 @@ def launch_view(name: str, flags: list[str]):
                 comm.close()
     else:  # start as daemon
         res_path = os.path.join(os.getcwd(), 'logs')
-        new_flags = ["-MS"]
+        new_flags = ["--machine-start"]
         if 'from reboot' in flags:
-            new_flags.append('-FR')
+            new_flags.append('--from-reboot')
         os.system(f'nohup python3 main.py @botcore_{name}@ '
                   f'start {name} {" ".join(new_flags)} > {res_path}/{name}_launch_log.txt 2>&1 &')
 

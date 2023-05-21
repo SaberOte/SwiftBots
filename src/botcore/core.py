@@ -31,7 +31,7 @@ def launch_bot(flags: list[str]):
     else:  # launch daemon instance
         res_path = os.path.join(os.getcwd(), 'logs')
         os.system('nohup python3 main.py @botcore_core@ '
-                  f'start -MS > {res_path}/core_launch_log.txt 2>&1 &')
+                  f'start --machine-start > {res_path}/core_launch_log.txt 2>&1 &')
 
 
 class Core:

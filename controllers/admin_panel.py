@@ -31,7 +31,7 @@ class AdminPanel(SuperController):
         self.log('Program is rebooting by admin')
         res_path = os.path.join(os.getcwd(), 'logs')
         os.system(f'nohup python3 main.py @botcore_core@ '
-                  f'start -MS -FR > {res_path}/core_launch_log.txt 2>&1 &')
+                  f'start --machine-start --from-reboot > {res_path}/core_launch_log.txt 2>&1 &')
         time.sleep(10)
         # Class Communicator another view must force kill this process.
         # If it won't, something's wrong
