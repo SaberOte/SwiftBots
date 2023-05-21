@@ -36,7 +36,9 @@ def write_reference():
     """write to stdout help information"""
     print('''Usage: python3 main.py [arguments] [flags]
 Arguments:
-start view: start certain view from ./views manually
+start `VIEW_NAME`: start certain view from ./views manually
+add view: create new view and choose some template
+add controller: create new controller and choose some template
 
 Flags:
 --debug\t\t-d : print every log
@@ -63,6 +65,18 @@ def read_flags(keys: list[str]) -> list[str]:
     return flags
 
 
+def start_view(args: list[str], flags: list[str]):
+    if len(args) == 0:
+        print('Need a view name to start!')
+        write_reference()
+        sys.exit(1)
+    view = args[0]
+    views.launch_view(view, flags)
+
+
+def create_view(): # тут и закончил
+
+
 def process_arguments(args: list[str], flags: list[str]):
     """get arguments in order and process"""
     args_len = len(args)
@@ -71,12 +85,9 @@ def process_arguments(args: list[str], flags: list[str]):
         sys.exit(0)
     arg = args[0]
     if arg == 'start':
-        if len(args) < 2:
-            print('Need a view name to start!')
-            write_reference()
-            return
-        view = args[1]
-        views.launch_view(view, flags)
+        start_view(args[1:], flags)
+    elif arg == 'add':
+        create_view()
     else:
         print(f'Argument {arg} is not recognized')
 

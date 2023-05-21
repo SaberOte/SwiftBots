@@ -91,6 +91,12 @@ class BaseTelegramView(BaseMultipleUsersView, ABC):
                 yield ans
 
     def listen(self):
+        """
+        Input pipe for commands from user.
+        Method must use "yield" operator to give information and command
+        Example: yield {'sender': user_id, 'message': command}
+        `sender` is required property
+        """
         assert self.admin and self.token, 'No defined token and admin fields'
         if 'from reboot' in self._flags:
             self.report('View is restarted')

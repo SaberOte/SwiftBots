@@ -53,7 +53,7 @@ class BaseMultipleUsersView(BaseView):
         If user sends some unknown shit, then say him about it
         :param context: needs to have 'sender' property
         """
-        self.log('Unknown command', context['message'])
+        self.log('Unknown command. Context:\n', context)
         return self.reply(self.unknown_error_message, context)
 
     def refuse(self, context: dict):
@@ -61,5 +61,5 @@ class BaseMultipleUsersView(BaseView):
         If user can't use it, then he must be aware
         :param context: needs to have 'sender' property
         """
-        self.log(f'Forbidden. Context: {context}')
+        self.log(f'Forbidden. Context:\n{context}')
         return self.reply(self.refuse_message, context)
