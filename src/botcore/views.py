@@ -7,7 +7,7 @@ from types import ModuleType
 from typing import Union
 from abc import ABC
 from traceback import format_exc
-from .templates.super_view import SuperView
+from .templates.base_view import BaseView
 from .config import read_config, write_config
 from .communicators import Communicator
 
@@ -33,7 +33,7 @@ def launch_view(name: str, flags: list[str]):
             module = import_view(name)
             module = importlib.reload(module)  # if program was updated and restarted
             clas = get_class(module)
-            inst: SuperView = clas()
+            inst: BaseView = clas()
             flags.append('launch')
             inst.init(flags)
             inst.init_listen()  # Starts infinite loop and never return
@@ -63,10 +63,10 @@ def check_name_valid(name: str):
 
 def get_class(module: ModuleType):
     for cls in inspect.getmembers(module, inspect.isclass):
-        if issubclass(cls[1], SuperView) and ABC not in cls[1].__bases__:
+        if issubclass(cls[1], BaseView) and ABC not in cls[1].__bases__:
             return cls[1]
     msg = f"Can't import view {module.__name__.split('.')[0]}. This file does not contain " \
-          'class that inherited from SuperView'
+          'class that inherited from BaseView'
     raise ImportError(msg)
 
 
@@ -77,8 +77,8 @@ def import_view(name: str) -> ModuleType:
 
 
 class ViewsManager:
-    main_view: Union[SuperView, _RawView, None]
-    views: {str: SuperView} = {}
+    main_view: Union[BaseView, _RawView, None]
+    views: {str: BaseView} = {}
 
     def __init__(self, log, communicator: Communicator, flags):
         self.communicator = communicator
@@ -219,7 +219,7 @@ class ViewsManager:
         for x in imports:
             view_name = x.__name__.split('.')[-1]
             try:
-                clas: SuperView = get_class(x)()
+                clas: BaseView = get_class(x)()
                 clas.init([])  # with no flags
                 clas.log = self.log
                 # Setting dict of views as { name : class }

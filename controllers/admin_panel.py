@@ -3,8 +3,8 @@ import signal
 import time
 from typing import Callable
 from src.botcore import crons
-from src.botcore.templates.super_view import SuperView
-from src.botcore.templates.super_controller import SuperController, admin_only
+from src.botcore.templates.base_view import BaseView
+from src.botcore.templates.base_controller import BaseController, admin_only
 from src.botcore.views import launch_view
 
 
@@ -17,15 +17,15 @@ def remember_request(func):
     return wrapper
 
 
-class AdminPanel(SuperController):
-    last_exec: tuple[Callable, SuperView, dict] = ()
+class AdminPanel(BaseController):
+    last_exec: tuple[Callable, BaseView, dict] = ()
 
     def __init__(self, bot):
         super().__init__(bot)
 
     @admin_only
     @remember_request
-    def reboot(self, view: SuperView, context):
+    def reboot(self, view: BaseView, context):
         """Reboot the core bot. """
         view.report('Now restarting...')
         self.log('Program is rebooting by admin')
@@ -40,7 +40,7 @@ class AdminPanel(SuperController):
 
     @admin_only
     @remember_request
-    def exit(self, view: SuperView, context):
+    def exit(self, view: BaseView, context):
         self._bot.communicator.close()
         self.log('Program is suspended by admin')
         view.report('Core stopped.')
@@ -48,7 +48,7 @@ class AdminPanel(SuperController):
 
     @admin_only
     @remember_request
-    def update_module(self, view: SuperView, context):
+    def update_module(self, view: BaseView, context):
         module: str = context['message']
         module = module.replace(' ', '_')
         if len(module) == 0:
@@ -72,7 +72,7 @@ class AdminPanel(SuperController):
 
     @admin_only
     @remember_request
-    def start_view(self, view: SuperView, context):
+    def start_view(self, view: BaseView, context):
         module: str = context['message']
         module = module.replace(' ', '_')
         if module in self._bot.views_manager.views:
@@ -83,7 +83,7 @@ class AdminPanel(SuperController):
 
     @admin_only
     @remember_request
-    def reboot_view(self, view: SuperView, context):
+    def reboot_view(self, view: BaseView, context):
         module: str = context['message']
         module = module.replace(' ', '_')
         if module not in self._bot.views_manager.views:
@@ -98,7 +98,7 @@ class AdminPanel(SuperController):
 
     @admin_only
     @remember_request
-    def kill_view(self, view: SuperView, context):
+    def kill_view(self, view: BaseView, context):
         module: str = context['message']
         module = module.replace(' ', '_')
         if module not in self._bot.views_manager.views:
@@ -114,14 +114,14 @@ class AdminPanel(SuperController):
         del self._bot.views_manager.views[module]
 
     @admin_only
-    def total_exit(self, view: SuperView, context):
+    def total_exit(self, view: BaseView, context):
         for module in self._bot.views_manager.views:
             self._bot.views_manager.kill_view(module)
         self.exit(view, context)
 
     @admin_only
     @remember_request
-    def send_status(self, view: SuperView, context):
+    def send_status(self, view: BaseView, context):
         views = self._bot.views_manager.ping_views()
         report = ''
         if len(views) > 0:
@@ -136,7 +136,7 @@ class AdminPanel(SuperController):
         view.reply(report, context)
 
     @admin_only
-    def repeat_cmd(self, view: SuperView, context: dict):
+    def repeat_cmd(self, view: BaseView, context: dict):
         if self.last_exec:
             func, view, context = self.last_exec
             func(self, view, context)

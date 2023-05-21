@@ -5,10 +5,10 @@ import os
 import random
 from abc import ABC
 from traceback import format_exc
-from .super_view import SuperView
+from .base_view import BaseView
 
 
-class VkontakteView(SuperView, ABC):
+class BaseVkontakteView(BaseView, ABC):
     token: str
     admin: int
     authentic_style = True
@@ -85,8 +85,8 @@ class VkontakteView(SuperView, ABC):
                     self.log('UNHANDLED' + str(update))
                 network_error_counter = 0
         except requests.exceptions.ConnectionError:
-            self.log('Connection ERROR in telegram_view.py. Sleep a minute')
+            self.log('Connection ERROR in base_telegram_view.py. Sleep a minute')
             time.sleep(60)
         except requests.exceptions.ReadTimeout:
-            self.log('Connection ERROR in telegram_view.py. Sleep a minute')
+            self.log('Connection ERROR in base_telegram_view.py. Sleep a minute')
             time.sleep(60)

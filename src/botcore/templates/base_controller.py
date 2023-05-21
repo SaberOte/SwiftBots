@@ -17,7 +17,7 @@ def admin_only(func):
     return wrapper
 
 
-class SuperController(ABC):
+class BaseController(ABC):
     prefixes: {str: Callable} = {}
     cmds: {str: Callable} = {}
     tasks: {str: (Callable, int, str)} = {}

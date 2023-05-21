@@ -83,7 +83,7 @@ def process_arguments(args: list[str], flags: list[str]):
 
 def signal_usr1(signum, frame):
     """
-    Calls just in SuperView when it's needed to update the current view.
+    Calls just in BaseView when it's needed to update the current view.
     So main calls again without rebooting all program.
     Due to python features all imported modules are cached, so it force reloads only view
     """

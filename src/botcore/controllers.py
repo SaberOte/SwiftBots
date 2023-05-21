@@ -3,7 +3,7 @@ import inspect
 import importlib
 from abc import ABC
 from types import ModuleType
-from .templates import super_controller
+from .templates import base_controller
 
 
 def import_controller(name: str) -> ModuleType:
@@ -34,7 +34,7 @@ class ControllerManager:
         classes = []
         for x in imports:
             for cls in inspect.getmembers(x, inspect.isclass):
-                if issubclass(cls[1], super_controller.SuperController) and ABC not in cls[1].__bases__:
+                if issubclass(cls[1], base_controller.BaseController) and ABC not in cls[1].__bases__:
                     try:
                         classes.append(cls[1](self._bot))
                     except Exception as e:
@@ -55,14 +55,14 @@ class ControllerManager:
             raise Exception(f'Exception in the import module ({module}):\n{str(type(e))}\n{str(e)}')
         entity = None
         for cls in inspect.getmembers(imported, inspect.isclass):
-            if issubclass(cls[1], super_controller.SuperController) and ABC not in cls[1].__bases__:
+            if issubclass(cls[1], base_controller.BaseController) and ABC not in cls[1].__bases__:
                 try:
                     entity = cls[1](self._bot)
                 except Exception as e:
                     raise Exception('Error in constructor controller: ' + str(cls[0]) + '\n' + str(e))
                 break
         if entity is None:
-            raise ModuleNotFoundError(f'Controller {module} has no class inheriting SuperController')
+            raise ModuleNotFoundError(f'Controller {module} has no class inheriting BaseController')
         self.controllers = list(filter(lambda plg: plg.__class__.__name__ != entity.__class__.__name__, self.controllers))
         self.controllers.append(entity)
         self.log(f'Updated controller {entity.__class__.__name__}')

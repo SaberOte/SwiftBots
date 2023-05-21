@@ -14,7 +14,7 @@ from ..config import read_config, write_config
 '''
 
 
-class SuperView(ABC):
+class BaseView(ABC):
     controllers: list[str] = []  # "подписка" на плагины. Каждое вьюшке соответствуют какие-то плагины. Команда будет искаться в них
     inner_commands: {str: str} = {}  # команды от ядра бота конкретно для этой вьюшки
     name: str

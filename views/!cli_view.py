@@ -1,8 +1,8 @@
-from ...templates.super_view import SuperView
+from ...templates.super_view import BaseView
 from ...communicators import Communicator
 
 
-class CliView(SuperView):
+class CliView(BaseView):
     def __init__(self, flags):
         super().__init__(flags)
 
