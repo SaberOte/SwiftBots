@@ -5,6 +5,7 @@ resources/*
 .idea/
 views/*
 controllers/*
+.run/
 
 
 # Byte-compiled / optimized / DLL files
