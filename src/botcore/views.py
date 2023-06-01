@@ -58,7 +58,7 @@ def check_name_valid(name: str):
     assert f'{name}.py' in os.listdir(f'views'), \
         f"Module views/{name}.py doesn't exist"
     assert name.islower(), 'View name must be lowercase'
-    assert name.endswith('view'), 'View name must end with "view"'
+    # assert name.endswith('view'), 'View name must end with "view"'
 
 
 def get_class(module: ModuleType):
@@ -147,7 +147,8 @@ class ViewsManager:
     def ping_views(self) -> set:
         config = read_config('config.ini')
         disabled_views = set(config['Disabled_Views'])
-        active_views = set(filter(lambda x: x.endswith('view'), config['Names'])) - disabled_views
+        # active_views = set(filter(lambda x: x.endswith('view'), config['Names'])) - disabled_views
+        active_views = set(config['Names']) - disabled_views
         running_views = set()
         for view in active_views:
             if self.ping_view(view):
@@ -162,8 +163,8 @@ class ViewsManager:
         # receiving modules NAMES
         views_dir: list[str] = \
             [x[:-3] for x in os.listdir('views')
-             if x.endswith('view.py')
-             and x.islower()
+             if x.islower()
+             # and x.endswith('view.py')
              and x[:-3] not in disabled_views
              and not x.startswith('!')]
 
