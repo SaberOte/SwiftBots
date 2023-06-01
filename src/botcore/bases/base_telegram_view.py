@@ -4,10 +4,10 @@ import signal
 import os
 from abc import ABC
 from traceback import format_exc
-from src.botcore.bases.base_multiple_users_view import BaseMultipleUsersView
+from src.botcore.bases.base_chat_view import BaseChatView
 
 
-class BaseTelegramView(BaseMultipleUsersView, ABC):
+class BaseTelegramView(BaseChatView, ABC):
     token: str
     admin: str
     first_time_launched = True

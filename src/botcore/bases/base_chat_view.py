@@ -5,7 +5,7 @@ from src.botcore.bases.base_view import BaseView
 from abc import abstractmethod
 
 
-class BaseMultipleUsersView(BaseView):
+class BaseChatView(BaseView):
     admin: str
     error_message = 'Error occurred'
     unknown_error_message = 'Unknown command'

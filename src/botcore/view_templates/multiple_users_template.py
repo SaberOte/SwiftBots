@@ -1,7 +1,7 @@
-from src.botcore.bases.base_multiple_users_view import BaseMultipleUsersView
+from src.botcore.bases.base_chat_view import BaseChatView
 
 
-class ViewName(BaseMultipleUsersView):
+class ViewName(BaseChatView):
     controllers = []
 
     def listen(self):
