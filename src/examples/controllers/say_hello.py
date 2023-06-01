@@ -18,10 +18,10 @@ class SayHello(BaseController):
         super().__init__(bot)
 
     def say_hi(self, view: BaseChatView, context: dict):
-        view.reply('Yo!', context)
+        view.reply(f"Yo! {context['sender']}", context)
 
     def say_truth(self, view: BaseChatView, context: dict):
-        view.reply('PHP is the best PL ever!', context)
+        view.reply('C is the best programming language ever', context)
 
     cmds = {
         "hello": say_hi,
