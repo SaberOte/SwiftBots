@@ -1,14 +1,16 @@
+# my custom
+.run/
+test.py
+views/*
+controllers/*
+models/*
+bots/*
+
 **/__pycache__
 **/logs
 resources/*
 .env
 .idea/
-views/*
-controllers/*
-
-# polkadott custom
-.run/
-test.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

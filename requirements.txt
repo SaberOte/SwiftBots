@@ -1,2 +1,2 @@
 requests
-crontab
+python-dotenv

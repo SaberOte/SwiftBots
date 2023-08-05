@@ -1,8 +1,12 @@
-"""
-context must contain 'sender' and 'message' keys
-"""
+from sys import stderr
 from src.botcore.bases.base_view import BaseView
 from abc import abstractmethod
+
+
+class ChatViewContext:
+    def __init__(self, message: str, sender: str):
+        self.message = message
+        self.sender = sender
 
 
 class BaseChatView(BaseView):
@@ -21,45 +25,46 @@ class BaseChatView(BaseView):
         Send important message to admin
         :param message: report message
         """
+        if self.admin is None:
+            raise NotImplementedError()
         print(f'Reported "{message}"')
         return self.send(message, self.admin)
 
-    def error(self, message: str, context: dict):
+    def error(self, admin_message: str, context: ChatViewContext):
         """
-        Inform user there is internal error. Admin is notifying too.
-        :param message: message is only for admin. User's looking at default message
-        :param context: needs to have 'sender' property
+        Inform user there is internal error. Admin is notifying too!
+        :param admin_message: message is only for admin!!! User looks at default message
+        :param context: context with `sender` and `messages` fields
         """
         try:
-            if context['sender'] != self.admin:
-                self.reply(self.error_message, context)
-            print('ERROR\n' + str(message))
+            if context.sender != self.admin:
+                self.answer(self.error_message, context)
         finally:
-            return self.report(str(message))
+            stderr.write(str(admin_message))
+            return self.report(str(admin_message))
 
-    def reply(self, message: str, context: dict):
+    def answer(self, message: str, context: ChatViewContext):
         """
-        Answer the sender
+        Text message to user
         :param message: text message
-        :param context: needs to have 'sender' property
+        :param context: context with `sender` and `messages` fields
         """
-        assert 'sender' in context, 'Needs "sender" defined in context!'
-        sender = context['sender']
-        print(f'''Replied "{sender}":\n"{message}"''')
+        sender = context.sender
+        print(f'''Answered "{sender}":\n"{message}"''')
         return self.send(message, sender)
 
-    def unknown_command(self, context: dict):
+    def unknown_command(self, context: ChatViewContext):
         """
-        If user sends some unknown shit, then say him about it
-        :param context: needs to have 'sender' property
+        If user sends some unknown shit, then say him about that
+        :param context: context with `sender` and `messages` fields
         """
         print('Unknown command. Context:\n', context)
-        return self.reply(self.unknown_error_message, context)
+        return self.answer(self.unknown_error_message, context)
 
-    def refuse(self, context: dict):
+    def refuse(self, context: ChatViewContext):
         """
         If user can't use it, then he must be aware
-        :param context: needs to have 'sender' property
+        :param context: context with `sender` and `messages` fields
         """
         print(f'Forbidden. Context:\n{context}')
-        return self.reply(self.refuse_message, context)
+        return self.answer(self.refuse_message, context)

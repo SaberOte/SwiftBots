@@ -52,23 +52,23 @@ class AdminPanel(BaseController):
         module: str = context['message']
         module = module.replace(' ', '_')
         if len(module) == 0:
-            view.reply('You can\'t update all controllers at the time. Specify certain one', context)
+            view.answer('You can\'t update all controllers at the time. Specify certain one', context)
             return
         updated = self._bot.controller_manager.update_controller(module)
         if updated > 0:
-            view.reply(f'Controller {module}\'s updated in RAM', context)
+            view.answer(f'Controller {module}\'s updated in RAM', context)
             return
         try:
             updated = self._bot.views_manager.update_view(module)
         except Exception as e:
-            view.reply(str(e), context)
+            view.answer(str(e), context)
             return
         if updated == 1:
-            view.reply(f"View {module}'s updated in RAM, but it doesn't launched", context)
+            view.answer(f"View {module}'s updated in RAM, but it doesn't launched", context)
         elif updated == 2:
-            view.reply(f"View {module}'s updated in RAM", context)
+            view.answer(f"View {module}'s updated in RAM", context)
         elif updated == 0:
-            view.reply('No such name modules', context)
+            view.answer('No such name modules', context)
 
     @admin_only
     @remember_request
@@ -76,10 +76,10 @@ class AdminPanel(BaseController):
         module: str = context['message']
         module = module.replace(' ', '_')
         if module in self._bot.views_manager.views:
-            view.reply(f'{module} is already launched', context)
+            view.answer(f'{module} is already launched', context)
             return
         launch_view(module, [])
-        view.reply(f'{module} is asked to start', context)
+        view.answer(f'{module} is asked to start', context)
 
     @admin_only
     @remember_request
@@ -87,14 +87,14 @@ class AdminPanel(BaseController):
         module: str = context['message']
         module = module.replace(' ', '_')
         if module not in self._bot.views_manager.views:
-            view.reply(f'{module} is not launched yet', context)
+            view.answer(f'{module} is not launched yet', context)
         view_flags = ['from reboot']
         try:
             del self._bot.views_manager.views[module]
         except KeyError:
             pass
         launch_view(module, view_flags)
-        view.reply(f'{module} is asked to restart', context)
+        view.answer(f'{module} is asked to restart', context)
 
     @admin_only
     @remember_request
@@ -102,15 +102,15 @@ class AdminPanel(BaseController):
         module: str = context['message']
         module = module.replace(' ', '_')
         if module not in self._bot.views_manager.views:
-            view.reply(f'{module} is not launched', context)
+            view.answer(f'{module} is not launched', context)
             return
         killed: int = self._bot.views_manager.kill_view(module)
         if killed == 0:
-            view.reply(f'View {module}\'s not launched!', context)
+            view.answer(f'View {module}\'s not launched!', context)
         elif killed == 1:
-            view.reply(f'View {module} sent unexpected answer. Its destiny is unknown', context)
+            view.answer(f'View {module} sent unexpected answer. Its destiny is unknown', context)
         elif killed == 2:
-            view.reply(f'{module} stopped', context)
+            view.answer(f'{module} stopped', context)
         del self._bot.views_manager.views[module]
 
     @admin_only
@@ -133,7 +133,7 @@ class AdminPanel(BaseController):
                   '\n- '.join([x.__module__.split('.')[-1] for x in self._bot.controller_manager.controllers])
         else:
             report += 'No loaded controllers'
-        view.reply(report, context)
+        view.answer(report, context)
 
     @admin_only
     def repeat_cmd(self, view: BaseView, context: dict):
@@ -141,7 +141,7 @@ class AdminPanel(BaseController):
             func, view, context = self.last_exec
             func(self, view, context)
         else:
-            view.reply('There is no command in memory', context)
+            view.answer('There is no command in memory', context)
 
     def _get_tasks_status(self):
         tasks = crons.get('../resources/config.ini')

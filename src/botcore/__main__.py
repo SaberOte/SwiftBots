@@ -1,13 +1,17 @@
 """Script is processing commands and flags"""
 import os
 import sys
-import signal
-from src.botcore import views
+from dotenv import load_dotenv
+from sys import stderr
+from src.botcore import bots
 
-from datetime import datetime
 
 def main():
     """entry point"""
+    load_dotenv()  # .env file should only be used at development stage
+    if os.getenv('ENVIRONMENT') == 'container':
+        start_bot()
+    raise NotImplementedError('Not implemented host stand yet')
     sys_args = sys.argv[1:]
     keys = list(filter(lambda arg: arg.startswith('-'), sys_args))
     args = list(filter(lambda arg: not arg.startswith('-') and not arg.startswith('@'), sys_args))
@@ -17,14 +21,13 @@ def main():
 
 def write_reference():
     """write to stdout help information"""
-    print('''Usage: python3 main.py [arguments] [flags]
+    print('''Usage: python3 main.py [flags] [arguments]
 Arguments:
-start `VIEW_NAME`: start certain view from ./views manually
 add view: create new view and choose some template
 add controller: create new controller and choose some template
 
 Flags:
---debug\t\t-d : print every log
+-h, --help:\nwrite this help reference
 ''')
 
 
@@ -35,10 +38,6 @@ def read_flags(keys: list[str]) -> list[str]:
         if key in ['-h', '--help']:
             write_reference()
             sys.exit(0)
-        elif key in ['--ms', '--machine-start']:
-            flags.append('machine start')  # app launched programmatically. So start instance directly
-        elif key in ['--fr', '--from-reboot']:
-            flags.append('from reboot')  # let view know it's rebooting but not initial start
         else:
             print(f'No such key {key}')
             write_reference()
@@ -46,13 +45,12 @@ def read_flags(keys: list[str]) -> list[str]:
     return flags
 
 
-def start_view(args: list[str], flags: list[str]):
-    if len(args) == 0:
-        print('Need a view name to start!')
-        write_reference()
+def start_bot():
+    name = os.getenv('BOT_NAME')
+    if name is None:
+        stderr.write('It\'s no VIEW_NAME in environment variables')
         sys.exit(1)
-    view = args[0]
-    views.launch_view(view, flags)
+    bots.launch_bot(name)
 
 
 def create_entity():
@@ -117,8 +115,6 @@ def create_entity():
     # закончил здесь. нужно скопировать файл
 
 
-
-
 def process_arguments(args: list[str], flags: list[str]):
     """get arguments in order and process"""
     args_len = len(args)
@@ -126,21 +122,7 @@ def process_arguments(args: list[str], flags: list[str]):
         print('No arguments')
         sys.exit(0)
     arg = args[0]
-    if arg == 'start':
-        start_view(args[1:], flags)
-    elif arg == 'add' or arg == 'create':
+    if arg == 'add' or arg == 'create':
         create_entity()
     else:
         print(f'Argument {arg} is not recognized')
-
-
-def signal_usr1(signum, frame):
-    """
-    Calls just in BaseView when it's needed to update the current view.
-    So main calls again without rebooting all program.
-    Due to python features all imported modules are cached, so it force reloads only view
-    """
-    main()
-
-
-signal.signal(signal.SIGUSR1, signal_usr1)

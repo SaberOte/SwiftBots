@@ -1,16 +1,14 @@
 import os
-import sys
+from sys import stderr
 import inspect
 import importlib
-import signal
-import subprocess
 from types import ModuleType
 from typing import Union
 from abc import ABC
 from traceback import format_exc
-from .bases.base_view import BaseView
-from .config import read_config, write_config
-from .communicators import Communicator
+from src.botcore.bases.base_view import BaseView
+from src.botcore.config import read_config, write_config
+from src.botcore.communicators import Communicator
 
 
 class _RawView:
@@ -18,61 +16,39 @@ class _RawView:
         message = '---Raw View report:\n' + message + '\n---'
         print(message)
 
-
-def launch_view(name: str, flags: list[str]):
+'''
+def launch_view(name: str):
     """
-    Looking at flags, launches a view as a daemon or as a main thread (LOCKS FURTHER CODE)
+    Launches a view by name.
     :param name: exact view name
-    :param flags: see flags description in __main__.py
     """
     check_name_valid(name)
-    if 'machine start' in flags or 'debug' in flags:  # direct start
-        try:
-            module = import_view(name)
-            module = importlib.reload(module)  # if program was updated and restarted
-            clas = get_class(module)
-            inst: BaseView = clas()
-            flags.append('launch')
-            inst.init(flags)
-            inst.init_listen()  # Starts infinite loop and never return
-        except:
-            comm = Communicator(name+'ghost', print)
-            try:
-                msg = f'Exception in view launching:\n{format_exc()}'
-                comm.send('report|' + msg, 'core')
-            finally:
-                comm.close()
-    else:  # start as daemon
-        res_path = os.path.join(os.getcwd(), 'logs')
-        new_flags = ["--machine-start"]
-        if 'from reboot' in flags:
-            new_flags.append('--from-reboot')
-        os.system(f'nohup python3 main.py @botcore_{name}@ '
-                  f'start {name} {" ".join(new_flags)} > {res_path}/{name}_launch_log.txt 2>&1 &')
-
+    module = import_view(name)
+    instance: BaseView = get_class(module)()
+    instance.init()
+    instance.init_listen()  # Starts infinite loop and never return
 
 def check_name_valid(name: str):
     """Check existence view file and its correct name"""
     assert f'{name}.py' in os.listdir(f'views'), \
         f"Module views/{name}.py doesn't exist"
-    assert name.islower(), 'View name must be lowercase'
-    # assert name.endswith('view'), 'View name must end with "view"'
+    assert not name.startswith('!'), 'View with ! char is deactivated'
 
 
 def get_class(module: ModuleType):
     for cls in inspect.getmembers(module, inspect.isclass):
         if issubclass(cls[1], BaseView) and ABC not in cls[1].__bases__:
             return cls[1]
-    msg = f"Can't import view {module.__name__.split('.')[0]}. This file does not contain " \
-          'class that inherited from BaseView'
-    raise ImportError(msg)
+    raise ImportError(
+        f"Can't import view {module.__name__.split('.')[0]}. This file does not contain "
+         'class that inherited from BaseView')
 
 
 def import_view(name: str) -> ModuleType:
     module = __import__(f'views.{name}')
-    instance = getattr(module, name)
+    instance = getattr(module, name)  # get name instead of views.name
     return instance
-
+'''
 
 class ViewsManager:
     main_view: Union[BaseView, _RawView, None]
@@ -85,7 +61,7 @@ class ViewsManager:
         self.main_view = None
 
     def error(self, message: str):
-        sys.stderr.write(str(message))
+        stderr.write(str(message))
         self.report(str(message))
 
     def report(self, message: str):

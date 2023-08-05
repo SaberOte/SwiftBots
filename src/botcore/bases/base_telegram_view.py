@@ -4,7 +4,7 @@ import signal
 import os
 from abc import ABC
 from traceback import format_exc
-from src.botcore.bases.base_chat_view import BaseChatView
+from src.botcore.bases.base_chat_view import BaseChatView, ChatViewContext
 
 
 class BaseTelegramView(BaseChatView, ABC):
@@ -19,10 +19,6 @@ class BaseTelegramView(BaseChatView, ABC):
         if not answer['ok']:
             self._handle_error(answer)
         return answer
-
-    def init_credentials(self):
-        self.token = os.environ['TELEGRAM_TOKEN']
-        self.admin = os.environ['ADMIN_ID']
 
     def update_message(self, data: dict) -> dict:
         """
@@ -113,12 +109,7 @@ class BaseTelegramView(BaseChatView, ABC):
                         sender = message['from']['id']
                         username = message['from']['username'] if 'username' in message['from'] else 'no username'
                         print(f"Came message from {sender} ({username}): '{text}'")
-                        yield {
-                            'message': text,
-                            'sender': sender,
-                            'username': username,
-                            'platform': 'telegram'
-                        }
+                        yield TGViewContext(text, sender, username)
                     else:
                         print('UNHANDLED\n', str(update))
                 except Exception as e:
@@ -140,3 +131,9 @@ class BaseTelegramView(BaseChatView, ABC):
             if reported != 1:
                 print('Not reported', reported)
             time.sleep(5)
+
+class TGViewContext(ChatViewContext):
+    def __init__(self, message: str, sender: str, username: str):
+        super().__init__(message, sender)
+        self.platform = 'telegram'
+        self.username = username

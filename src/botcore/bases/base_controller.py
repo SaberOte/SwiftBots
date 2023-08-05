@@ -1,8 +1,5 @@
 from typing import Callable, Optional, TYPE_CHECKING
 from abc import ABC
-if TYPE_CHECKING:
-    from ..core import Core
-
 
 def admin_only(func):
     """Decorator. Should be with controller functions to prevent non admin execution"""
@@ -18,12 +15,12 @@ def admin_only(func):
 
 
 class BaseController(ABC):
-    prefixes: {str: Callable} = {}
-    cmds: {str: Callable} = {}
-    tasks: {str: (Callable, int, str)} = {}
-    any: Optional[Callable] = None
-
-    def __init__(self, bot: 'Core'):
-        self.error = bot.error
-        self.report = bot.report
-        self._bot = bot
+    error: Callable
+    report: Callable
+    def init(self, error: Callable, report: Callable):
+        """
+        :param error: method to log the error and notify admin
+        :param report: method to send message to admin
+        """
+        self.error = error
+        self.report = report
