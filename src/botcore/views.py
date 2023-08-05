@@ -1,4 +1,5 @@
 import os
+import sys
 import inspect
 import importlib
 import signal
@@ -13,12 +14,9 @@ from .communicators import Communicator
 
 
 class _RawView:
-    def __init__(self, log):
-        self.log = log
-
     def report(self, message: str):
         message = '---Raw View report:\n' + message + '\n---'
-        self.log(message)
+        print(message)
 
 
 def launch_view(name: str, flags: list[str]):
@@ -80,28 +78,27 @@ class ViewsManager:
     main_view: Union[BaseView, _RawView, None]
     views: {str: BaseView} = {}
 
-    def __init__(self, log, communicator: Communicator, flags):
+    def __init__(self, communicator: Communicator, flags):
         self.communicator = communicator
-        self.log = log
         self.flags = flags
-        # self.main_view = _RawView(lambda x: None if 'debug' in flags else log)
-        self.main_view = None  # _RawView(log)
+        # self.main_view = _RawView()
+        self.main_view = None
 
     def error(self, message: str):
-        self.log('!!!ERROR!!!\n'+str(message))
+        sys.stderr.write(str(message))
         self.report(str(message))
 
     def report(self, message: str):
-        # можно ещё сделать накопление ошибок или передачу их другой вьюшке
+        raise NotImplementedError(message)
         if not self.main_view:
             self.assign_main_view()
-        self.log('Report has sent to main view : ' + self.main_view.__class__.__name__)
+        print('Report has sent to main view : ' + self.main_view.__class__.__name__)
         self.main_view.report(str(message))
 
     def assign_main_view(self):
         if len(self.views) == 0:
-            # self.main_view = _RawView(lambda x: None if 'debug' in self.flags else self.log)
-            self.main_view = _RawView(self.log)
+            # self.main_view = _RawView(lambda x: None if 'debug' in self.flags else print)
+            self.main_view = _RawView()
             return
         config = read_config('config.ini')
         disabled_views = set(config['Disabled_Views'])
@@ -119,7 +116,7 @@ class ViewsManager:
         if 'cliview' in loaded_views and 'cliview' not in disabled_views and self.ping_view('cliview'):  # если только cliview есть, выбирается он
             self.main_view = loaded_views['cliview']
             return
-        self.main_view = _RawView(lambda x,y: None if 'debug' in self.flags else self.log)  # если ну прям вообще ничего нет, то всё уйдёт в логи
+        self.main_view = _RawView()
 
     def ping_view(self, view: str) -> bool:
         """
@@ -130,7 +127,7 @@ class ViewsManager:
         config = read_config('config.ini')
         if view not in config['Names']:
             return False
-        comm = Communicator('core' + 'ghost', self.log)
+        comm = Communicator('core' + 'ghost')
         try:
             ans = comm.request('ping', view)
         finally:
@@ -158,7 +155,7 @@ class ViewsManager:
     def init_views(self):
         config = read_config('config.ini')
         disabled_views = set(config['Disabled_Views'])
-        self.log(f'Disabled views: {str(disabled_views)}')
+        print(f'Disabled views: {str(disabled_views)}')
 
         # receiving modules NAMES
         views_dir: list[str] = \
@@ -169,14 +166,14 @@ class ViewsManager:
              and not x.startswith('!')]
 
         self.fill_views_dict(views_dir)
-        self.log(f'Loaded views: {[x for x in self.views]}')
+        print(f'Loaded views: {[x for x in self.views]}')
 
         # Detecting of already running views
         running_views: set[str] = self.ping_views()
         if len(running_views) > 0:
-            self.log(f'Running views now: {running_views}')
+            print(f'Running views now: {running_views}')
         else:
-            self.log('No running views now. Using Raw View from ViewsManager')
+            print('No running views now. Using Raw View from ViewsManager')
 
         # Starting of instances as daemons
         views_to_start: set[str] = set(self.views.keys()) - running_views - disabled_views - {'cliview'}
@@ -192,9 +189,9 @@ class ViewsManager:
                 self.error(f'View {view} failed to start: {e}')
 
         if len(views_to_start) == 0:
-            self.log('No views to start')
+            print('No views to start')
         else:
-            self.log(str(started) + ' started')
+            print(str(started) + ' started')
 
     def fill_views_dict(self, views_dir: list[str], should_reload=False) -> int:
         """
@@ -222,12 +219,11 @@ class ViewsManager:
             try:
                 clas: BaseView = get_class(x)()
                 clas.init([])  # with no flags
-                clas.log = self.log
                 # Setting dict of views as { name : class }
                 self.views[view_name] = clas
                 counter += 1
             except Exception as e:
-                self.log(str(e))
+                print(str(e))
                 self.error(f'Module {view_name} failed to import: {e}')
         return counter
 
@@ -253,7 +249,7 @@ class ViewsManager:
         :return: int, 0 - view is not launched, 1 - not exited. Reason is unknown., 2 - exited succesfully
         """
         if self.ping_view(view):
-            comm = Communicator('core' + 'ghost', self.log)
+            comm = Communicator('core' + 'ghost')
             try:
                 ans = comm.request('exit', view)
             finally:

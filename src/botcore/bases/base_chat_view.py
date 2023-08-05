@@ -21,7 +21,7 @@ class BaseChatView(BaseView):
         Send important message to admin
         :param message: report message
         """
-        self.log(f'Reported "{message}"')
+        print(f'Reported "{message}"')
         return self.send(message, self.admin)
 
     def error(self, message: str, context: dict):
@@ -33,7 +33,7 @@ class BaseChatView(BaseView):
         try:
             if context['sender'] != self.admin:
                 self.reply(self.error_message, context)
-            self.log('ERROR\n' + str(message))
+            print('ERROR\n' + str(message))
         finally:
             return self.report(str(message))
 
@@ -45,7 +45,7 @@ class BaseChatView(BaseView):
         """
         assert 'sender' in context, 'Needs "sender" defined in context!'
         sender = context['sender']
-        self.log(f'''Replied "{sender}":\n"{message}"''')
+        print(f'''Replied "{sender}":\n"{message}"''')
         return self.send(message, sender)
 
     def unknown_command(self, context: dict):
@@ -53,7 +53,7 @@ class BaseChatView(BaseView):
         If user sends some unknown shit, then say him about it
         :param context: needs to have 'sender' property
         """
-        self.log('Unknown command. Context:\n', context)
+        print('Unknown command. Context:\n', context)
         return self.reply(self.unknown_error_message, context)
 
     def refuse(self, context: dict):
@@ -61,5 +61,5 @@ class BaseChatView(BaseView):
         If user can't use it, then he must be aware
         :param context: needs to have 'sender' property
         """
-        self.log(f'Forbidden. Context:\n{context}')
+        print(f'Forbidden. Context:\n{context}')
         return self.reply(self.refuse_message, context)

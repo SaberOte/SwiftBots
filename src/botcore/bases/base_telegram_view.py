@@ -44,7 +44,7 @@ class BaseTelegramView(BaseChatView, ABC):
         This method can contain any fields in data
         :param data:
         """
-        self.log(f"""Replied {data["chat_id"]}:\n'{data["text"]}'""")
+        print(f"""Replied {data["chat_id"]}:\n'{data["text"]}'""")
         return self.post('sendMessage', data)
 
     def delete_message(self, message_id, chat_id):
@@ -112,7 +112,7 @@ class BaseTelegramView(BaseChatView, ABC):
                         text = message['text']
                         sender = message['from']['id']
                         username = message['from']['username'] if 'username' in message['from'] else 'no username'
-                        self.log(f"Came message from {sender} ({username}): '{text}'")
+                        print(f"Came message from {sender} ({username}): '{text}'")
                         yield {
                             'message': text,
                             'sender': sender,
@@ -120,7 +120,7 @@ class BaseTelegramView(BaseChatView, ABC):
                             'platform': 'telegram'
                         }
                     else:
-                        self.log('UNHANDLED\n', str(update))
+                        print('UNHANDLED\n', str(update))
                 except Exception as e:
                     msg = 'Unhandled:' + '\nAnswer is:\n' + str(update) + '\n' + format_exc() 
                     try:
@@ -129,14 +129,14 @@ class BaseTelegramView(BaseChatView, ABC):
                         self.try_report(msg)
                         self.try_report('error number 0x8923')
         except requests.exceptions.ConnectionError as e:
-            self.log('Connection ERROR in base_telegram_view.py. Sleep a minute')
+            print('Connection ERROR in base_telegram_view.py. Sleep a minute')
             reported = 1 # = self.try_report('connection error')
             if reported != 1:
-                self.log('Not reported', reported)
+                print('Not reported', reported)
             time.sleep(5)
         except requests.exceptions.ReadTimeout as e:
-            self.log('Connection ERROR in base_telegram_view.py. Sleep a minute', e)
+            print('Connection ERROR in base_telegram_view.py. Sleep a minute', e)
             reported = 1 # = self.try_report('read timeout error')
             if reported != 1:
-                self.log('Not reported', reported)
+                print('Not reported', reported)
             time.sleep(5)

@@ -24,7 +24,6 @@ class BaseController(ABC):
     any: Optional[Callable] = None
 
     def __init__(self, bot: 'Core'):
-        self.log = bot.log
         self.error = bot.error
         self.report = bot.report
         self._bot = bot

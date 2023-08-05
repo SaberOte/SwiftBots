@@ -73,7 +73,7 @@ class BaseVkontakteView(BaseView, ABC):
                     text = message['text']
                     sender = message['from']['id']
                     username = message['from']['username'] if 'username' in message['from'] else 'no username'
-                    self.log(f"Came message: '{text}' from {sender} ({username})")
+                    print(f"Came message: '{text}' from {sender} ({username})")
                     yield {
                         'message': text,
                         'sender': sender,
@@ -81,11 +81,11 @@ class BaseVkontakteView(BaseView, ABC):
                         'platform': 'telegram'
                     }
                 else:
-                    self.log('UNHANDLED' + str(update))
+                    print('UNHANDLED' + str(update))
                 network_error_counter = 0
         except requests.exceptions.ConnectionError:
-            self.log('Connection ERROR in base_telegram_view.py. Sleep a minute')
+            print('Connection ERROR in base_telegram_view.py. Sleep a minute')
             time.sleep(60)
         except requests.exceptions.ReadTimeout:
-            self.log('Connection ERROR in base_telegram_view.py. Sleep a minute')
+            print('Connection ERROR in base_telegram_view.py. Sleep a minute')
             time.sleep(60)

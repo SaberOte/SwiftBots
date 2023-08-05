@@ -4,32 +4,15 @@ import sys
 import signal
 from src.botcore import views
 
+from datetime import datetime
 
 def main():
     """entry point"""
-    set_working_dir()
-    prepare_project()
     sys_args = sys.argv[1:]
     keys = list(filter(lambda arg: arg.startswith('-'), sys_args))
     args = list(filter(lambda arg: not arg.startswith('-') and not arg.startswith('@'), sys_args))
     flags = read_flags(keys)
     process_arguments(args, flags)
-
-
-def prepare_project():
-    """Create all needed directories"""
-    logs_path = os.path.join(os.getcwd(), 'logs')
-    if not os.path.isdir(logs_path):
-        os.makedirs(logs_path)
-
-
-def set_working_dir():
-    """sets project root directory as a working directory"""
-    # full file path's is PROJECT_PATH/src/botcore/__main__.py
-    # work directory must be PROJECT_PATH/
-    get_prev = os.path.dirname
-    path = get_prev(get_prev(get_prev(os.path.abspath(__file__))))
-    os.chdir(path)
 
 
 def write_reference():
@@ -52,8 +35,6 @@ def read_flags(keys: list[str]) -> list[str]:
         if key in ['-h', '--help']:
             write_reference()
             sys.exit(0)
-        elif key in ['-d', '--debug']:
-            flags.append('debug')  # write logs also in stdout
         elif key in ['--ms', '--machine-start']:
             flags.append('machine start')  # app launched programmatically. So start instance directly
         elif key in ['--fr', '--from-reboot']:
@@ -163,7 +144,3 @@ def signal_usr1(signum, frame):
 
 
 signal.signal(signal.SIGUSR1, signal_usr1)
-
-
-if __name__ != '__main__':
-    main()

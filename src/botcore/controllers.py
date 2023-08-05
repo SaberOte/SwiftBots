@@ -18,7 +18,6 @@ class ControllerManager:
     def __init__(self, bot):
         self._bot = bot
         self.error = bot.error
-        self.log = bot.log
 
     # init_controllers and update_controller are almost the same. Fix it!!!!!!!
     def init_controllers(self):
@@ -41,7 +40,7 @@ class ControllerManager:
                         self.error('Error in constructor controller: ' + str(cls[0]) + '\n' + str(e))
                     break
         self.controllers = classes
-        self.log(f'Loaded controllers: {str([x.__class__.__name__ for x in classes])}')
+        print(f'Loaded controllers: {str([x.__class__.__name__ for x in classes])}')
 
     def update_controller(self, controller: str) -> int:
         module = [x[:-3] for x in os.listdir('controllers') if x == f'{controller}.py']
@@ -65,5 +64,5 @@ class ControllerManager:
             raise ModuleNotFoundError(f'Controller {module} has no class inheriting BaseController')
         self.controllers = list(filter(lambda plg: plg.__class__.__name__ != entity.__class__.__name__, self.controllers))
         self.controllers.append(entity)
-        self.log(f'Updated controller {entity.__class__.__name__}')
+        print(f'Updated controller {entity.__class__.__name__}')
         return 1

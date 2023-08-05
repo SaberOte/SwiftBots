@@ -28,21 +28,21 @@ class AdminPanel(BaseController):
     def reboot(self, view: BaseView, context):
         """Reboot the core bot. """
         view.report('Now restarting...')
-        self.log('Program is rebooting by admin')
+        print('Program is rebooting by admin')
         res_path = os.path.join(os.getcwd(), 'logs')
         os.system(f'nohup python3 main.py @botcore_core@ '
                   f'start --machine-start --from-reboot > {res_path}/core_launch_log.txt 2>&1 &')
         time.sleep(10)
         # Class Communicator another view must force kill this process.
         # If it won't, something's wrong
-        self.log('Program was not rebooted')
+        print('Program was not rebooted')
         view.report("Core isn't rebooted")
 
     @admin_only
     @remember_request
     def exit(self, view: BaseView, context):
         self._bot.communicator.close()
-        self.log('Program is suspended by admin')
+        print('Program is suspended by admin')
         view.report('Core stopped.')
         os.kill(os.getpid(), signal.SIGKILL)
 
@@ -185,12 +185,12 @@ class AdminPanel(BaseController):
                 for x in cont.tasks:
                     all_tasks.append(x)
             self.sender.send(self.user_id, 'Такой задачи нет. Все задачи: ' + ', '.join(all_tasks))
-            self.log(f'Unknown task {task} is called')
+            print(f'Unknown task {task} is called')
             return
         delay = controller.tasks[task][1]
         path = os.path.split(os.getcwd())[0]
         crons.add(controller.__class__.__name__, task, delay, path)
-        self.log(f'Task {task} is scheduled')
+        print(f'Task {task} is scheduled')
         self.sender.send(self.user_id, 'Задача запущена')
 
     def unschedule_task(self):
@@ -205,11 +205,11 @@ class AdminPanel(BaseController):
                 for x in cont.tasks:
                     all_tasks.append(x)
             self.sender.send(self.user_id, 'Такой задачи нет. Все задачи: ' + ', '.join(all_tasks))
-            self.log(f'Unknown task {task} is called')
+            print(f'Unknown task {task} is called')
             return
         path = os.path.split(os.getcwd())[0]
         crons.remove(controller.__class__.__name__, task, path)
-        self.log(f'Task {task} is unscheduled')
+        print(f'Task {task} is unscheduled')
         self.sender.send(self.user_id, 'Задача удалена')
 
     prefixes = {

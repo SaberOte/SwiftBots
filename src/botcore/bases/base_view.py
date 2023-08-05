@@ -2,8 +2,6 @@ import os, threading, inspect, time
 from signal import SIGKILL, SIGUSR1
 from traceback import format_exc
 from abc import ABC, abstractmethod
-from typing import Callable
-from src.botcore import logger
 from src.botcore.communicators import Communicator
 from src.botcore.config import read_config, write_config
 
@@ -15,20 +13,18 @@ class BaseView(ABC):
     inner_commands: {str: str} = {}
     name: str
     _flags: list[str]
-    log: Callable
 
     def init(self, flags: list[str]):
         """
         Preparing a view for execution or serving by core.
-        Launches with its own communicator, logger and thread with port listening if that's 'launch' flag
+        Launches with its own communicator and thread with port listening if that's 'launch' flag
         If it launchs not as process, it's only name property processing
         :param flags: flags describing is in the file __main__.py
         """
         self.name = self.__module__.split('.')[-1]
         self._flags = flags
         if 'launch' in flags:
-            self.log = logger.Logger(self.name, 'debug' in flags).log
-            self.comm = Communicator(self.name, self.log)
+            self.comm = Communicator(self.name)
             self.core_listener = threading.Thread(target=self.listen_port, daemon=True)
 
     @abstractmethod
@@ -62,7 +58,7 @@ class BaseView(ABC):
             self.report(msg)
             return 1
         except Exception as e:
-            self.log("Couldn't report because of:", e)
+            print("Couldn't report because of:", e)
             return e
 
     def init_listen(self):
@@ -85,10 +81,10 @@ class BaseView(ABC):
                     self.comm.send(f"mes|{str(data)}", 'core')
             except Exception as e:
                 msg = format_exc()
-                self.log(msg)
+                print(msg)
                 reported = self.try_report(msg)
                 if reported != 1:
-                    self.log('Not reported', reported)
+                    print('Not reported', reported)
                 # prevent 1 billion looped error tracebacks per second
                 error_count += 1
                 elapsed_time = time.time() - last_error_time
@@ -102,13 +98,13 @@ class BaseView(ABC):
 
     def listen_port(self):
         """Waits commands from core bot. Executing in another thread"""
-        self.log('start listening')
+        print('start listening')
         last_error_time = 0
         error_count = 0
         while 1:
             try:
                 for data in self.comm.listen():
-                    self.log('Received ' + str(data))
+                    print('Received ' + str(data))
                     message = data['message']
                     if message.startswith('com|'):  # есть команда и информация: формат com|КОМАНДА|НЕКАЯ_ИНФА
                         command = message[4:].split('|')[0]
@@ -120,7 +116,7 @@ class BaseView(ABC):
                     else:
                         command = message
                         if command == 'exit':
-                            self.log('View is exited')
+                            print('View is exited')
                             config = read_config('config.ini')
                             config["Disabled_Views"][self.name] = ''
                             write_config(config, 'config.ini')
@@ -154,7 +150,7 @@ class BaseView(ABC):
                 elif error_count > 5:
                     reported = self.try_report('Error rate is too high. Waiting for one minute...')
                     if reported != 1:
-                        self.log('This view is gonna die right after this message\n' + str(reported))
+                        print('This view is gonna die right after this message\n' + str(reported))
                         os.kill(os.getpid(), SIGKILL)
                     time.sleep(60)
                     error_count = 0

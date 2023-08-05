@@ -3,7 +3,6 @@ import os
 from . import communicators
 from .views import ViewsManager
 from .controllers import ControllerManager
-from .logger import Logger
 from .listener import Listener
 from typing import Callable
 
@@ -41,7 +40,6 @@ class Core:
     views_manager: ViewsManager
     report: Callable
     error: Callable
-    log: Callable
 
     def __init__(self, flags: list[str]):
         self.flags = flags
@@ -53,14 +51,12 @@ class Core:
         self.__listener = Listener(self)
 
     def __init_base_services(self):
-        logger = Logger('core', 'debug' in self.flags)
-        self.log = logger.log
-        logger.log("Program is launching")
-        self.communicator = communicators.Communicator('core', self.log)
-        logger.log('Base services are loaded')
+        print("Program is launching")
+        self.communicator = communicators.Communicator('core')
+        print('Base services are loaded')
 
     def __init_views(self):
-        self.views_manager = ViewsManager(self.log, self.communicator, self.flags)
+        self.views_manager = ViewsManager(self.communicator, self.flags)
         self.views_manager.init_views()
         self.report = self.views_manager.report
         self.error = self.views_manager.error

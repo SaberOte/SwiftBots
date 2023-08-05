@@ -6,7 +6,6 @@ from . import crons
 class Listener:
     def __init__(self, bot):
         self._bot = bot
-        self.log = bot.log
         self.report = bot.report
         self.error = bot.error
         self.communicator = bot.communicator
@@ -49,7 +48,7 @@ class Listener:
                 f'There\'s fatal error! "{str(method)}" from class "{type(controller).__name__}" is not a method '
                 'or a function!')
             return
-        self.log(f'Method "{method.__name__}" from class "{type(controller).__name__}" is called')
+        print(f'Method "{method.__name__}" from class "{type(controller).__name__}" is called')
         try:
             method(controller, view, context)
         except Exception as e:
@@ -63,7 +62,7 @@ class Listener:
                 controller = cont
         if not controller:
             crons.remove(controller_name, task)
-            self.log(f'Message {task} is not recognized. Then removed')
+            print(f'Message {task} is not recognized. Then removed')
             return
         task_info = controller.tasks[task]
         view_name = task_info[2]
@@ -79,7 +78,7 @@ class Listener:
                 f'There\'s fatal error! "{str(method)}" from class "{type(controller).__name__}" is not a method '
                 'or a function!')
             return
-        self.log(f'Method "{method.__name__}" from class "{type(controller).__name__}" is called by cron')
+        print(f'Method "{method.__name__}" from class "{type(controller).__name__}" is called by cron')
         try:
             method(controller, view)
         except Exception as e:
@@ -95,7 +94,7 @@ class Listener:
             # Если ни один не подходит, то считается, что это сообщение от внутренних компонентов бота
 
             raw_message = raw_data['message']
-            self.log(f'Came message: {raw_message}')
+            print(f'Came message: {raw_message}')
             if raw_message.startswith('mes|'):
                 sender_view = raw_data['sender_view']
                 self.handle_message(raw_message[4:], sender_view)
@@ -119,7 +118,7 @@ class Listener:
             # self.error(f'Exception in handling message:\n{str(type(e))}\n{str(e)}')
 
     def listen(self):
-        self.log('Start listening...')
+        print('Start listening...')
         while 1:
             try:
                 for raw_data in self.communicator.listen():

@@ -35,12 +35,12 @@ class CliView(BaseView):
         if message.startswith('THIS view dies'):
             print(message)
             return
-        self.log('It is cliview_ghost. Do not frighten')
+        print('It is cliview_ghost. Do not frighten')
         communicator = Communicator('cliview_ghost')
         try:
             communicator.send('com|report|'+message, 'cliview')
         except:
-            self.log('Sending to cliview impossible now')
+            print('Sending to cliview impossible now')
         finally:
             communicator.close()
 

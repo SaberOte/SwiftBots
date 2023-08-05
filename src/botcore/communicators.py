@@ -13,12 +13,11 @@ class Communicator:
     BUFFER_AMOUNT = 8192
     sock = None
 
-    def __init__(self, name: str, log=print):
+    def __init__(self, name: str):
         name = name.lower()
         if not re.match(r'^[0-9a-z_]+$', name):
             raise Exception('Name of communicator ' + str(name) +
                             " can only contain letters or digits or '_'")
-        self.log = log
         self.name = name
 
     def get_name(self, port: int):
@@ -55,12 +54,12 @@ class Communicator:
                     break
         if pid is None:
             return
-        self.log(f'Communicator {self.name} already launched with pid {pid}')
+        print(f'Communicator {self.name} already launched with pid {pid}')
         try:
             os.kill(pid, signal.SIGKILL)
-            self.log(f'Killed {pid}')
+            print(f'Killed {pid}')
         except ProcessLookupError:
-            self.log("Can't kill. Exception ProcessLookupError")
+            print("Can't kill. Exception ProcessLookupError")
 
     def assign_port(self, port=0):
         if self.sock:
@@ -90,14 +89,14 @@ class Communicator:
                 raise Exception('This port is already busy')
         self.set_name()
         if is_random_port:
-            self.log(f'Binded socket with random port {port} with try {counter}')
+            print(f'Binded socket with random port {port} with try {counter}')
         else:
-            self.log(f'Binded socket with specified port {port}')
+            print(f'Binded socket with specified port {port}')
 
     def listen(self, requested=None):
         if not self.sock:
             self.assign_port()
-        self.log('Listening port %d...' % self.port)
+        print('Listening port %d...' % self.port)
         sliced_messages = {}
         sock = self.sock
         # cleaning
