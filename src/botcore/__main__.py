@@ -47,8 +47,10 @@ def read_flags(keys: list[str]) -> list[str]:
 
 def start_bot():
     name = os.getenv('BOT_NAME')
+    if name.endswith('.py'):
+        name = name[-3:]
     if name is None:
-        stderr.write('It\'s no VIEW_NAME in environment variables')
+        print('It\'s no BOT_NAME in environment variables', file=stderr)
         sys.exit(1)
     bots.launch_bot(name)
 

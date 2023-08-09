@@ -61,7 +61,7 @@ class ViewsManager:
         self.main_view = None
 
     def error(self, message: str):
-        stderr.write(str(message))
+        print(message, file=stderr)
         self.report(str(message))
 
     def report(self, message: str):

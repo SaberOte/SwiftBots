@@ -3,7 +3,7 @@ import os
 from . import communicators
 from .views import ViewsManager
 from .controllers import ControllerManager
-from .listener import Listener
+from .listeners import Listener
 from typing import Callable
 
 

@@ -1,4 +1,4 @@
-import requests
+import aiohttp
 import time
 import signal
 import os
@@ -7,48 +7,63 @@ from traceback import format_exc
 from src.botcore.bases.base_chat_view import BaseChatView, ChatViewContext
 
 
+class TGViewContext(ChatViewContext):
+    """
+    FIELDS:
+    platform: str
+    username: str
+    message: str
+    sender: str
+    """
+    def __init__(self, message: str, sender: str, username: str):
+        super().__init__(message, sender)
+        self.platform = 'telegram'
+        self.username = username
+
+
 class BaseTelegramView(BaseChatView, ABC):
     token: str
     admin: str
     first_time_launched = True
     skip_old_updates = False
+    http_session = aiohttp.ClientSession()
 
-    def post(self, method: str, data: dict) -> dict:
-        response = requests.post(f'https://api.telegram.org/bot{self.token}/{method}', json=data)
-        answer = response.json()
+    async def fetch(self, method: str, data: dict) -> dict:
+        response = await self.http_session.post(f'https://api.telegram.org/bot{self.token}/{method}', json=data)
+        answer = await response.json()
         if not answer['ok']:
             self._handle_error(answer)
         return answer
 
-    def update_message(self, data: dict) -> dict:
+    async def update_message(self, data: dict) -> dict:
         """
         Updating the message
         :param data: should contain at least "text", "message_id", "chat_id"
         """
-        return self.post('editMessageText', data)
+        return await self.fetch('editMessageText', data)
 
-    def send(self, message: str, chat_id) -> dict:
+    async def send(self, message: str, chat_id) -> dict:
         data = {
             "chat_id": chat_id,
             "text": message
         }
-        return self.post('sendMessage', data)
+        return await self.fetch('sendMessage', data)
 
-    def custom_send(self, data: dict) -> dict:
+    async def custom_send(self, data: dict) -> dict:
         """
         Standard send provides only message and chat_id arguments.
         This method can contain any fields in data
         :param data:
         """
         print(f"""Replied {data["chat_id"]}:\n'{data["text"]}'""")
-        return self.post('sendMessage', data)
+        return await self.fetch('sendMessage', data)
 
-    def delete_message(self, message_id, chat_id):
+    async def delete_message(self, message_id, chat_id):
         data = {
             "chat_id": chat_id,
             "message_id": message_id
         }
-        return self.post('deleteMessage', data)
+        return await self.fetch('deleteMessage', data)
 
     def _handle_error(self, error):
         if error['error_code'] == 409:
@@ -86,18 +101,13 @@ class BaseTelegramView(BaseChatView, ABC):
                 data['offset'] = ans['result'][0]['update_id'] + 1
                 yield ans
 
-    def listen(self):
+    async def listen(self):
         """
-        Input pipe for commands from user.
-        Method must use "yield" operator to give information and command
-        Example: yield {'sender': user_id, 'message': command}
-        `sender` is required property
+        Long Polling: Telegram BOT API https://core.telegram.org/bots/api
         """
-        assert self.admin and self.token, 'No defined token and admin fields'
-        if 'from reboot' in self._flags:
-            self.report('View is restarted')
-        else:
-            self.report('View is launched')
+
+        if self.admin:
+            self.report(f'{self.get_name()} is started')
 
         try:
             for update in self._get_updates():
@@ -131,9 +141,3 @@ class BaseTelegramView(BaseChatView, ABC):
             if reported != 1:
                 print('Not reported', reported)
             time.sleep(5)
-
-class TGViewContext(ChatViewContext):
-    def __init__(self, message: str, sender: str, username: str):
-        super().__init__(message, sender)
-        self.platform = 'telegram'
-        self.username = username

@@ -1,15 +1,23 @@
 from sys import stderr
-from src.botcore.bases.base_view import BaseView
 from abc import abstractmethod
+from src.botcore.bases.base_view import BaseView, ViewContext
 
 
-class ChatViewContext:
+class ChatViewContext(ViewContext):
+    """
+    FIELDS:
+    sender: str
+    message: str
+    """
     def __init__(self, message: str, sender: str):
-        self.message = message
+        super().__init__(message)
         self.sender = sender
 
 
 class BaseChatView(BaseView):
+    """
+    General chat purposes view. Must LISTEN many users and ANSWER them
+    """
     admin: str
     error_message = 'Error occurred'
     unknown_error_message = 'Unknown command'
@@ -17,10 +25,29 @@ class BaseChatView(BaseView):
     exit_message = 'View exited.'
 
     @abstractmethod
-    def send(self, message, user_id):
-        raise NotImplementedError(f'Not implemented method `send` in {self.name}')
+    async def send(self, message, user_id):
+        raise NotImplementedError(f"Not implemented method `send` in {self.get_name()}")
 
-    def report(self, message: str):
+    @abstractmethod
+    async def listen(self) -> ChatViewContext:
+        """
+        Input pipe for commands from user.
+        Method must use "yield" operator to give information and command
+        """
+        raise NotImplementedError(f"Not implemented method `listen` in {self.get_name()}")
+
+    def get_listeners(self) -> dict:
+        """
+        Returns an only listener. If it's needed more, then have to override this method.
+        :return: set of listeners like this: {
+            'whatsapp1': self.listen_WA1,
+            'whatsapp2': self.listen_WA2,
+            'viber': self.listen_viber
+        }
+        """
+        return {f"{self.get_name()}_listener": self.listen}
+
+    async def report(self, message: str):
         """
         Send important message to admin
         :param message: report message
@@ -28,9 +55,9 @@ class BaseChatView(BaseView):
         if self.admin is None:
             raise NotImplementedError()
         print(f'Reported "{message}"')
-        return self.send(message, self.admin)
+        return await self.send(message, self.admin)
 
-    def error(self, admin_message: str, context: ChatViewContext):
+    async def error(self, admin_message: str, context: ChatViewContext):
         """
         Inform user there is internal error. Admin is notifying too!
         :param admin_message: message is only for admin!!! User looks at default message
@@ -38,12 +65,12 @@ class BaseChatView(BaseView):
         """
         try:
             if context.sender != self.admin:
-                self.answer(self.error_message, context)
+                await self.answer(self.error_message, context)
         finally:
-            stderr.write(str(admin_message))
-            return self.report(str(admin_message))
+            print(admin_message, file=stderr)
+            return await self.report(str(admin_message))
 
-    def answer(self, message: str, context: ChatViewContext):
+    async def answer(self, message: str, context: ChatViewContext):
         """
         Text message to user
         :param message: text message
@@ -51,19 +78,19 @@ class BaseChatView(BaseView):
         """
         sender = context.sender
         print(f'''Answered "{sender}":\n"{message}"''')
-        return self.send(message, sender)
+        return await self.send(message, sender)
 
-    def unknown_command(self, context: ChatViewContext):
+    async def unknown_command(self, context: ChatViewContext):
         """
-        If user sends some unknown shit, then say him about that
+        If user sends some unknown shit, then needed say him about that
         :param context: context with `sender` and `messages` fields
         """
         print('Unknown command. Context:\n', context)
-        return self.answer(self.unknown_error_message, context)
+        return await self.answer(self.unknown_error_message, context)
 
     def refuse(self, context: ChatViewContext):
         """
-        If user can't use it, then he must be aware
+        If user can't use it, then he must be aware.
         :param context: context with `sender` and `messages` fields
         """
         print(f'Forbidden. Context:\n{context}')
