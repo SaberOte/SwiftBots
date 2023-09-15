@@ -73,19 +73,19 @@ class BaseTelegramView(BaseChatView, ABC):
             os.kill(os.getpid(), signal.SIGKILL)
         raise Exception(f"Error {error['error_code']} from TG API: {error['description']}")
 
-    def __skip_old_updates(self):
+    async def __skip_old_updates(self):
         data = {
             "timeout": 0,
             "limit": 1,
             "offset": -1
         }
-        ans = self.post('getUpdates', data)
+        ans = await self.fetch('getUpdates', data)
         result = ans['result']
         if len(result) > 0:
             return result[0]['update_id'] + 1
         return -1
 
-    def _get_updates(self):
+    async def _get_updates(self):
         timeout = 1000
         data = {
             "timeout": timeout,
@@ -94,9 +94,9 @@ class BaseTelegramView(BaseChatView, ABC):
         }
         if self.first_time_launched or self.skip_old_updates:
             self.first_time_launched = False
-            data['offset'] = self.__skip_old_updates()
+            data['offset'] = await self.__skip_old_updates()
         while 1:
-            ans = self.post('getUpdates', data)
+            ans = await self.fetch('getUpdates', data)
             if len(ans['result']) != 0:
                 data['offset'] = ans['result'][0]['update_id'] + 1
                 yield ans
@@ -107,10 +107,10 @@ class BaseTelegramView(BaseChatView, ABC):
         """
 
         if self.admin:
-            self.report(f'{self.get_name()} is started')
+            await self.report(f'{self.get_name()} is started')
 
         try:
-            for update in self._get_updates():
+            for update in await self._get_updates():
                 try:
                     update = update['result'][0]
                     if 'message' in update and 'text' in update['message']:
@@ -122,22 +122,12 @@ class BaseTelegramView(BaseChatView, ABC):
                         yield TGViewContext(text, sender, username)
                     else:
                         print('UNHANDLED\n', str(update))
-                except Exception as e:
-                    msg = 'Unhandled:' + '\nAnswer is:\n' + str(update) + '\n' + format_exc() 
-                    try:
-                        self.error(msg, update['message']['from']['id'])
-                    except:
-                        self.try_report(msg)
-                        self.try_report('error number 0x8923')
-        except requests.exceptions.ConnectionError as e:
-            print('Connection ERROR in base_telegram_view.py. Sleep a minute')
-            reported = 1 # = self.try_report('connection error')
-            if reported != 1:
-                print('Not reported', reported)
-            time.sleep(5)
-        except requests.exceptions.ReadTimeout as e:
-            print('Connection ERROR in base_telegram_view.py. Sleep a minute', e)
-            reported = 1 # = self.try_report('read timeout error')
+                except Exception:
+                    msg = 'Unhandled:' + '\nAnswer is:\n' + str(update) + '\n' + format_exc()
+                    await self.error(msg, update['message']['from']['id'])
+        except aiohttp.ServerConnectionError:
+            print('Connection ERROR in base_telegram_view.py. Sleep 5 seconds')
+            reported = 1  # = self.try_report('connection error')
             if reported != 1:
                 print('Not reported', reported)
             time.sleep(5)

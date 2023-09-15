@@ -38,11 +38,14 @@ class BaseBot(ABC):
         return self.__module__.split('.')[-1]
 
     async def message_handler(self, listener):
+        """
+        Checks command matches in message.
+        """
         async for context in listener():
             context: ViewContext = context
             message = context.message
             lower_message = message.lower()
-            # check exact coincidence
+            # check exact match
             if lower_message in self.commands:
                 method = self.commands[lower_message]
                 method(view=self.view, context=context)
@@ -90,6 +93,7 @@ class BaseBot(ABC):
 
         tasks = set()
         for name in handlers:
+            # handler waits any updates from outer resources
             task = asyncio.create_task(handlers[name]())
             task.set_name(name)
             tasks.add(task)
