@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "swiftbots"
+version = "0.0.0dev"
+description = "Python web framework for rapid any-level bots development"
+authors = ["Polka <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.11.5"
+aiohttp = "*"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
