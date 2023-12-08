@@ -1,10 +1,7 @@
-# my custom
-.run/
-test.py
-views/*
-controllers/*
-models/*
-bots/*
+# My custom
+
+
+# Pre installed
 
 **/__pycache__
 **/logs
