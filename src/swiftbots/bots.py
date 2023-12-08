@@ -3,7 +3,7 @@ import inspect
 import asyncio
 from types import ModuleType
 from abc import ABC
-from src.botcore.bases.base_bot import BaseBot
+from src.swiftbots.bases.base_bot import BaseBot
 
 
 def launch_bot(name: str):

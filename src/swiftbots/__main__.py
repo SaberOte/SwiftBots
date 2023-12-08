@@ -3,7 +3,7 @@ import os
 import sys
 from dotenv import load_dotenv
 from sys import stderr
-from src.botcore import bots
+from src.swiftbots import bots
 
 
 def main():
@@ -58,7 +58,7 @@ def start_bot():
 def create_entity():
     """
     1. Ask user what to add: view or controller
-    2. Ask which template to choose from src.botcore.view_templates or ctrl_templates
+    2. Ask which template to choose from src.swiftbots.view_templates or ctrl_templates
     3. Ask how to name the file
     4. Check for similar names of existing files
     5. Move and rename file
@@ -77,12 +77,12 @@ def create_entity():
             break
 
     # step 2. Choice which exactly entity to copy
-    path = f'src/botcore/{view_or_controller}_templates/'
+    path = f'src/swiftbots/{view_or_controller}_templates/'
     found_entities = os.listdir(path)
     found_entities = list(filter(lambda x: x.endswith('.py') and not x.startswith('!'), found_entities))
     entity = ''
     if len(found_entities) == 0:
-        print(f"There is no {view_or_controller} in src/botcore/{view_or_controller}_templates/ directory!")
+        print(f"There is no {view_or_controller} in src/swiftbots/{view_or_controller}_templates/ directory!")
         sys.exit(1)
     elif len(found_entities) == 1:
         entity = found_entities[0]

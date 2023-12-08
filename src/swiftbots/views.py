@@ -6,9 +6,9 @@ from types import ModuleType
 from typing import Union
 from abc import ABC
 from traceback import format_exc
-from src.botcore.bases.base_view import BaseView
-from src.botcore.config import read_config, write_config
-from src.botcore.communicators import Communicator
+from src.swiftbots.bases.base_view import BaseView
+from src.swiftbots.config import read_config, write_config
+from src.swiftbots.communicators import Communicator
 
 
 class _RawView:

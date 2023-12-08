@@ -1,4 +1,4 @@
-from src.botcore.bases.base_chat_view import BaseChatView
+from src.swiftbots.bases.base_chat_view import BaseChatView
 
 
 class ViewName(BaseChatView):

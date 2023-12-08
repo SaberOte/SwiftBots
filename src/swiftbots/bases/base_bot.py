@@ -12,7 +12,7 @@ from abc import ABC
 from sys import stderr
 from typing import Callable
 from traceback import format_exc
-from src.botcore.bases.base_view import BaseView, ViewContext
+from src.swiftbots.bases.base_view import BaseView, ViewContext
 
 
 class BaseBot(ABC):

@@ -1,5 +1,5 @@
 import os
-from src.botcore.bases.base_telegram_view import BaseTelegramView
+from src.swiftbots.bases.base_telegram_view import BaseTelegramView
 
 
 class TelegramView(BaseTelegramView):

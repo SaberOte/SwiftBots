@@ -27,7 +27,7 @@ class BaseView(ABC):
         If this view should receive messages from users,
         it's needed to override this method and add at least 1 listener.
         Listener waits updates from any outer resource like telegram and then returns it to handle.
-        Example is src/botcore/bases/base_telegram_view.py.
+        Example is src/swiftbots/bases/base_telegram_view.py.
         :return: set of listeners like this: {
             'whatsapp1': self.listen_WA1,
             'whatsapp2': self.listen_WA2,
