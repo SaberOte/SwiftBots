@@ -3,7 +3,7 @@ import os
 import sys
 from dotenv import load_dotenv
 from sys import stderr
-from src.swiftbots import bots
+from swiftbots import bots
 
 
 def main():

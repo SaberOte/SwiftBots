@@ -1,4 +1,4 @@
-from src.swiftbots.bases.base_view import BaseView
+from swiftbots import BaseView
 
 
 class ViewName(BaseView):

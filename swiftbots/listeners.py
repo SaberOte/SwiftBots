@@ -1,7 +1,6 @@
 from traceback import format_exc
-import ast, threading, traceback
+import ast, threading
 from . import crons
-from src.swiftbots.bases.base_view import ViewContext
 
 
 async def listen_port(self):

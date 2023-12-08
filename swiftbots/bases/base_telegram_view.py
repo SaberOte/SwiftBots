@@ -4,7 +4,7 @@ import signal
 import os
 from abc import ABC
 from traceback import format_exc
-from src.swiftbots.bases.base_chat_view import BaseChatView, ChatViewContext
+from swiftbots.bases.base_chat_view import BaseChatView, ChatViewContext
 
 
 class TGViewContext(ChatViewContext):

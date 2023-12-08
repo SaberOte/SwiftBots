@@ -1,4 +1,4 @@
-from src.swiftbots.bases.base_telegram_view import BaseTelegramView
+from swiftbots import BaseTelegramView
 
 
 class ViewName(BaseTelegramView):

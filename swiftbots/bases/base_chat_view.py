@@ -1,6 +1,6 @@
 from sys import stderr
 from abc import abstractmethod
-from src.swiftbots.bases.base_view import BaseView, ViewContext
+from swiftbots import BaseView, ViewContext
 
 
 class ChatViewContext(ViewContext):

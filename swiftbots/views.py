@@ -1,14 +1,12 @@
 import os
 from sys import stderr
-import inspect
 import importlib
 from types import ModuleType
 from typing import Union
-from abc import ABC
 from traceback import format_exc
-from src.swiftbots.bases.base_view import BaseView
-from src.swiftbots.config import read_config, write_config
-from src.swiftbots.communicators import Communicator
+from swiftbots import BaseView
+from swiftbots.config import read_config, write_config
+from swiftbots import Communicator
 
 
 class _RawView:

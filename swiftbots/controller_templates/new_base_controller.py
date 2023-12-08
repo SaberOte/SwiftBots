@@ -1,5 +1,6 @@
 # from src.swiftbots.bases.base_multiple_users_view import BaseChatView
-from src.swiftbots.bases.base_controller import BaseController, admin_only
+from swiftbots import BaseController
+
 
 class ControllerName(BaseController):
     def __init__(self, bot):
