@@ -9,6 +9,10 @@ readme = "README.md"
 python = "3.11.5"
 aiohttp = "*"
 
+[tool.poetry.group.dev.dependencies]
+flake8 = "*"
+pylint = "*"
+
 
 [build-system]
 requires = ["poetry-core"]
