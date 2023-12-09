@@ -1,10 +1,10 @@
 """Minimal demonstration of the simple chatbot view in the terminal"""
-from swiftbots.views import ChatView
+from swiftbots.types import ChatView
 
 
 class ConsoleView(ChatView):
 
-    def listen(self):
+    async def alisten(self):
         print("Welcome in the command line chat! Good day, Friend!")
         while True:
             message = input('-> ')
@@ -14,5 +14,5 @@ class ConsoleView(ChatView):
             }
             yield ans
 
-    def send(self, message):
+    async def asend(self, message, context):
         print(message)
