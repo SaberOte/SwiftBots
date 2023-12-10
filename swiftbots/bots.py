@@ -7,6 +7,7 @@ class Bot:
     view_type: type[IView]
     controller_types: list[type[IController]]
     message_handler_type: type[IMessageHandler]
+
     view: IView
     controllers: list[IController]
     message_handler: IMessageHandler
@@ -18,6 +19,9 @@ class Bot:
         self.controller_types = controller_types
         self.message_handler_type = message_handler_type
         self.logger = logger
+
+    def get_name(self):
+        return self.view.get_name()
 
 
 def _set_views(bots: list[Bot]) -> None:

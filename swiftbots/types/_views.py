@@ -1,8 +1,8 @@
-import asyncio
 from abc import ABC, abstractmethod
-from typing import Callable, Optional, AsyncGenerator
+from typing import Callable, Optional, AsyncGenerator, TYPE_CHECKING
 
-from swiftbots.types import ILogger
+if TYPE_CHECKING:
+    from swiftbots.types import ILogger
 
 
 class IView(ABC):
@@ -10,7 +10,7 @@ class IView(ABC):
     Abstract View class
     """
 
-    _logger: Optional[ILogger] = None
+    _logger: Optional['ILogger'] = None
     __name: Optional[str] = None
     __overriden_listener: Optional[Callable] = None
 
@@ -28,16 +28,16 @@ class IView(ABC):
 
     @abstractmethod
     def set_name(self, name: str) -> None:
-        """Set the name of the view"""
+        """Set desired name for the view (and for bot too)"""
         raise NotImplementedError()
 
     @abstractmethod
-    def _get_name(self) -> str:
-        """Return the name of the view"""
+    def get_name(self) -> str:
+        """Return the name of the view (therefore of the bot too)"""
         raise NotImplementedError()
 
     @abstractmethod
-    def _set_logger(self, logger: ILogger) -> None:
+    def _set_logger(self, logger: 'ILogger') -> None:
         """Set needed logger for this view"""
         raise NotImplementedError()
 

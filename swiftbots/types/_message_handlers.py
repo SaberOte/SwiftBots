@@ -5,8 +5,10 @@ Rules configuring in message handler classes.
 
 from abc import ABC, abstractmethod
 from enum import Enum
+from typing import TYPE_CHECKING
 
-from swiftbots.types import IView, IController, ILogger
+if TYPE_CHECKING:
+    from swiftbots.types import IView, IController, ILogger
 
 
 class MessageHandlingResult(Enum):
@@ -22,11 +24,11 @@ class IMessageHandler(ABC):
     """
 
     @abstractmethod
-    def __init__(self, controllers: list[IController], logger: ILogger):
+    def __init__(self, controllers: list['IController'], logger: 'ILogger'):
         raise NotImplementedError()
 
     @abstractmethod
-    async def handle_message_async(self, view: IView, context: dict):
+    async def handle_message_async(self, view: 'IView', context: dict):
         """Accept message and execute it in appropriate controller"""
         raise NotImplementedError()
 

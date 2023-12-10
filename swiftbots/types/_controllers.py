@@ -1,37 +1,37 @@
 from abc import ABC, abstractmethod
-from asyncio import coroutine
-from typing import Callable, Optional
+from typing import Callable, Optional, TYPE_CHECKING, Awaitable
 
-from swiftbots.types import ILogger, IView
+if TYPE_CHECKING:
+    from swiftbots.types import ILogger, IView
 
 
 class IController(ABC):
 
-    __logger: ILogger = None
+    __logger: 'ILogger' = None
     cmds: dict[str, Callable] = {}
-    default: Optional[Callable[[IView, dict], coroutine]] = None
+    default: Optional[Callable[['IView', dict], Awaitable]] = None
 
     @abstractmethod
-    def info(self, *args: str | bytes) -> None:
+    def info(self, *args, **kwargs) -> None:
         """If standard logger wasn't replaced, logs to stdout"""
         raise NotImplementedError()
 
     @abstractmethod
-    def warn(self, *args: str | bytes) -> None:
+    def warn(self, *args, **kwargs) -> None:
         """If standard logger wasn't replaced, logs to stdout"""
         raise NotImplementedError()
 
     @abstractmethod
-    def error(self, *args: str | bytes) -> None:
+    def error(self, *args, **kwargs) -> None:
         """If standard logger wasn't replaced, logs to stderr"""
         raise NotImplementedError()
 
     @abstractmethod
-    def critical(self, *args: str | bytes) -> None:
+    def critical(self, *args, **kwargs) -> None:
         """If standard logger wasn't replaced, logs to stderr"""
         raise NotImplementedError()
 
     @abstractmethod
-    def _set_logger(self, logger: ILogger) -> None:
+    def _set_logger(self, logger: 'ILogger') -> None:
         """Set needed logger for this controller"""
         raise NotImplementedError()

@@ -10,7 +10,7 @@ class BasicView(IBasicView, ABC):
         assert isinstance(name, str)
         self.__name = name
 
-    def _get_name(self) -> str:
+    def get_name(self) -> str:
         """Return the name of the view"""
         if self.__name is None:
             return type(self).__name__

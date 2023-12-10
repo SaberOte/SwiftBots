@@ -5,14 +5,14 @@ from swiftbots.types import ISysIOLogger
 
 class SysIOLogger(ISysIOLogger):
 
-    def info(self, *args: str | bytes) -> None:
-        print(*args)
+    def info(self, *args, **kwargs) -> None:
+        print(*args, **kwargs)
 
-    def warn(self, *args: str | bytes) -> None:
-        self.info(*args)
+    def warn(self, *args, **kwargs) -> None:
+        self.info(*args, **kwargs)
 
-    def error(self, *args: str | bytes) -> None:
-        print(*args, file=stderr)
+    def error(self, *args, **kwargs) -> None:
+        print(*args, **kwargs, file=stderr)
 
-    def critical(self, *args: str | bytes) -> None:
-        self.error(*args)
+    def critical(self, *args, **kwargs) -> None:
+        self.error(*args, **kwargs)
