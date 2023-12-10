@@ -1,21 +1,18 @@
 from sys import stderr
 
-from swiftbots.types import LoggerInterface
+from swiftbots.types import ISysIOLogger
 
 
-class StandardLogger(LoggerInterface):
-    """
-    Logger that will log all messages to stdout or stderr
-    """
+class SysIOLogger(ISysIOLogger):
 
-    def log(self, *args: str | bytes) -> None:
-        """Log to stdout"""
+    def info(self, *args: str | bytes) -> None:
         print(*args)
 
+    def warn(self, *args: str | bytes) -> None:
+        self.info(*args)
+
     def error(self, *args: str | bytes) -> None:
-        """Log to stderr"""
         print(*args, file=stderr)
 
     def critical(self, *args: str | bytes) -> None:
-        """Log to stderr"""
         self.error(*args)
