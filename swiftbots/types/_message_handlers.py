@@ -41,7 +41,7 @@ class IBasicMessageHandler(IMessageHandler, ABC):
     pass
 
 
-class IMultiControllerMessageHandler(IMessageHandler, ABC):
+class IChatMessageHandler(IMessageHandler, ABC):
     """
     Message handler is using for forwarding messages to appropriate controllers.
     Rules are configured in this class.

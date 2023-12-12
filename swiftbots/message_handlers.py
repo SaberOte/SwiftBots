@@ -4,7 +4,7 @@ from typing import Callable, Optional
 
 from swiftbots.types import (IController, ILogger, IBasicView, IView,
                              IMessageHandler, MessageHandlingResult, IBasicMessageHandler,
-                             IMultiControllerMessageHandler)
+                             IChatMessageHandler)
 
 
 class CommandRepresentation:
@@ -30,7 +30,7 @@ class BasicMessageHandler(IBasicMessageHandler):
         await self.__controller.default(view, context)
 
 
-class MultiControllerMessageHandler(IMultiControllerMessageHandler):
+class ChatMessageHandler(IChatMessageHandler):
 
     __controllers: list[IController]
     __commands: dict[str, Callable]

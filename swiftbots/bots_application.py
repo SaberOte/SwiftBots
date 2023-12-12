@@ -1,15 +1,12 @@
 import asyncio
-from typing import ClassVar, Callable
 from enum import Enum
+from typing import Callable
 
-from swiftbots.loggers import SysIOLogger
-from swiftbots.types import IMessageHandler, IController, ILogger, IView
-from swiftbots.bots import Bot, _instantiate_in_bots
-from swiftbots.message_handlers import MultiControllerMessageHandler
 from swiftbots.runners import run_async
-
-
-DEFAULT_MESSAGE_HANDLER_TYPE = MultiControllerMessageHandler
+from swiftbots.loggers import SysIOLogger
+from swiftbots.bots import Bot, _instantiate_in_bots
+from swiftbots.message_handlers import ChatMessageHandler
+from swiftbots.types import IMessageHandler, IController, ILogger, IView
 
 
 class RunnerMode(Enum):
@@ -17,6 +14,10 @@ class RunnerMode(Enum):
     SYNCHRONOUSLY = 2
     MULTITHREADING = 3
     CUSTOM = 4
+
+
+DEFAULT_MESSAGE_HANDLER_TYPE = ChatMessageHandler
+DEFAULT_RUNNER_MODE = RunnerMode.ASYNCHRONOUSLY
 
 
 class BotsApplication:
@@ -38,7 +39,8 @@ class BotsApplication:
         self.__logger = logger
 
     def add_bot(self, view_type: type[IView], controller_types: list[type[IController]],
-                message_handler_type: type[IMessageHandler] = None, name: str = None) -> None:
+                message_handler_type: type[IMessageHandler] = DEFAULT_MESSAGE_HANDLER_TYPE,
+                name: str = None) -> None:
         """
         Adds a bot with one view and some bound controllers. # TODO: add docstring
         """
@@ -48,14 +50,12 @@ class BotsApplication:
         for controller_type in controller_types:
             assert issubclass(controller_type, IController), 'Controllers must be of type IController'
 
-        if message_handler_type is None:
-            message_handler_type = DEFAULT_MESSAGE_HANDLER_TYPE
         if name is None:
             name = view_type.__name__
 
         self.__bots.append(Bot(view_type, controller_types, message_handler_type, self.__logger, name))
 
-    def run(self, mode: RunnerMode = RunnerMode.ASYNCHRONOUSLY, custom_runner: Callable = None) -> None:
+    def run(self, mode: RunnerMode = DEFAULT_RUNNER_MODE, custom_runner: Callable = None) -> None:
         """
         Start application to listen all the bots in asynchronous event loop
         """

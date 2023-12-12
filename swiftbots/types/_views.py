@@ -13,6 +13,7 @@ class IView(ABC):
     _logger: Optional['ILogger'] = None
     __overriden_listener: Optional[Callable] = None
 
+
     @abstractmethod
     def listen_async(self) -> AsyncGenerator[dict, None]:
         """
@@ -94,42 +95,51 @@ class IChatView(IView, ABC):
     @abstractmethod
     def listen_async(self) -> AsyncGenerator[dict, None]:
         """
-        For ChatView listen_async must yield dict with at least 2 fields: `sender` and `arguments`.
-        `sender` needed for replying answer to user.
-        `message` needed for providing it to message handler and forwarding to
-        appropriate controller and executing appropriate command.
+        For a ChatView listen_async must yield a dict with at least 2 fields: `sender` and `message`.
+        `sender` needed for replying answer to a user.
+        `message` needed for processing it by a message handler and forwarding to
+        the appropriate controller and executing the appropriate command.
         """
         raise NotImplementedError()
 
     @abstractmethod
     async def send_async(self, message: str, context: dict) -> None:
         """
-        Sending message to user.
-        :param message: the message for user
-        :param context: dict with `sender` field
+        Sending message to a user.
+        :param message: a message for a user
+        :param context: dict with a `sender` key
         """
         raise NotImplementedError()
 
     async def error_async(self, context: dict):
         """
-        Inform user there is internal error.
+        Inform a user there is internal error.
         :param context: context with `sender` and `messages` fields
         """
         raise NotImplementedError()
 
     async def unknown_command_async(self, context: dict):
         """
-        If user sends some unknown shit, then needed say him about that
+        If a user sends some unknown shit, then needed say him about that
         :param context: context with `sender` and `messages` fields
         """
         raise NotImplementedError()
 
     def refuse_async(self, context: dict):
         """
-        If user can't use it, then he must be aware.
+        If a user can't use it, then he must be aware.
         :param context: context with `sender` and `messages` fields
         """
         raise NotImplementedError()
+
+    class Context(dict):
+        raw_message: str
+        arguments: str
+        sender: str
+
+        def foo(self, key: str, value: str):
+            self[key] = value
+            setattr(self, key, value)
 
 
 """

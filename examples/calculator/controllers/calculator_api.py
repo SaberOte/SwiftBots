@@ -21,7 +21,8 @@ class CalculatorApi(Controller):
         result = float(num1) - float(num2)
         await view.send_async(str(result), context)
 
-    async def kek(self, view: IChatView, context: dict):
+    async def kek(self, view: IChatView, context: IChatView.Context):
+        context.message
         await view.send_async(f'The message is {context["message"]}', context)
 
     cmds = {
