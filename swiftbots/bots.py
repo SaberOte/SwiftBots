@@ -1,8 +1,10 @@
-from swiftbots.types import IView, IController, IMessageHandler, ILogger
+from swiftbots.types import IView, IController, IMessageHandler, ILogger, IBasicMessageHandler
 
 
 class Bot:
-    """Storage of controllers and views"""
+    """A storage of controllers and views"""
+
+    name: str
 
     view_type: type[IView]
     controller_types: list[type[IController]]
@@ -14,14 +16,12 @@ class Bot:
     logger: ILogger
 
     def __init__(self, view_type: type[IView], controller_types: list[type[IController]],
-                 message_handler_type: type[IMessageHandler], logger: ILogger):
+                 message_handler_type: type[IMessageHandler], logger: ILogger, name: str):
         self.view_type = view_type
         self.controller_types = controller_types
         self.message_handler_type = message_handler_type
         self.logger = logger
-
-    def get_name(self):
-        return self.view.get_name()
+        self.name = name
 
 
 def _set_views(bots: list[Bot]) -> None:

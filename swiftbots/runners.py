@@ -16,7 +16,7 @@ async def start_async_listener(bot: Bot):
 async def run_async(bots: list[Bot]):
     tasks: set[asyncio.Task] = set()
 
-    bot_names: dict[str, Bot] = {bot.get_name(): bot for bot in bots}
+    bot_names: dict[str, Bot] = {bot.name: bot for bot in bots}
 
     for name, bot in bot_names.items():
         task = asyncio.create_task(start_async_listener(bot), name=name)

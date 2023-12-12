@@ -27,7 +27,8 @@ class BotsApplication:
     def __init__(self, logger: ILogger = None):
         if logger is None:
             self.use_logger(SysIOLogger())
-        self.use_logger(logger)
+        else:
+            self.use_logger(logger)
 
     def use_logger(self, logger: ILogger) -> None:
         """
@@ -37,9 +38,9 @@ class BotsApplication:
         self.__logger = logger
 
     def add_bot(self, view_type: type[IView], controller_types: list[type[IController]],
-                message_handler_type: type[IMessageHandler] = None) -> None:
+                message_handler_type: type[IMessageHandler] = None, name: str = None) -> None:
         """
-        Adds a bot with one view and some bound controllers.
+        Adds a bot with one view and some bound controllers. # TODO: add docstring
         """
         assert issubclass(view_type, IView), 'view must be of type IView'
         assert len(controller_types) > 0, 'No controllers'
@@ -49,7 +50,10 @@ class BotsApplication:
 
         if message_handler_type is None:
             message_handler_type = DEFAULT_MESSAGE_HANDLER_TYPE
-        self.__bots.append(Bot(view_type, controller_types, message_handler_type, self.__logger))
+        if name is None:
+            name = view_type.__name__
+
+        self.__bots.append(Bot(view_type, controller_types, message_handler_type, self.__logger, name))
 
     def run(self, mode: RunnerMode = RunnerMode.ASYNCHRONOUSLY, custom_runner: Callable = None) -> None:
         """

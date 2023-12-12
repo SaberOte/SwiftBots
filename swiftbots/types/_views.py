@@ -11,7 +11,6 @@ class IView(ABC):
     """
 
     _logger: Optional['ILogger'] = None
-    __name: Optional[str] = None
     __overriden_listener: Optional[Callable] = None
 
     @abstractmethod
@@ -26,15 +25,21 @@ class IView(ABC):
         """
         raise NotImplementedError()
 
-    @abstractmethod
-    def set_name(self, name: str) -> None:
-        """Set desired name for the view (and for bot too)"""
-        raise NotImplementedError()
-
-    @abstractmethod
-    def get_name(self) -> str:
-        """Return the name of the view (therefore of the bot too)"""
-        raise NotImplementedError()
+    #
+    # @abstractmethod
+    # def commands_message_modifier(self, message: dict) -> dict:
+    #     """
+    #     The message from the view must be modified before sending it to a controller.
+    #     This is method that determines how to turn `message` yielded from a view listener
+    #     into `context` that used in controller methods
+    #     """
+    #     raise NotImplementedError()
+    #
+    # @abstractmethod
+    # def default_modifier(self, message: dict) -> dict:
+    #     """
+    #     That message
+    #     """
 
     @abstractmethod
     def _set_logger(self, logger: 'ILogger') -> None:

@@ -13,17 +13,20 @@ class CommandRepresentation:
 
 
 class BasicMessageHandler(IBasicMessageHandler):
-    """Handler just routing messages to `default` method of controller"""
 
     __controller: IController
 
-    def __init__(self, controller: IController, logger: ILogger):
+    def __init__(self, controllers: list[IController], logger: ILogger):
         logger.info('Initializing BasicMessageHandler')
+        assert len(controllers) == 1, 'Basic message handler can serve only 1 controller'
+        controller = controllers[0]
+        assert isinstance(controller, IController)
         assert controller.default is not None, \
-            'In basic message handler controller must have a `default` method'
-        self.controller = controller
+            'Controller must have `default` method if serves by basic message handler'
+        self.__controller = controller
 
     async def handle_message_async(self, view: IView, context: dict) -> None:
+
         await self.__controller.default(view, context)
 
 
