@@ -133,7 +133,7 @@ class IChatView(IView, ABC):
         raise NotImplementedError()
 
     class Context(dict):
-        raw_message: str
+        message: str
         arguments: str
         sender: str
 
