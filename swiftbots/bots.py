@@ -1,4 +1,6 @@
-from swiftbots.types import IView, IController, IMessageHandler, ILogger, IBasicMessageHandler
+from typing import Optional
+
+from swiftbots.types import IView, IController, IMessageHandler, ILogger
 
 
 class Bot:
@@ -6,20 +8,20 @@ class Bot:
 
     name: str
 
-    view_type: type[IView]
-    controller_types: list[type[IController]]
-    message_handler_type: type[IMessageHandler]
+    view_class: type[IView]
+    controller_classes: list[type[IController]]
+    message_handler_class: Optional[type[IMessageHandler]]
 
     view: IView
     controllers: list[IController]
     message_handler: IMessageHandler
     logger: ILogger
 
-    def __init__(self, view_type: type[IView], controller_types: list[type[IController]],
-                 message_handler_type: type[IMessageHandler], logger: ILogger, name: str):
-        self.view_type = view_type
-        self.controller_types = controller_types
-        self.message_handler_type = message_handler_type
+    def __init__(self, view_class: type[IView], controller_classes: list[type[IController]],
+                 message_handler_class: Optional[type[IMessageHandler]], logger: ILogger, name: str):
+        self.view_class = view_class
+        self.controller_classes = controller_classes
+        self.message_handler_class = message_handler_class
         self.logger = logger
         self.name = name
 
@@ -29,7 +31,9 @@ def _set_views(bots: list[Bot]) -> None:
     Instantiate and set views
     """
     for bot in bots:
-        bot.view = bot.view_type()
+        bot.view = bot.view_class()
+        bot.view._logger = bot.logger
+        bot.view._message_handler = bot.message_handler
 
 
 def _set_controllers(bots: list[Bot]) -> None:
@@ -39,7 +43,7 @@ def _set_controllers(bots: list[Bot]) -> None:
     controller_memory: list[IController] = []
     for bot in bots:
         controllers_to_add: list[IController] = []
-        controller_types = bot.controller_types
+        controller_types = bot.controller_classes
 
         for controller_type in controller_types:
             found_instances = list(filter(lambda inst: controller_type is inst, controller_memory))
@@ -47,6 +51,7 @@ def _set_controllers(bots: list[Bot]) -> None:
                 controller_instance = found_instances[0]
             elif len(found_instances) == 0:
                 controller_instance = controller_type()
+                controller_instance._set_logger(bot.logger)
                 controller_memory.append(controller_instance)
             else:
                 raise Exception('Invalid algorithm')
@@ -60,7 +65,10 @@ def _set_message_handlers(bots: list[Bot]) -> None:
     Instantiate and set handlers
     """
     for bot in bots:
-        bot.message_handler = bot.message_handler_type(bot.controllers, bot.logger)
+        if bot.message_handler_class is None:
+            bot.message_handler = bot.view._default_message_handler_class(bot.controllers, bot.logger)
+        else:
+            bot.message_handler = bot.message_handler_class(bot.controllers, bot.logger)
 
 
 def _instantiate_in_bots(bots: list[Bot]) -> None:

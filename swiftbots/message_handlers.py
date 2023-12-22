@@ -4,7 +4,7 @@ from typing import Callable, Optional
 
 from swiftbots.types import (IController, ILogger, IBasicView, IView,
                              IMessageHandler, MessageHandlingResult, IBasicMessageHandler,
-                             IChatMessageHandler)
+                             IChatMessageHandler, IContext)
 
 
 class CommandRepresentation:
@@ -25,8 +25,7 @@ class BasicMessageHandler(IBasicMessageHandler):
             'Controller must have `default` method if serves by basic message handler'
         self.__controller = controller
 
-    async def handle_message_async(self, view: IView, context: dict) -> None:
-
+    async def handle_message_async(self, view: IView, context: IContext) -> None:
         await self.__controller.default(view, context)
 
 

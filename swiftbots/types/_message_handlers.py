@@ -1,6 +1,8 @@
 """
-Message handler is using for executing commands in appropriate controller.
-Rules configuring in message handler classes.
+Message handlers do:
+1. Modify message into context object according to `View`.Context interface.
+2. Seek appropriate controller and its appropriate method, based on context.
+3. Forward modified context to chosen controller method and execute.
 """
 
 from abc import ABC, abstractmethod
@@ -8,7 +10,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from swiftbots.types import IView, IController, ILogger
+    from swiftbots.types import IView, IController, ILogger, IContext
 
 
 class MessageHandlingResult(Enum):
@@ -20,7 +22,8 @@ class MessageHandlingResult(Enum):
 
 class IMessageHandler(ABC):
     """
-    Abstract class of Message Handler
+    Abstract class of Message Handler.
+    About what message handlers do read swiftbots.types._message_handlers docstring.
     """
 
     @abstractmethod
@@ -28,7 +31,7 @@ class IMessageHandler(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def handle_message_async(self, view: 'IView', context: dict):
+    async def handle_message_async(self, view: 'IView', context: 'IContext'):
         """Accept message and execute it in appropriate controller"""
         raise NotImplementedError()
 

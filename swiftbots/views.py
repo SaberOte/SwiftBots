@@ -1,33 +1,25 @@
 from abc import ABC
 from typing import Callable
 
-from swiftbots.types import ILogger, IBasicView, IChatView
+from swiftbots.types import ILogger, IView, IBasicView, IChatView, IMessageHandler
 
 
 class BasicView(IBasicView, ABC):
 
-    def _set_logger(self, logger: ILogger) -> None:
-        self._logger = logger
+    @IView._logger.getter
+    def _logger(self) -> ILogger:
+        return self.__logger
 
-    def _get_listener(self) -> Callable:
-        """
-        Listener waits updates from any outer resource like telegram and then returns it to handle.
-        By default, method returns `alisten` method, which will be called to receive updates.
-        If it's needed to override some behavior, you should use method _set_listener to set
-        custom listener.
-        :returns: method `listen_async`
-        """
+    @IView._logger.setter
+    def _logger(self, logger: ILogger) -> None:
+        self.__logger = logger
+
+    @IView._listener.getter
+    def _listener(self) -> Callable:
         return self.listen_async if self.__overriden_listener is None else self.__overriden_listener
 
-    def _set_listener(self, listener: Callable) -> None:
-        """
-        Override the default listener (method `listen_async`).
-        Listener waits updates from any outer resource like telegram and then returns it to handle.
-        Listener than will be used by message_handler, which can be overridden too in BotsApplication.
-        :param listener: callable function, which will be called to receive updates.
-        Must be asynchronous and use "yield" operator to return dict with
-        information about outer resource command.
-        """
+    @IView._listener.setter
+    def _listener(self, listener: Callable) -> None:
         assert isinstance(listener, Callable)
         self.__overriden_listener = listener
 

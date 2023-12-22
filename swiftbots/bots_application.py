@@ -1,11 +1,10 @@
 import asyncio
 from enum import Enum
-from typing import Callable
+from typing import Callable, Optional
 
 from swiftbots.runners import run_async
 from swiftbots.loggers import SysIOLogger
 from swiftbots.bots import Bot, _instantiate_in_bots
-from swiftbots.message_handlers import ChatMessageHandler
 from swiftbots.types import IMessageHandler, IController, ILogger, IView
 
 
@@ -16,7 +15,6 @@ class RunnerMode(Enum):
     CUSTOM = 4
 
 
-DEFAULT_MESSAGE_HANDLER_TYPE = ChatMessageHandler
 DEFAULT_RUNNER_MODE = RunnerMode.ASYNCHRONOUSLY
 
 
@@ -38,22 +36,22 @@ class BotsApplication:
         assert isinstance(logger, ILogger), 'Logger must be of type ILogger'
         self.__logger = logger
 
-    def add_bot(self, view_type: type[IView], controller_types: list[type[IController]],
-                message_handler_type: type[IMessageHandler] = DEFAULT_MESSAGE_HANDLER_TYPE,
-                name: str = None) -> None:
+    def add_bot(self, view_type: type[IView], controller_classes: list[type[IController]],
+                message_handler_class: Optional[type[IMessageHandler]] = None, name: Optional[str] = None) -> None:
         """
         Adds a bot with one view and some bound controllers. # TODO: add docstring
         """
         assert issubclass(view_type, IView), 'view must be of type IView'
-        assert len(controller_types) > 0, 'No controllers'
-        assert (message_handler_type is None or issubclass(message_handler_type, IMessageHandler))
-        for controller_type in controller_types:
+        assert len(controller_classes) > 0, 'No controllers'
+        assert (message_handler_class is None or issubclass(message_handler_class, IMessageHandler)), \
+            'Message handler must be a TYPE and inherit IMessageHandler'
+        for controller_type in controller_classes:
             assert issubclass(controller_type, IController), 'Controllers must be of type IController'
 
         if name is None:
             name = view_type.__name__
 
-        self.__bots.append(Bot(view_type, controller_types, message_handler_type, self.__logger, name))
+        self.__bots.append(Bot(view_type, controller_classes, message_handler_class, self.__logger, name))
 
     def run(self, mode: RunnerMode = DEFAULT_RUNNER_MODE, custom_runner: Callable = None) -> None:
         """
