@@ -129,6 +129,9 @@ class IBasicView(IView, ABC):
         __doc__ += IView.PreContext.__doc__
         message: object
 
+        def __init__(self, message: object, **kwargs):
+            super().__init__(message=message, **kwargs)
+
     class Context(IContext):
         """
         1 required attribute `message` of any type
@@ -189,28 +192,32 @@ class IChatView(IView, ABC):
 
     class PreContext(IContext):
         """
-        2 required fields:
-        message - raw message from sender
+        1 require field:
+        message - raw message from sender.
+        1 optional but mostly useful field:
         sender - user from who message was sent
         """
         __doc__ += IView.Context.__doc__
-
         message: str
         sender: str
 
-        def __init__(self, message: str, sender: str, **kwargs):
+        def __init__(self, message: str, sender: str = 'unknown', **kwargs):
             super().__init__(message=message, sender=sender, **kwargs)
 
     class Context(IContext):
         """
-        3 required fields:
-        raw - didn't modify message from sender
-        arguments - additional message arguments after the command if given
-        sender - user from who message was sent
+        4 required fields:
+        raw_message - not modified message.
+        arguments - message with cut out command part (empty string if not given).
+        command - part of the message what was matched as a command.
+        sender - user from who message was received.
+
+        If default method was called, raw_message, command and arguments will both contain not modified message.
         """
         __doc__ += IView.Context.__doc__
-        raw: str
+        raw_message: str
         arguments: str
+        command: str
         sender: str
 
 

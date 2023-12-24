@@ -16,7 +16,7 @@ class ConsoleView(BasicView):
 
     async def listen_async(self):
         print("Welcome in the command line chat! Good day, Friend!")
-        print("Type expression to solve like `2 + 2`")
+        print("Type expression to solve like `68 + 1`")
         while True:
             message = await input_async('-> ')
-            yield self.PreContext(message=message)
+            yield self.PreContext(message)

@@ -1,23 +1,20 @@
 import re
-
 from typing import Callable, Optional
 
-from swiftbots.types import (IController, ILogger, IBasicView, IView,
-                             IMessageHandler, MessageHandlingResult, IBasicMessageHandler,
-                             IChatMessageHandler, IContext)
-
-
-class CommandRepresentation:
-    command_string: str
-    method: Callable
+from swiftbots.types import (IController, ILogger, IChatView, IView,
+                             IBasicMessageHandler, IChatMessageHandler, IContext)
 
 
 class BasicMessageHandler(IBasicMessageHandler):
+    """"""
+    __doc__ += IBasicMessageHandler.__doc__
 
     __controller: IController
+    __logger: ILogger
 
     def __init__(self, controllers: list[IController], logger: ILogger):
-        logger.info('Initializing BasicMessageHandler')
+        self.__logger = logger
+        self.__logger.info('Initializing BasicMessageHandler')
         assert len(controllers) == 1, 'Basic message handler can serve only 1 controller'
         controller = controllers[0]
         assert isinstance(controller, IController)
@@ -26,104 +23,145 @@ class BasicMessageHandler(IBasicMessageHandler):
         self.__controller = controller
 
     async def handle_message_async(self, view: IView, context: IContext) -> None:
-        await self.__controller.default(view, context)
+        new_context = view.Context(**context)
+        await self.__controller.default(view, new_context)
 
 
 class ChatMessageHandler(IChatMessageHandler):
+    """"""
+    __doc__ += IChatMessageHandler.__doc__
 
+    class ControllerCommand:
+        command_name: str
+        method: Callable
+        pattern: re.Pattern
+        controller: IController
+
+        def __init__(self, command_name: str, method: Callable, pattern: re.Pattern, controller: IController):
+            self.command_name = command_name
+            self.method = method
+            self.pattern = pattern
+            self.controller = controller
+
+    __trimmer = re.compile(r'\s+$')
     __controllers: list[IController]
-    __commands: dict[str, Callable]
-    __default_handler: Callable = None
-    __logger: ILogger = None
+    __default_controller: Optional[IController] = None
+    __logger: ILogger
+    __commands: list[ControllerCommand] = []
 
     def __init__(self, controllers: list[IController], logger: ILogger):
-        logger.info('Initializing ChatMessageHandler')
         self.__logger = logger
+        self.__logger.info('Initializing ChatMessageHandler')
         self.__controllers = controllers
 
-        self.__commands = dict()
-        for controller in controllers:
-            self.__commands.update(controller.cmds)
-        logger.info(f'Initialized commands dict: {self.__commands}')
+        self.__build_commands(self.__controllers)
+        self.__logger.info(f'Initialized commands dict: {self.__commands}')
 
-        self.__register_default_handler()
-        self.__compile_regex_commands()
+        self.__register_default_controller()
 
-    def use_as_default(self, method: Optional[Callable]) -> None:
+    def use_as_default(self, controller: Optional[IController]) -> None:
         """
         Define the method that will be called when no one
         commands was fitted to process the message.
-        If it's needed to disable any default handler, may be passed None
-        :param method: Function for defining the default command handler,
+        May be passed None if it's needed to disable any default handler
+        :param controller: Function for defining the default command handler,
         or None to disable any default commands
         """
-        self.__default_handler = method
-        if method is not None:
-            self.__logger.info(f'Registered default handler directly: {self.__default_handler}')
+        self.__default_controller = controller
+        if controller is not None:
+            self.__logger.info(f'Registered default handler directly: {self.__default_controller}')
         else:
             self.__logger.info('Unregistered default handler directly')
 
-    def handle_message_async(self, view: IBasicView, context: dict):
+    async def handle_message_async(self, view: IChatView, context: IChatView.PreContext):
         """
         Receive the command and send it to one of controllers to execute.
         If no one fitted commands found, then send message to default handler.
         If it's no default handler, reject to execute command.
         :param view: View object
-        :param context: dict, must contain at least 'message' field
+        :param context: pre context. Must have a message field.
         :return: MessageHandlingResult
         """
         message: str = context.message
-        lower_message = message.lower()
-        """
-        # check exact match
-        if lower_message in self.__commands:
-            method = self.commands[lower_message]
-            method(view=self.view, context=context)
-            continue"""
-        # check if the command has arguments like `ADDNOTE apple, cigarettes, cheese`, where `ADDNOTE` is command
-        for name in self.compiled_commands_patterns:
-            pattern: re.Pattern = self.compiled_commands_patterns[name]
+        arguments: str = ''
+        best_match_rank = 0
+        best_matched_command: Optional['ChatMessageHandler.ControllerCommand'] = None
+
+        # check if the command has arguments like `ADD NOTE apple, cigarettes, cheese`,
+        # where `ADD NOTE` is a command and the rest is arguments
+        for command in self.__commands:
+            pattern: re.Pattern = command.pattern
             match = pattern.match(message)
+
             if match:
-                message_without_command = match.group(2)
-                context.message = message_without_command
-                method = self.commands[name]
-                method(view=self.view, context=context)
-                continue
-        # finally check `any`
-        if self.any is not None:
-            self.any(view=self.view, context=context)
+                message_without_command = match.group(4)
+                if not message_without_command:  # the entire message matches the command
+                    best_matched_command = command
+                    arguments = ''
+                    break
+                # message matches partly. there are arguments. Despite the match, try to find better match
+                match_rank = len(command.command_name)
+                if match_rank > best_match_rank:
+                    best_match_rank = match_rank
+                    best_matched_command = command
+                    arguments = message_without_command
 
+        if best_matched_command:
+            arguments = self.__trimmer.sub('', arguments)
+            method = best_matched_command.method
+            command_name = best_matched_command.command_name
+            controller = best_matched_command.controller
 
-    def __compile_regex_commands(self):
+        elif self.__default_controller is not None:  # No matches. Use default controller method
+            command_name = arguments = message
+            controller = self.__default_controller
+            method = controller.default.__func__
+
+        else:  # No matches and default methods. Send `unknown message`
+            await view.unknown_command_async(context)
+            return
+
+        del context['message']
+        new_context = view.Context(raw_message=message, arguments=arguments, command=command_name, **context)
+        await method(controller, view=view, context=new_context)
+
+    def __build_commands(self, controllers: list[IController]):
+        for controller in controllers:
+            for command in controller.cmds:
+                controller_command = self.ControllerCommand(command,
+                                                            controller.cmds[command],
+                                                            self.__compile_command_as_regex(command),
+                                                            controller)
+                self.__commands.append(controller_command)
+
+    @staticmethod
+    def __compile_command_as_regex(name):
         """
         Compile with regex patterns all command names to faster search.
         Pattern is:
-        1. Begins with NAME OF COMMAND (case-insensitive).
-        2. Then any whitespace characters [ \f\n\r\t\v] (zero or more)
-        3. Then any non-whitespace characters
+        1. Begins with NAME OF COMMAND (case-insensitive). Marks as group 1.
+        2. Then any whitespace characters [ \f\n\r\t\v] (zero or more). Marks as group 3.
+        3. Then rest of text. Marks as group 4.
+        Group 3 and group 4 are optional. If there is empty group 4, then the message is entirely match a command
         """
-        for name in self.__commands:
-            escaped_name = re.escape(name)
-            pattern = re.compile(rf'^({escaped_name})\s*(\S*)$', re.IGNORECASE)
-            self.__compiled_commands[name] = pattern
+        escaped_name = re.escape(name)
+        return re.compile(rf'^({escaped_name})((\s+)(.*))?$', re.IGNORECASE | re.DOTALL)
 
-
-    def __register_default_handler(self):
+    def __register_default_controller(self):
         """
         Choose the default handler from all controllers.
         If that's only 1 `default` method found, it will be registered as default handler.
         If that's no `default` methods founds, default handler stays None and
-        unfitted commands will be rejected to execute.
-        If that's more than 1 `default` method found, first one will be registered.
+        unfitted commands will be rejected to execute (`unknown_command_async` method of the view will be called).
+        If that's more than 1 `default` method found, first found will be registered.
         """
-        defaults = filter(lambda c: c.default is not None, self.__controllers)
+        defaults = list(filter(lambda c: c.default is not None, self.__controllers))
         if len(defaults) == 0:
             self.__logger.info('No default handlers in controllers')
         elif len(defaults) == 1:
-            __default_handler = defaults[0]
-            self.__logger.info(f'One default handler found and registered: {__default_handler}')
+            self.__default_controller = defaults[0]
+            self.__logger.info(f'One default handler found and registered: {self.__default_controller}')
         else:
             self.__logger.warn(f'Multiple default handlers found in controllers: {defaults}')
-            __default_handler = defaults[0]
-            self.__logger.warn(f'Registered first handler: {__default_handler}')
+            self.__default_controller = defaults[0]
+            self.__logger.warn(f'Registered handler: {self.__default_controller}')
