@@ -1,10 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Callable, Optional, AsyncGenerator, TYPE_CHECKING
 
-from swiftbots.message_handlers import BasicMessageHandler, ChatMessageHandler
-
 if TYPE_CHECKING:
-    from swiftbots.types import ILogger, IMessageHandler
+    from swiftbots.types import ILogger, IMessageHandler, IBasicMessageHandler, IChatMessageHandler
 
 
 class IContext(dict, ABC):
@@ -39,7 +37,11 @@ class IView(ABC):
 
     __logger: Optional['ILogger'] = None
     __overriden_listener: Optional[Callable] = None
-    _default_message_handler_class: type['IMessageHandler']
+
+    @property
+    @abstractmethod
+    def _default_message_handler_class(self) -> type['IMessageHandler']:
+        raise NotImplementedError()
 
     @abstractmethod
     def listen_async(self) -> AsyncGenerator['IView.Context', None]:
@@ -113,8 +115,6 @@ class IBasicView(IView, ABC):
     Minimal view must at least listen one outer resource and provide it to handle.
     """
 
-    _default_message_handler_class = BasicMessageHandler
-
     @abstractmethod
     def listen_async(self) -> AsyncGenerator['IBasicView.Context', None]:
         """
@@ -142,8 +142,6 @@ class IChatView(IView, ABC):
     Generally, chat purposes view. Must LISTEN many users and ANSWER them.
     Also, must notify them about unexpected errors, unknown given commands or using of forbidden commands.
     """
-
-    _default_message__default_message_handler_class = ChatMessageHandler
 
     error_message = 'Error occurred'
     unknown_error_message = 'Unknown command'

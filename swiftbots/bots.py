@@ -33,7 +33,6 @@ def _set_views(bots: list[Bot]) -> None:
     for bot in bots:
         bot.view = bot.view_class()
         bot.view._logger = bot.logger
-        bot.view._message_handler = bot.message_handler
 
 
 def _set_controllers(bots: list[Bot]) -> None:
@@ -66,9 +65,8 @@ def _set_message_handlers(bots: list[Bot]) -> None:
     """
     for bot in bots:
         if bot.message_handler_class is None:
-            bot.message_handler = bot.view._default_message_handler_class(bot.controllers, bot.logger)
-        else:
-            bot.message_handler = bot.message_handler_class(bot.controllers, bot.logger)
+            bot.message_handler_class = bot.view_class._default_message_handler_class
+        bot.message_handler = bot.message_handler_class(bot.controllers, bot.logger)
 
 
 def _instantiate_in_bots(bots: list[Bot]) -> None:

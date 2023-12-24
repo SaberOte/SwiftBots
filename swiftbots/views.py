@@ -1,30 +1,38 @@
 from abc import ABC
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 
 from swiftbots.types import ILogger, IView, IBasicView, IChatView, IMessageHandler
+from swiftbots.message_handlers import BasicMessageHandler, ChatMessageHandler
+
+if TYPE_CHECKING:
+    from swiftbots.types import IBasicMessageHandler, IChatMessageHandler
 
 
 class BasicView(IBasicView, ABC):
 
-    @IView._logger.getter
+    _default_message_handler_class = BasicMessageHandler
+
+    @property
     def _logger(self) -> ILogger:
         return self.__logger
 
-    @IView._logger.setter
+    @_logger.setter
     def _logger(self, logger: ILogger) -> None:
         self.__logger = logger
 
-    @IView._listener.getter
+    @property
     def _listener(self) -> Callable:
         return self.listen_async if self.__overriden_listener is None else self.__overriden_listener
 
-    @IView._listener.setter
+    @_listener.setter
     def _listener(self, listener: Callable) -> None:
         assert isinstance(listener, Callable)
         self.__overriden_listener = listener
 
 
 class ChatView(IChatView, BasicView, ABC):
+
+    _default_message_handler_class = ChatMessageHandler
 
     async def error_async(self, context: dict):
         """
