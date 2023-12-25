@@ -1,10 +1,11 @@
 import aiohttp
 import asyncio
+import random
 
 from abc import ABC
 from typing import Callable, Optional, TYPE_CHECKING, AsyncGenerator
 
-from swiftbots.types import ILogger, IBasicView, IChatView, ITelegramView
+from swiftbots.types import ILogger, IBasicView, IChatView, ITelegramView, IVkontakteView, IContext, FireContext
 from swiftbots.admin_utils import shutdown_bot_async
 from swiftbots.message_handlers import BasicMessageHandler, ChatMessageHandler
 
@@ -13,14 +14,13 @@ if TYPE_CHECKING:
 
 
 class BasicView(IBasicView, ABC):
-
     _default_message_handler_class = BasicMessageHandler
 
     def init(self, bot: 'Bot', logger: 'ILogger') -> None:
         self._bot = bot
         self._logger = logger
 
-    def _close(self):
+    def _close_async(self):
         pass
 
     @property
@@ -51,7 +51,6 @@ class BasicView(IBasicView, ABC):
 
 
 class ChatView(IChatView, BasicView, ABC):
-
     _default_message_handler_class = ChatMessageHandler
 
     async def error_async(self, context: dict):
@@ -79,7 +78,6 @@ class ChatView(IChatView, BasicView, ABC):
 
 
 class TelegramView(ITelegramView, ChatView, ABC):
-
     __token: str
     __first_time_launched = True
     __should_skip_old_updates: bool
@@ -127,9 +125,9 @@ class TelegramView(ITelegramView, ChatView, ABC):
     async def update_message_async(self, data: dict) -> dict:
         return await self.fetch_async('editMessageText', data)
 
-    async def send_async(self, message: str, context: 'ITelegramView.Context') -> dict:
+    async def send_async(self, message: str, context: 'IContext') -> dict:
         data = {
-            "chat_id": context.sender,
+            "chat_id": context['sender'],
             "text": message
         }
         return await self.fetch_async('sendMessage', data)
@@ -138,11 +136,7 @@ class TelegramView(ITelegramView, ChatView, ABC):
         if not self._admin:
             self._logger.error(f'No admin id set. Impossible to report the message:\n{message}')
             return None
-        data = {
-            "chat_id": self._admin,
-            "text": message
-        }
-        return await self.custom_send_async(data)
+        return await self.send_async(message, FireContext(sender=self._admin))
 
     async def custom_send_async(self, data: dict) -> dict:
         self._logger.info(f"""Sent {data["chat_id"]}:\n'{data["text"]}'""")
@@ -162,7 +156,7 @@ class TelegramView(ITelegramView, ChatView, ABC):
         await self._http_session.close()
 
     async def _handle_server_connection_error_async(self) -> None:
-        self._logger.info('Connection ERROR in base_telegram_view.py. Sleep 5 seconds')
+        self._logger.info(f'Connection ERROR in {self._bot.name}. Sleep 5 seconds')
         await asyncio.sleep(5)
 
     def _deconstruct_message(self, update: dict) -> Optional['ITelegramView.PreContext']:
@@ -198,8 +192,8 @@ class TelegramView(ITelegramView, ChatView, ABC):
 
     async def __handle_error_async(self, error: dict) -> None:
         if error['error_code'] == 409:
-            self._logger.critical('Error code 409. Another telegram instance is working. Shutting down this instance')
             await shutdown_bot_async()
+            self._logger.critical('Error code 409. Another telegram instance is working. Shutting down this instance')
         self.__logger.error(f"Error {error['error_code']} from TG API: {error['description']}")
 
     async def __skip_old_updates_async(self):
@@ -215,7 +209,140 @@ class TelegramView(ITelegramView, ChatView, ABC):
         return -1
 
 
-"""
-class VkontakteView(ChatView):
-    pass
-"""
+class VkontakteView(IVkontakteView, ChatView, ABC):
+
+    _admin: Optional[int]
+    _group_id: int
+    _first_time_launched = True
+    _http_session: aiohttp.ClientSession
+    __API_VERSION = '5.199'
+    __default_headers: dict
+    __greeting_disabled: bool = False
+
+    def __init__(self, token: str, group_id: int, admin: int = None):
+        """
+        :param token: Auth token of bot
+        :param admin: admin id to send reports or errors. Optional
+        """
+        self._admin = admin
+        self._group_id = group_id
+        self.__default_headers = {
+            'Authorization': f'Bearer {token}'
+        }
+
+    async def listen_async(self):
+        self._http_session = aiohttp.ClientSession()
+        key, server, ts = await self.__get_long_poll_server_async()
+
+        if not self.__greeting_disabled:
+            await self.report_async(f'{self._bot.name} is launched')
+
+        try:
+            async for update in self.__get_updates_async(key, server, ts):
+                pre_context = self._deconstruct_message(update)
+                if pre_context:
+                    yield pre_context
+
+        except aiohttp.ServerConnectionError:
+            await self._handle_server_connection_error_async()
+        # except Exception as e:
+        #     msg = 'Unhandled:' + '\nAnswer is:\n' + str(update) + '\n' + format_exc()
+        #     self._logger.error(msg, update['message']['from']['id'])
+
+    async def fetch_async(self, method: str, data: dict = None, headers: dict = None, query_data: dict = None) -> dict | None:
+
+        args = ''.join([f"{name}={value}&" for name, value in query_data.items()]) if query_data else ''
+        url = (f'https://api.vk.com/method/'
+               f'{method}?'
+               f'{args}'
+               f'v={self.__API_VERSION}')
+
+        if headers is None:
+            headers = self.__default_headers
+        else:
+            headers.update(self.__default_headers)
+
+        response = await self._http_session.post(url=url, data=data, headers=headers)
+
+        answer = await response.json()
+        if 'error' in answer:
+            await self.__handle_error_async(answer)
+            return answer
+        return answer
+
+    async def send_async(self, message: str, context: 'IContext') -> dict:
+        # if message out of 9000 letters, split it on chunks
+        messages = [message[i:i + 9000] for i in range(0, len(message), 9000)]
+        result = {}
+        for msg in messages:
+            data = {
+                'user_id': context['sender'],
+                'message': msg,
+                'random_id': random.randint(-2 ** 31, 2 ** 31)
+            }
+            result = await self.fetch_async('messages.send', data)
+        return result
+
+    async def custom_send_async(self, data: dict) -> dict:
+        self._logger.info(f"""Sent {data["user_id"]}:\n'{data["message"]}'""")
+        return await self.fetch_async('messages.send', data)
+
+    async def report_async(self, message: str) -> dict | None:
+        if not self._admin:
+            self._logger.error(f'No admin id set. Impossible to report the message:\n{message}')
+            return None
+        return await self.send_async(message, FireContext(sender=self._admin))
+
+    async def __handle_error_async(self, error: dict) -> None:
+        error_code: int = error['error']['error_code']
+        error_msg: str = error['error']['error_msg']
+        msg = f"Error {error_code} from VK API: {error_msg}"
+        if error_code == 100:
+            await shutdown_bot_async()
+            self._logger.critical(msg)
+        self._logger.error(msg)
+
+    async def __get_long_poll_server_async(self) -> tuple[str, str, str]:
+        """
+        https://dev.vk.com/ru/api/bots-long-poll/getting-started#Подключение
+        """
+        data = {'group_id': self._group_id}
+        result = await self.fetch_async('groups.getLongPollServer', query_data=data)
+        key = result['response']['key']
+        server = result['response']['server']
+        ts = result['response']['ts']
+        return key, server, ts
+
+    async def __get_updates_async(self, key: str, server: str, ts: str) -> AsyncGenerator[dict, None]:
+        """
+        https://dev.vk.com/ru/api/bots-long-poll/getting-started#Подключение
+        """
+        timeout = '25'
+        while True:
+            url = f"{server}?act=a_check&key={key}&ts={ts}&wait={timeout}"
+            ans = await self._http_session.post(url=url)
+            result = await ans.json()
+            updates = result['updates']
+            if len(updates) != 0:
+                ts = result['ts']
+                for update in updates:
+                    yield update
+
+    def disable_greeting(self) -> None:
+        self.__greeting_disabled = True
+
+    async def _close_async(self):
+        await self._http_session.close()
+
+    def _deconstruct_message(self, update: dict) -> Optional['ITelegramView.PreContext']:
+
+        message = update['object']['message']
+        text: str = message['text']
+        sender: int = message['from_id']
+        message_id: int = message['id']
+        self._logger.info(f"Came message from '{sender}': '{text}'")
+        return self.PreContext(message=text, sender=sender, message_id=message_id)
+
+    async def _handle_server_connection_error_async(self) -> None:
+        self._logger.info(f'Connection ERROR in {self._bot.name}. Sleep 5 seconds')
+        await asyncio.sleep(5)

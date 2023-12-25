@@ -49,8 +49,14 @@ async def run_async(bots: list[Bot]):
                 tasks.remove(task)
                 await close_bot_async(bot)
                 continue
+            except (AttributeError, TypeError, KeyError, AssertionError) as e:
+                bot.logger.critical(f"Critical python {e.__class__.__name__} raised: {e}. Bot stopped. Fix the code. "
+                                    f"Full traceback:\n{format_exc()}")
+                tasks.remove(task)
+                await close_bot_async(bot)
+                continue
             except Exception as e:
-                bot.logger.critical(f"Bot {name} was raised with unhandled exception: {e}",
+                bot.logger.critical(f"Bot {name} was raised with unhandled {e.__class__.__name__}: {e}",
                                     f"and restarted. Full traceback:\n{format_exc()}")
             await close_bot_async(bot)
 

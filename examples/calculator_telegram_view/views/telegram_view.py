@@ -1,12 +1,7 @@
-"""Minimal demonstration of the simple chatbot view in the terminal"""
-import asyncio
+"""Minimal demonstration of the simple telegram view"""
 import os
 
 from swiftbots.views import TelegramView
-
-
-def input_async(*args, **kwargs):
-    return asyncio.to_thread(input, *args, **kwargs)
 
 
 class MyTgView(TelegramView):

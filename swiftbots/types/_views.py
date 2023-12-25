@@ -19,15 +19,22 @@ class IContext(dict, ABC):
         `Context(message=message, sender=sender)`.
         """
         super().__init__()
-        for attr in self.__annotations__:
-            assert attr in kwargs, (f"Error while creating the Context object. Attribute {attr} must be provided in "
-                                    f"a constructor like `Context({attr}={attr}...)")
+        if '__annotations__' in self:
+            for attr in self.__annotations__:
+                assert attr in kwargs, (f"Error while creating the Context object. Attribute {attr} must be provided in "
+                                        f"a constructor like `Context({attr}={attr}...)")
         for arg_name in kwargs:
             self._add(arg_name, kwargs[arg_name])
 
-    def _add(self, key: str, value: str):
+    def _add(self, key: str, value: object):
         self[key] = value
         setattr(self, key, value)
+
+
+class FireContext(IContext):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 
 class IView(ABC):
@@ -118,7 +125,7 @@ class IView(ABC):
         """
         raise NotImplementedError()
 
-    class PreContext(IContext):
+    class PreContext(IContext, ABC):
         """
         Declaration how pre context should look like
         when it yielded from view listener and starts
@@ -128,7 +135,7 @@ class IView(ABC):
             super().__init__(**kwargs)
             raise NotImplementedError("Implement your own PreContext class in your View class")
 
-    class Context(IContext):
+    class Context(IContext, ABC):
         """
         Declaration how context should look like
         when it processed in message handler and
@@ -304,7 +311,7 @@ class ITelegramView(IChatView, ABC):
 
     class PreContext(IContext):
         """
-        3 require fields:
+        3 required fields:
         message - raw message from sender.
         sender - user from who message was received
         username - user's symbolic username. `no username` if user has no symbolic username
@@ -319,7 +326,7 @@ class ITelegramView(IChatView, ABC):
 
     class Context(IContext):
         """
-        4 required fields:
+        5 required fields:
         raw_message - not modified message.
         arguments - message with cut out command part (empty string if not given).
         command - part of the message what was matched as a command.
@@ -336,7 +343,36 @@ class ITelegramView(IChatView, ABC):
         username: str
 
 
-"""
-class VkontakteView(ChatView):
-    pass
-"""
+class IVkontakteView(IChatView, ABC):
+    class PreContext(IContext):
+        """
+        3 required fields:
+        message - raw message from sender.
+        sender - user from who message was received
+        message_id - identified of message
+        """
+        __doc__ += IView.Context.__doc__
+        message: str
+        sender: int
+        message_id: int
+
+        def __init__(self, message: str, sender: int, message_id: int, **kwargs):
+            super().__init__(message=message, sender=sender, message_id=message_id, **kwargs)
+
+    class Context(IContext):
+        """
+        5 required fields:
+        raw_message - not modified message.
+        arguments - message with cut out command part (empty string if not given).
+        command - part of the message what was matched as a command.
+        sender - user from who message was received.
+        message_id - message id
+
+        If default method was called, raw_message, command and arguments will both contain not modified message.
+        """
+        __doc__ += IView.Context.__doc__
+        raw_message: str
+        arguments: str
+        command: str
+        sender: int
+        message_id: int
