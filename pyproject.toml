@@ -6,7 +6,7 @@ authors = ["Polka <you@example.com>"]
 readme = "docs/README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.10.*"
+python = ">=3.10.0"
 aiohttp = "*"
 
 [tool.poetry.group.dev.dependencies]
