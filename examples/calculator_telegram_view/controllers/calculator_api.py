@@ -3,6 +3,7 @@ with commands and a chat view"""
 
 from swiftbots.types import ITelegramView
 from swiftbots.controllers import Controller
+from swiftbots.admin_utils import admin_only_async
 
 
 class CalculatorApi(Controller):
@@ -15,6 +16,7 @@ class CalculatorApi(Controller):
         result = float(num1) + float(num2)
         await view.send_async(str(result), context)
 
+    @admin_only_async
     async def subtract(self, view: ITelegramView, context: ITelegramView.Context):
         """
         Subtract two numbers.

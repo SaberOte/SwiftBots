@@ -13,6 +13,18 @@ async def start_async_listener(bot: Bot):
         await bot.message_handler.handle_message_async(bot.view, context)
 
 
+async def close_bot_async(bot: Bot):
+    """
+    Call `_close` method of bot to softly close all connections
+    """
+    try:
+        await bot.view._close_async()
+    except Exception as e:
+        try:
+            bot.logger.error(f'Raised an exception `{e}` when a view closing method called:\n{format_exc()}')
+        except: pass
+
+
 async def run_async(bots: list[Bot]):
     tasks: set[asyncio.Task] = set()
 
@@ -35,13 +47,12 @@ async def run_async(bots: list[Bot]):
             except asyncio.CancelledError:
                 bot.logger.error(f"Bot {name} was cancelled. Not started again")
                 tasks.remove(task)
-                try:
-                    await bot.view._close_async()
-                except: pass
+                await close_bot_async(bot)
                 continue
             except Exception as e:
                 bot.logger.critical(f"Bot {name} was raised with unhandled exception: {e}",
                                     f"and restarted. Full traceback:\n{format_exc()}")
+            await close_bot_async(bot)
 
             tasks.remove(task)
             new_task = asyncio.create_task(start_async_listener(bot), name=name)

@@ -27,17 +27,6 @@ class Bot:
         self.logger = logger
         self.name = name
 
-    async def shutdown_bot_async(self):
-        """
-        Shutdown the instance. Won't restart
-        """
-        try:
-            self.logger.critical("Bot task was cancelled.")
-        except: pass
-
-        task = asyncio.current_task()
-        task.cancel()
-
 
 def _set_views(bots: list[Bot]) -> None:
     """
