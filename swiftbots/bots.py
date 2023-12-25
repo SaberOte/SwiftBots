@@ -1,3 +1,5 @@
+import asyncio
+
 from typing import Optional
 
 from swiftbots.types import IView, IController, IMessageHandler, ILogger
@@ -25,6 +27,19 @@ class Bot:
         self.logger = logger
         self.name = name
 
+    async def shutdown_bot_async(self):
+        """
+        Shutdown the instance. Won't restart
+        """
+        self.logger.critical("Bot task was cancelled.")
+        try:
+            await self.view._close_async()
+        except Exception as e:
+            self.logger.critical("Raised an exception when the bot task is cancelling: \n", e)
+
+        task: asyncio.tasks.Task = await asyncio.current_task()
+        task.cancel()
+
 
 def _set_views(bots: list[Bot]) -> None:
     """
@@ -32,7 +47,7 @@ def _set_views(bots: list[Bot]) -> None:
     """
     for bot in bots:
         bot.view = bot.view_class()
-        bot.view._logger = bot.logger
+        bot.view.init(bot, bot.logger)
 
 
 def _set_controllers(bots: list[Bot]) -> None:

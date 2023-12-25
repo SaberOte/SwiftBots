@@ -9,7 +9,7 @@ async def start_async_listener(bot: Bot):
     Launches all bot views, and sends all updates to their message handlers.
     Runs asynchronously.
     """
-    async for context in bot.view.listen_async():
+    async for context in bot.view._listener():
         await bot.message_handler.handle_message_async(bot.view, context)
 
 
@@ -23,6 +23,8 @@ async def run_async(bots: list[Bot]):
         tasks.add(task)
 
     while 1:
+        if len(tasks) == 0:
+            return
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for task in done:
             name = task.get_name()
@@ -31,7 +33,9 @@ async def run_async(bots: list[Bot]):
                 result = task.result()
                 bot.logger.critical(f"Bot {name} was finished with result {result} and restarted")
             except asyncio.CancelledError:
-                bot.logger.info(f"Bot {name} was cancelled")
+                bot.logger.error(f"Bot {name} was cancelled. Not started again")
+                tasks.remove(task)
+                continue
             except Exception as e:
                 bot.logger.critical(f"Bot {name} was raised with unhandled exception: {e}",
                                     f"and restarted. Full traceback:\n{format_exc()}")

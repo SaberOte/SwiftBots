@@ -1,0 +1,35 @@
+"""The simplest demonstration how controller may work
+with commands and a chat view"""
+
+from swiftbots.types import ITelegramView
+from swiftbots.controllers import Controller
+
+
+class CalculatorApi(Controller):
+
+    async def add(self, view: ITelegramView, context: ITelegramView.Context):
+        """Add two numbers"""
+        message = context.arguments
+        self.info(f'User is requesting ADD operation: {message}')
+        num1, num2 = message.split(' ')
+        result = float(num1) + float(num2)
+        await view.send_async(str(result), context)
+
+    async def subtract(self, view: ITelegramView, context: ITelegramView.Context):
+        """
+        Subtract two numbers.
+        Here is usage context as a dict. So it's possible provide any
+        additional information to context and use it in controllers.
+        """
+        message = context['arguments']
+        self.info(f'User is requesting SUBTRACT operation: {message}')
+        num1, num2 = message.split(' ')
+        result = float(num1) - float(num2)
+        await view.send_async(str(result), context)
+
+    cmds = {
+        'add': add,
+        '+': add,
+        'sub': subtract,
+        '-': subtract
+    }

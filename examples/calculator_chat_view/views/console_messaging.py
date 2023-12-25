@@ -10,8 +10,7 @@ def input_async(*args, **kwargs):
 
 class ConsoleView(ChatView):
     """
-    It's a bad example, `print` and `input` doesn't run asynchronously,
-    but it's pretty simple.
+    Pretty simple example of Chat View usage.
     """
 
     async def listen_async(self):
