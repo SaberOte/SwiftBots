@@ -31,13 +31,11 @@ class Bot:
         """
         Shutdown the instance. Won't restart
         """
-        self.logger.critical("Bot task was cancelled.")
         try:
-            await self.view._close_async()
-        except Exception as e:
-            self.logger.critical("Raised an exception when the bot task is cancelling: \n", e)
+            self.logger.critical("Bot task was cancelled.")
+        except: pass
 
-        task: asyncio.tasks.Task = await asyncio.current_task()
+        task = asyncio.current_task()
         task.cancel()
 
 
@@ -65,7 +63,7 @@ def _set_controllers(bots: list[Bot]) -> None:
                 controller_instance = found_instances[0]
             elif len(found_instances) == 0:
                 controller_instance = controller_type()
-                controller_instance._set_logger(bot.logger)
+                controller_instance.init(bot.logger, bot)
                 controller_memory.append(controller_instance)
             else:
                 raise Exception('Invalid algorithm')

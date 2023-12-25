@@ -35,6 +35,9 @@ async def run_async(bots: list[Bot]):
             except asyncio.CancelledError:
                 bot.logger.error(f"Bot {name} was cancelled. Not started again")
                 tasks.remove(task)
+                try:
+                    await bot.view._close_async()
+                except: pass
                 continue
             except Exception as e:
                 bot.logger.critical(f"Bot {name} was raised with unhandled exception: {e}",

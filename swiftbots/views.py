@@ -200,9 +200,6 @@ class TelegramView(ITelegramView, ChatView, ABC):
         if error['error_code'] == 409:
             self._logger.critical('Error code 409. Another telegram instance is working. Shutting down this instance')
             await self._bot.shutdown_bot_async()
-            # for i in range(2):
-            #     time.sleep(1)
-            # os.kill(os.getpid(), signal.SIGKILL)
         self.__logger.error(f"Error {error['error_code']} from TG API: {error['description']}")
 
     async def __skip_old_updates_async(self):
