@@ -80,7 +80,6 @@ class ChatView(IChatView, BasicView, ABC):
 class TelegramView(ITelegramView, ChatView, ABC):
 
     __token: str
-    _admin: Optional[str]
     __first_time_launched = True
     __should_skip_old_updates: bool
     __greeting_disabled = False

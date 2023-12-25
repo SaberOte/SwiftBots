@@ -179,6 +179,8 @@ class IChatView(IView, ABC):
     unknown_error_message = 'Unknown command'
     refuse_message = 'Access forbidden'
 
+    _admin: Optional[str] = None
+
     @abstractmethod
     def listen_async(self) -> AsyncGenerator['IChatView.PreContext', None]:
         """
