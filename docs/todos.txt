@@ -1,22 +1,12 @@
 TODOS
 =====
 - Create makefile
-- Remove modes of launching bots. It will always be an asynchronous framework.
 - Finish adequate readme
 - Handle exception not in runner, but in the message handler.
 - In message handler create function which will execute methods itself
 - Develop tasks/scheduler
-- Develop tasks admin utils
 - Make creation of user folder (inject as python command)
-- Maybe make not such stupid examples
-- Make loggers asynchronous
-- Make loggers for chatbots with report method
 - Create tests. Test at least chat and basic views
-- Make admin utils:
-1. List bots in the project
-2. Stop bot by his name
-3. Start bot by his name
-- Create config with bot started/stopped. When restart app, state is saved
 - Make REST api view
 - Think about Models like a persistence storage
 - Use colorama to write `warning` messages with yellow outline
