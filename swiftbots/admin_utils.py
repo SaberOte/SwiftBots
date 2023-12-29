@@ -6,6 +6,9 @@ import random
 
 from typing import TYPE_CHECKING
 
+from swiftbots.runners import get_all_tasks
+from swiftbots.types import StartBotException
+
 if TYPE_CHECKING:
     from swiftbots.types import IChatView
 
@@ -27,22 +30,50 @@ async def shutdown_bot_async(bot_name: str = None) -> bool:
     Otherwise, it closes the bot with name `bot_name`
     :return: True if the bot was stopped, False if not found
     """
-    if bot_name is None:
-        task = asyncio.current_task()
-        task.cancel('Canceling bot itself')
-        return True
+    if bot_name.casefold() not in [task.casefold() for task in get_all_tasks()]:
+        return False
     else:
         tasks = asyncio.all_tasks()
         for task in tasks:
             if task.get_name().casefold() == bot_name.casefold():
-                task.cancel('Bot was stopped by administrator.')
+                task.cancel(f'Bot {bot_name} was stopped by administrator.')
                 return True
         return False
 
 
-async def get_list_bots_async() -> set[str]:
+async def get_bot_names_async() -> (set[str], set[str], set[str]):
+    """
+    :returns: 1. a set of all the tasks in app;
+    2. set of running tasks;
+    3. set of stopped tasks
+    """
+    app_tasks = get_all_tasks()
+
+    running_task_instances = asyncio.all_tasks()
+    all_running_tasks = {task.get_name() for task in running_task_instances}
+    # It returns also system tasks, we don't need it
+    stopped_tasks = app_tasks - all_running_tasks
+    running_tasks = app_tasks - stopped_tasks
+    return app_tasks, running_tasks, stopped_tasks
+
+
+async def start_bot_async(bot_name: str) -> int:
+    """
+    Try to start bot. It must be already stopped.
+    :returns: exception `StartBotException` if bot was successfully asked started.
+    1 if the bot already is running.
+    2 if there is no such bot name
+    """
     tasks = asyncio.all_tasks()
-    return {task.get_name() for task in tasks}
+    for task in tasks:
+        if task.get_name().casefold() == bot_name.casefold():
+            return 1
+
+    all_tasks = get_all_tasks()
+    for task in all_tasks:
+        if task.casefold() == bot_name.casefold():
+            raise StartBotException(task)
+    return 2
 
 
 async def send_telegram_message_async(message: str, admin: str, token: str) -> None:

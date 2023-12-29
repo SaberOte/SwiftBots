@@ -1,0 +1,2 @@
+class StartBotException(Exception):
+    pass

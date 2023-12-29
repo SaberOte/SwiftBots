@@ -2,6 +2,14 @@ import asyncio
 from traceback import format_exc
 
 from swiftbots.bots import Bot
+from swiftbots.types import StartBotException
+
+
+__ALL_TASKS: set[str] = set()
+
+
+def get_all_tasks() -> set[str]:
+    return __ALL_TASKS
 
 
 async def start_async_listener(bot: Bot):
@@ -27,6 +35,8 @@ async def run_async(bots: list[Bot]):
     tasks: set[asyncio.Task] = set()
 
     bot_names: dict[str, Bot] = {bot.name: bot for bot in bots}
+    global __ALL_TASKS
+    __ALL_TASKS = bot_names.keys()
 
     for name, bot in bot_names.items():
         task = asyncio.create_task(start_async_listener(bot), name=name)
@@ -54,10 +64,18 @@ async def run_async(bots: list[Bot]):
                 tasks.remove(task)
                 await close_bot_async(bot)
                 continue
+            except StartBotException as ex:
+                # Special exception instance for starting bots from admin panel
+                try:
+                    bot_name_to_start = str(ex)
+                    bot_to_start = bot_names[str(ex)]
+                    new_task = asyncio.create_task(start_async_listener(bot_to_start), name=bot_name_to_start)
+                    tasks.add(new_task)
+                except Exception as e:
+                    await bot.logger.critical_async(f"Couldn't start bot {ex}. Exception: {e}")
             except Exception as e:
                 await bot.logger.critical_async(f"Bot {name} was raised with unhandled {e.__class__.__name__}: {e}",
                                                 f"and restarted. Full traceback:\n{format_exc()}")
-            await close_bot_async(bot)
 
             tasks.remove(task)
             new_task = asyncio.create_task(start_async_listener(bot), name=name)

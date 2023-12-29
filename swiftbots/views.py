@@ -90,7 +90,8 @@ class TelegramView(ITelegramView, ChatView, ABC):
         self.__should_skip_old_updates = skip_old_updates
 
     async def listen_async(self) -> AsyncGenerator['ITelegramView.PreContext', None]:
-        self.http_session = aiohttp.ClientSession()
+        if self.http_session is None:
+            self.http_session = aiohttp.ClientSession()
 
         if not self.__greeting_disabled and self._admin is not None:
             await self.custom_send_async({'chat_id': self._admin, 'text': f'{self.bot.name} is started!'})
@@ -220,7 +221,9 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
         }
 
     async def listen_async(self):
-        self._http_session = aiohttp.ClientSession()
+        if self._http_session is None:
+            self._http_session = aiohttp.ClientSession()
+
         key, server, ts = await self.__get_long_poll_server_async()
 
         if not self.__greeting_disabled and self._admin is not None:
