@@ -7,48 +7,61 @@ class ILogger(ABC):
     Logs can be provided by controllers, views or framework classes
     """
 
+    bot_name: str = None
+
     @abstractmethod
-    def info(self, *args, **kwargs) -> None:
-        """Save unimportant message"""
+    async def info_async(self, *args, skip_prefix: bool = False) -> None:
+        """Save an unimportant message"""
         raise NotImplementedError()
 
     @abstractmethod
-    def warn(self, *args, **kwargs) -> None:
-        """Save message that may be important"""
+    def info(self, *args, skip_prefix: bool = False) -> None:
+        """Save an unimportant message"""
         raise NotImplementedError()
 
     @abstractmethod
-    def error(self, *args, **kwargs) -> None:
-        """Save error message that may be important"""
+    async def warn_async(self, *args, skip_prefix: bool = False) -> None:
+        """Save a message that may be important"""
         raise NotImplementedError()
 
     @abstractmethod
-    def critical(self, *args, **kwargs) -> None:
-        """Process critical error (e.g. notifying administrator)"""
-        raise NotImplementedError()
-
-
-class ISysIOLogger(ILogger, ABC):
-    """
-    Logger that will log all messages to stdout or stderr
-    """
-
-    @abstractmethod
-    def info(self, *args, **kwargs) -> None:
-        """Save unimportant message to stdout"""
+    def warn(self, *args, skip_prefix: bool = False) -> None:
+        """Save a message that may be important"""
         raise NotImplementedError()
 
     @abstractmethod
-    def warn(self, *args, **kwargs) -> None:
-        """Save message that may be important to stdout"""
+    async def error_async(self, *args, skip_prefix: bool = False) -> None:
+        """Save an error message that may be important"""
         raise NotImplementedError()
 
     @abstractmethod
-    def error(self, *args, **kwargs) -> None:
-        """Save error message that may be important to stdout"""
+    def error(self, *args, skip_prefix: bool = False) -> None:
+        """Save an error message that may be important"""
         raise NotImplementedError()
 
     @abstractmethod
-    def critical(self, *args, **kwargs) -> None:
-        """Save critical error to stdout"""
+    async def critical_async(self, *args, skip_prefix: bool = False) -> None:
+        """Process a critical error (e.g. notifying administrator)"""
+        raise NotImplementedError()
+
+    @abstractmethod
+    def critical(self, *args, skip_prefix: bool = False) -> None:
+        """Process a critical error (e.g. notifying administrator)"""
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def report_async(self, *args, skip_prefix: bool = False) -> None:
+        """Report to administrator some message"""
+        raise NotImplementedError()
+
+    @abstractmethod
+    def report(self, *args, skip_prefix: bool = False) -> None:
+        """Report to administrator"""
+        raise NotImplementedError()
+
+
+class ILoggerFactory:
+
+    @abstractmethod
+    def get_logger(self) -> ILogger:
         raise NotImplementedError()

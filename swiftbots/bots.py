@@ -1,14 +1,13 @@
-import asyncio
-
 from typing import Optional
 
-from swiftbots.types import IView, IController, IMessageHandler, ILogger
+from swiftbots.types import IView, IController, IMessageHandler, ILogger, ILoggerFactory
 
 
 class Bot:
     """A storage of controllers and views"""
 
     name: str
+    __logger: ILogger = None
 
     view_class: type[IView]
     controller_classes: list[type[IController]]
@@ -17,15 +16,20 @@ class Bot:
     view: IView
     controllers: list[IController]
     message_handler: IMessageHandler
-    logger: ILogger
+
+    @property
+    def logger(self) -> ILogger:
+        return self.__logger
 
     def __init__(self, view_class: type[IView], controller_classes: list[type[IController]],
-                 message_handler_class: Optional[type[IMessageHandler]], logger: ILogger, name: str):
+                 message_handler_class: Optional[type[IMessageHandler]],
+                 logger_factory: ILoggerFactory, name: str = None):
         self.view_class = view_class
         self.controller_classes = controller_classes
         self.message_handler_class = message_handler_class
-        self.logger = logger
-        self.name = name
+        self.name = name or view_class.__name__
+        self.__logger = logger_factory.get_logger()
+        self.__logger.bot_name = self.name
 
 
 def _set_views(bots: list[Bot]) -> None:
@@ -34,7 +38,7 @@ def _set_views(bots: list[Bot]) -> None:
     """
     for bot in bots:
         bot.view = bot.view_class()
-        bot.view.init(bot, bot.logger)
+        bot.view.init(bot)
 
 
 def _set_controllers(bots: list[Bot]) -> None:
@@ -52,7 +56,6 @@ def _set_controllers(bots: list[Bot]) -> None:
                 controller_instance = found_instances[0]
             elif len(found_instances) == 0:
                 controller_instance = controller_type()
-                controller_instance.init(bot.logger, bot)
                 controller_memory.append(controller_instance)
             else:
                 raise Exception('Invalid algorithm')
@@ -67,7 +70,7 @@ def _set_message_handlers(bots: list[Bot]) -> None:
     """
     for bot in bots:
         if bot.message_handler_class is None:
-            bot.message_handler_class = bot.view_class._default_message_handler_class
+            bot.message_handler_class = bot.view_class.default_message_handler_class
         bot.message_handler = bot.message_handler_class(bot.controllers, bot.logger)
 
 

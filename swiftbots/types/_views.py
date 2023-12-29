@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Optional, AsyncGenerator, TYPE_CHECKING
+from typing import Optional, AsyncGenerator, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from swiftbots.types import ILogger, IMessageHandler
@@ -21,8 +21,8 @@ class IContext(dict, ABC):
         super().__init__()
         if '__annotations__' in self:
             for attr in self.__annotations__:
-                assert attr in kwargs, (f"Error while creating the Context object. Attribute {attr} must be provided in "
-                                        f"a constructor like `Context({attr}={attr}...)")
+                assert attr in kwargs, (f"Error while creating the Context object. Attribute {attr} must be provided "
+                                        f"in a constructor like `Context({attr}={attr}...)")
         for arg_name in kwargs:
             self._add(arg_name, kwargs[arg_name])
 
@@ -43,19 +43,10 @@ class IView(ABC):
     Never inherit this class outside swiftbots module!
     """
 
-    _overriden_listener: Optional[Callable] = None
-    __logger: Optional['ILogger'] = None
-    __bot: 'Bot'
+    default_message_handler_class: type['IMessageHandler']
 
     @abstractmethod
-    def init(self, bot: 'Bot', logger: 'ILogger') -> None:
-        """
-        Initialize the View
-        """
-        raise NotImplementedError()
-
-    @abstractmethod
-    def listen_async(self) -> AsyncGenerator['IView.PreContext', None]:
+    async def listen_async(self) -> AsyncGenerator['IView.PreContext', None]:
         """
         Input pipe for commands from outer resource.
         Method must use "yield" operator to return dict.
@@ -67,61 +58,29 @@ class IView(ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    def init(self, bot: 'Bot') -> None:
+        """
+        Initialize the View
+        """
+        raise NotImplementedError()
+
+    @property
+    @abstractmethod
+    def logger(self) -> Optional['ILogger']:
+        """Get this view's logger"""
+        raise NotImplementedError()
+
+    @property
+    @abstractmethod
+    def bot(self) -> 'Bot':
+        """Get the bot instance"""
+        raise NotImplementedError()
+
+    @abstractmethod
     async def _close_async(self):
         """
         Before shutting down, a bot calls this method.
-        Close database connections, http clients etc.
-        """
-        raise NotImplementedError()
-
-    @property
-    @abstractmethod
-    def _default_message_handler_class(self) -> type['IMessageHandler']:
-        raise NotImplementedError()
-
-    @property
-    @abstractmethod
-    def _logger(self) -> Optional['ILogger']:
-        """Get logger of this view"""
-        raise NotImplementedError()
-
-    @_logger.setter
-    @abstractmethod
-    def _logger(self, logger: 'ILogger') -> None:
-        """Set needed logger for this view"""
-        raise NotImplementedError()
-
-    @property
-    @abstractmethod
-    def _bot(self) -> 'Bot':
-        """Get bot instance"""
-        raise NotImplementedError()
-
-    @_bot.setter
-    @abstractmethod
-    def _bot(self, bot: 'Bot') -> None:
-        """Set bot instance"""
-        raise NotImplementedError()
-
-    @property
-    @abstractmethod
-    def _listener(self) -> Callable:
-        """
-        Listener waits updates from any outer resource like telegram and then returns it to handle.
-        If it's needed to override some behavior, set _get_listener manually with custom one.
-        :returns: listener function
-        """
-        raise NotImplementedError()
-
-    @_listener.setter
-    @abstractmethod
-    def _listener(self, listener: Callable) -> None:
-        """
-        Override default listener.
-        Listener waits updates from any outer resource like telegram and then returns it to handle.
-        Listener than will be used by message_handler, which can be overridden too in BotsApplication.
-        :param listener: callable function, which will be called to receive updates.
-        Must be asynchronous and use "yield" operator to return dict with information about command.
+        Close database connections, http clients, etc.
         """
         raise NotImplementedError()
 
@@ -152,7 +111,7 @@ class IBasicView(IView, ABC):
     """
 
     @abstractmethod
-    def listen_async(self) -> AsyncGenerator['IBasicView.Context', None]:
+    async def listen_async(self) -> AsyncGenerator['IBasicView.Context', None]:
         """
         Must yield dict with some information, that will be helpful when processing by controller.
         """
@@ -186,10 +145,10 @@ class IChatView(IView, ABC):
     unknown_error_message = 'Unknown command'
     refuse_message = 'Access forbidden'
 
-    _admin: Optional[str] = None
+    _admin = None
 
     @abstractmethod
-    def listen_async(self) -> AsyncGenerator['IChatView.PreContext', None]:
+    async def listen_async(self) -> AsyncGenerator['IChatView.PreContext', None]:
         """
         For a ChatView listen_async must yield a Context with at least 2 fields: `sender` and `message`.
         `sender` needed for replying answer to a user.
@@ -199,7 +158,7 @@ class IChatView(IView, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def send_async(self, message: str, context: dict) -> None:
+    async def send_async(self, message: str, context: 'IContext') -> None:
         """
         Sending message to a user.
         :param message: a message for a user
@@ -207,24 +166,34 @@ class IChatView(IView, ABC):
         """
         raise NotImplementedError()
 
-    async def error_async(self, context: dict):
+    @abstractmethod
+    async def error_async(self, context: 'IContext'):
         """
         Inform a user there is internal error.
         :param context: context with `sender` and `messages` fields
         """
         raise NotImplementedError()
 
-    async def unknown_command_async(self, context: dict):
+    @abstractmethod
+    async def unknown_command_async(self, context: 'IContext'):
         """
         If a user sends some unknown shit, then needed say him about that
         :param context: context with `sender` and `messages` fields
         """
         raise NotImplementedError()
 
-    def refuse_async(self, context: dict):
+    @abstractmethod
+    async def refuse_async(self, context: 'IContext'):
         """
         If a user can't use it, then he must be aware.
         :param context: context with `sender` and `messages` fields
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def is_admin(self, user) -> bool:
+        """
+        Whether the user is an admin or not
         """
         raise NotImplementedError()
 
@@ -260,35 +229,12 @@ class IChatView(IView, ABC):
 
 
 class ITelegramView(IChatView, ABC):
-    @abstractmethod
-    def listen_async(self) -> AsyncGenerator['ITelegramView.PreContext', None]:
-        """
-        For a TelegramView listen_async must yield a dict with at least 2 fields: `sender` and `message`.
-        `sender` needed for replying answer to a user.
-        `message` needed for processing it by a message handler and forwarding to
-        the appropriate controller and executing the appropriate command.
-        """
-        raise NotImplementedError()
 
     @abstractmethod
     async def update_message_async(self, data: dict) -> dict:
         """
         Updating the message
         :param data: should contain at least "text", "message_id", "chat_id"
-        """
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def send_async(self, message: str, context: 'ITelegramView.Context') -> dict:
-        """
-        Reply user with message
-        """
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def report_async(self, message: str) -> dict | None:
-        """
-        Send message to admin if it has given. Else log message as error
         """
         raise NotImplementedError()
 
@@ -303,7 +249,7 @@ class ITelegramView(IChatView, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def delete_message_async(self, message_id, context: 'ITelegramView.Context') -> dict:
+    async def delete_message_async(self, message_id, context: 'IContext') -> dict:
         """
         Delete message `message_id`
         """
@@ -344,6 +290,7 @@ class ITelegramView(IChatView, ABC):
 
 
 class IVkontakteView(IChatView, ABC):
+
     class PreContext(IContext):
         """
         3 required fields:

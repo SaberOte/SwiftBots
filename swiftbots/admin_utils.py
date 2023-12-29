@@ -9,14 +9,10 @@ if TYPE_CHECKING:
 def admin_only_async(func):
     """Decorator. Should wrap controller method to prevent non admin execution"""
     async def wrapper(self, view: 'IChatView', context: 'IChatView.Context'):
-        if view._admin is not None:
-            if str(context.sender) != str(view._admin):
-                await view.refuse_async(context)
-            else:
-                return await func(self, view, context)
+        if view.is_admin(context.sender):
+            await view.refuse_async(context)
         else:
-            view._logger.error('admin_only decorator requires `_admin` property in view')
-            await view.error_async(context)
+            return await func(self, view, context)
     return wrapper
 
 

@@ -6,18 +6,10 @@ Message handlers do:
 """
 
 from abc import ABC, abstractmethod
-from enum import Enum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from swiftbots.types import IView, IController, ILogger, IContext
-
-
-class MessageHandlingResult(Enum):
-    SUCCESS = 1
-    ERROR = 2
-    DEFAULT_HANDLER_INVOKED = 3
-    NO_MATCHES = 4
 
 
 class IMessageHandler(ABC):

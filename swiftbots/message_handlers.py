@@ -80,7 +80,6 @@ class ChatMessageHandler(IChatMessageHandler):
         If it's no default handler, reject to execute command.
         :param view: View object
         :param context: pre context. Must have a message field.
-        :return: MessageHandlingResult
         """
         message: str = context.message
         arguments: str = ''

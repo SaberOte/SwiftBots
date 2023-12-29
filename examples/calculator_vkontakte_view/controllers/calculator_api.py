@@ -1,3 +1,4 @@
+# noinspection DuplicatedCode
 """The simplest demonstration how controller may work
 with commands and a vkontakte view"""
 
@@ -11,7 +12,7 @@ class CalculatorApi(Controller):
     async def add(self, view: IVkontakteView, context: IVkontakteView.Context):
         """Add two numbers"""
         message = context.arguments
-        self.info(f'User is requesting ADD operation: {message}')
+        await view.logger.info_async(f'User is requesting ADD operation: {message}')
         num1, num2 = message.split(' ')
         result = float(num1) + float(num2)
         await view.send_async(str(result), context)
@@ -24,7 +25,7 @@ class CalculatorApi(Controller):
         additional information to context and use it in controllers.
         """
         message = context['arguments']
-        self.info(f'User is requesting SUBTRACT operation: {message}')
+        await view.logger.info_async(f'User is requesting SUBTRACT operation: {message}')
         num1, num2 = message.split(' ')
         result = float(num1) - float(num2)
         await view.send_async(str(result), context)

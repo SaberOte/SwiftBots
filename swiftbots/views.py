@@ -3,9 +3,9 @@ import asyncio
 import random
 
 from abc import ABC
-from typing import Callable, Optional, TYPE_CHECKING, AsyncGenerator
+from typing import Optional, TYPE_CHECKING, AsyncGenerator
 
-from swiftbots.types import ILogger, IBasicView, IChatView, ITelegramView, IVkontakteView, IContext, FireContext
+from swiftbots.types import ILogger, IBasicView, IChatView, ITelegramView, IVkontakteView, IContext
 from swiftbots.admin_utils import shutdown_bot_async
 from swiftbots.message_handlers import BasicMessageHandler, ChatMessageHandler
 
@@ -14,75 +14,69 @@ if TYPE_CHECKING:
 
 
 class BasicView(IBasicView, ABC):
-    _default_message_handler_class = BasicMessageHandler
 
-    def init(self, bot: 'Bot', logger: 'ILogger') -> None:
-        self._bot = bot
-        self._logger = logger
+    default_message_handler_class = BasicMessageHandler
+    __bot: 'Bot'
+    __logger: Optional['ILogger']
 
-    def _close_async(self):
-        pass
+    def init(self, bot: 'Bot') -> None:
+        self.__bot = bot
+        self.__logger = bot.logger
 
     @property
-    def _logger(self) -> ILogger:
+    def logger(self) -> ILogger:
         return self.__logger
 
-    @_logger.setter
-    def _logger(self, logger: ILogger) -> None:
-        assert isinstance(logger, ILogger)
-        self.__logger = logger
-
     @property
-    def _listener(self) -> Callable:
-        return self.listen_async if self._overriden_listener is None else self._overriden_listener
-
-    @_listener.setter
-    def _listener(self, listener: Callable) -> None:
-        assert isinstance(listener, Callable)
-        self.__overriden_listener = listener
-
-    @property
-    def _bot(self) -> 'Bot':
+    def bot(self) -> 'Bot':
         return self.__bot
 
-    @_bot.setter
-    def _bot(self, bot: 'Bot') -> None:
-        self.__bot = bot
+    async def _close_async(self):
+        pass
 
 
 class ChatView(IChatView, BasicView, ABC):
-    _default_message_handler_class = ChatMessageHandler
 
-    async def error_async(self, context: dict):
+    default_message_handler_class = ChatMessageHandler
+
+    async def error_async(self, context: 'IContext'):
         """
         Inform user there is internal error.
         :param context: context with `sender` and `messages` fields
         """
+        await self.logger.info_async(f'Error in view. Context: {context}')
         await self.send_async(self.error_message, context)
 
-    async def unknown_command_async(self, context: dict):
+    async def unknown_command_async(self, context: 'IContext'):
         """
         If user sends some unknown shit, then needed say him about that
         :param context: context with `sender` and `messages` fields
         """
-        self._logger.info(f'User sends unknown command. Context:\n{context}')
+        await self.logger.info_async(f'User sent unknown command. Context:\n{context}')
         await self.send_async(self.unknown_error_message, context)
 
-    async def refuse_async(self, context: dict):
+    async def refuse_async(self, context: 'IContext'):
         """
         If user can't use it, then he must be aware.
         :param context: context with `sender` and `messages` fields
         """
-        self._logger.info(f'Forbidden. Context:\n{context}')
+        await self.logger.info_async(f'Forbidden. Context:\n{context}')
         await self.send_async(self.refuse_message, context)
+
+    async def is_admin(self, user) -> bool:
+        if self._admin is None:
+            await self.logger.error_async(f"No `_admin` property is set for view {self.bot.name}")
+            return False
+        return str(self._admin) == str(user)
 
 
 class TelegramView(ITelegramView, ChatView, ABC):
+
     __token: str
     __first_time_launched = True
     __should_skip_old_updates: bool
     __greeting_disabled = False
-    _http_session = None
+    http_session = None
     ALLOWED_UPDATES = ["messages"]
 
     def __init__(self, token: str, admin: str = None, skip_old_updates: bool = True):
@@ -96,15 +90,15 @@ class TelegramView(ITelegramView, ChatView, ABC):
         self.__should_skip_old_updates = skip_old_updates
 
     async def listen_async(self) -> AsyncGenerator['ITelegramView.PreContext', None]:
-        self._http_session = aiohttp.ClientSession()
+        self.http_session = aiohttp.ClientSession()
 
-        if not self.__greeting_disabled:
-            await self.report_async(f'{self._bot.name} is started')
+        if not self.__greeting_disabled and self._admin is not None:
+            await self.custom_send_async({'chat_id': self._admin, 'text': f'{self.bot.name} is started!'})
 
         while True:
             try:
                 async for update in self._get_updates_async():
-                    pre_context = self._deconstruct_message(update)
+                    pre_context = await self._deconstruct_message_async(update)
                     if pre_context:
                         yield pre_context
 
@@ -115,7 +109,7 @@ class TelegramView(ITelegramView, ChatView, ABC):
             #     self._logger.error(msg, update['message']['from']['id'])
 
     async def fetch_async(self, method: str, data: dict) -> dict | None:
-        response = await self._http_session.post(f'https://api.telegram.org/bot{self.__token}/{method}', json=data)
+        response = await self.http_session.post(f'https://api.telegram.org/bot{self.__token}/{method}', json=data)
         answer = await response.json()
         if not answer['ok']:
             await self.__handle_error_async(answer)
@@ -132,14 +126,8 @@ class TelegramView(ITelegramView, ChatView, ABC):
         }
         return await self.fetch_async('sendMessage', data)
 
-    async def report_async(self, message: str) -> dict | None:
-        if not self._admin:
-            self._logger.error(f'No admin id set. Impossible to report the message:\n{message}')
-            return None
-        return await self.send_async(message, FireContext(sender=self._admin))
-
     async def custom_send_async(self, data: dict) -> dict:
-        self._logger.info(f"""Sent {data["chat_id"]}:\n'{data["text"]}'""")
+        await self.logger.info_async(f"""Sent {data["chat_id"]}:\n'{data["text"]}'""")
         return await self.fetch_async('sendMessage', data)
 
     async def delete_message_async(self, message_id, context: 'ITelegramView.Context') -> dict:
@@ -153,23 +141,23 @@ class TelegramView(ITelegramView, ChatView, ABC):
         self.__greeting_disabled = True
 
     async def _close_async(self):
-        await self._http_session.close()
+        await self.http_session.close()
 
     async def _handle_server_connection_error_async(self) -> None:
-        self._logger.info(f'Connection ERROR in {self._bot.name}. Sleep 5 seconds')
+        await self.logger.info_async(f'Connection ERROR in {self.bot.name}. Sleep 5 seconds')
         await asyncio.sleep(5)
 
-    def _deconstruct_message(self, update: dict) -> Optional['ITelegramView.PreContext']:
+    async def _deconstruct_message_async(self, update: dict) -> Optional['ITelegramView.PreContext']:
         update = update['result'][0]
         if 'message' in update and 'text' in update['message']:
             message = update['message']
             text = message['text']
             sender = message['from']['id']
             username = message['from']['username'] if 'username' in message['from'] else 'no username'
-            self._logger.info(f"Came message from '{sender}' ({username}): '{text}'")
+            await self.logger.info_async(f"Came message from '{sender}' ({username}): '{text}'")
             return self.PreContext(text, sender, username)
         else:
-            self._logger.error('Unknown message type:\n', str(update))
+            await self.logger.error_async('Unknown message type:\n', str(update))
 
     async def _get_updates_async(self) -> AsyncGenerator[dict, None]:
         """
@@ -193,8 +181,9 @@ class TelegramView(ITelegramView, ChatView, ABC):
     async def __handle_error_async(self, error: dict) -> None:
         if error['error_code'] == 409:
             await shutdown_bot_async()
-            self._logger.critical('Error code 409. Another telegram instance is working. Shutting down this instance')
-        self.__logger.error(f"Error {error['error_code']} from TG API: {error['description']}")
+            await self.logger.critical_async('Error code 409. Another telegram instance is working. '
+                                             'Shutting down this instance')
+        await self.logger.error_async(f"Error {error['error_code']} from TG API: {error['description']}")
 
     async def __skip_old_updates_async(self):
         data = {
@@ -211,7 +200,6 @@ class TelegramView(ITelegramView, ChatView, ABC):
 
 class VkontakteView(IVkontakteView, ChatView, ABC):
 
-    _admin: Optional[int]
     _group_id: int
     _first_time_launched = True
     _http_session: aiohttp.ClientSession
@@ -234,12 +222,12 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
         self._http_session = aiohttp.ClientSession()
         key, server, ts = await self.__get_long_poll_server_async()
 
-        if not self.__greeting_disabled:
-            await self.report_async(f'{self._bot.name} is launched')
+        if not self.__greeting_disabled and self._admin is not None:
+            await self.custom_send_async({'message': f'{self.bot.name} is started!', 'user_id': self._admin})
 
         try:
             async for update in self.__get_updates_async(key, server, ts):
-                pre_context = self._deconstruct_message(update)
+                pre_context = await self._deconstruct_message_async(update)
                 if pre_context:
                     yield pre_context
 
@@ -249,7 +237,8 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
         #     msg = 'Unhandled:' + '\nAnswer is:\n' + str(update) + '\n' + format_exc()
         #     self._logger.error(msg, update['message']['from']['id'])
 
-    async def fetch_async(self, method: str, data: dict = None, headers: dict = None, query_data: dict = None) -> dict | None:
+    async def fetch_async(self, method: str, data: dict = None,
+                          headers: dict = None, query_data: dict = None) -> dict | None:
 
         args = ''.join([f"{name}={value}&" for name, value in query_data.items()]) if query_data else ''
         url = (f'https://api.vk.com/method/'
@@ -284,14 +273,8 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
         return result
 
     async def custom_send_async(self, data: dict) -> dict:
-        self._logger.info(f"""Sent {data["user_id"]}:\n'{data["message"]}'""")
+        await self.logger.info_async(f"""Sent {data["user_id"]}:\n'{data["message"]}'""")
         return await self.fetch_async('messages.send', data)
-
-    async def report_async(self, message: str) -> dict | None:
-        if not self._admin:
-            self._logger.error(f'No admin id set. Impossible to report the message:\n{message}')
-            return None
-        return await self.send_async(message, FireContext(sender=self._admin))
 
     async def __handle_error_async(self, error: dict) -> None:
         error_code: int = error['error']['error_code']
@@ -299,8 +282,8 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
         msg = f"Error {error_code} from VK API: {error_msg}"
         if error_code == 100:
             await shutdown_bot_async()
-            self._logger.critical(msg)
-        self._logger.error(msg)
+            await self.logger.critical_async(msg)
+        await self.logger.error_async(msg)
 
     async def __get_long_poll_server_async(self) -> tuple[str, str, str]:
         """
@@ -334,15 +317,15 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
     async def _close_async(self):
         await self._http_session.close()
 
-    def _deconstruct_message(self, update: dict) -> Optional['ITelegramView.PreContext']:
+    async def _deconstruct_message_async(self, update: dict) -> Optional['ITelegramView.PreContext']:
 
         message = update['object']['message']
         text: str = message['text']
         sender: int = message['from_id']
         message_id: int = message['id']
-        self._logger.info(f"Came message from '{sender}': '{text}'")
+        await self.logger.info_async(f"Came message from '{sender}': '{text}'")
         return self.PreContext(message=text, sender=sender, message_id=message_id)
 
     async def _handle_server_connection_error_async(self) -> None:
-        self._logger.info(f'Connection ERROR in {self._bot.name}. Sleep 5 seconds')
+        await self.logger.info_async(f'Connection ERROR in {self.bot.name}. Sleep 5 seconds')
         await asyncio.sleep(5)

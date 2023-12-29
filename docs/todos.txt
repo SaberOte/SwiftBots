@@ -19,3 +19,6 @@ TODOS
 - Create config with bot started/stopped. When restart app, state is saved
 - Make REST api view
 - Think about Models like a persistence storage
+- Use colorama to write `warning` messages with yellow outline
+- Stop using protected attributes outside classes
+- Notify user when there's internal error

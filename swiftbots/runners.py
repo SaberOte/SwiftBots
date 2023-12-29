@@ -9,7 +9,7 @@ async def start_async_listener(bot: Bot):
     Launches all bot views, and sends all updates to their message handlers.
     Runs asynchronously.
     """
-    async for context in bot.view._listener():
+    async for context in bot.view.listen_async():
         await bot.message_handler.handle_message_async(bot.view, context)
 
 
@@ -20,9 +20,7 @@ async def close_bot_async(bot: Bot):
     try:
         await bot.view._close_async()
     except Exception as e:
-        try:
-            bot.logger.error(f'Raised an exception `{e}` when a view closing method called:\n{format_exc()}')
-        except: pass
+        await bot.logger.error_async(f'Raised an exception `{e}` when a view closing method called:\n{format_exc()}')
 
 
 async def run_async(bots: list[Bot]):
@@ -43,21 +41,22 @@ async def run_async(bots: list[Bot]):
             bot = bot_names[name]
             try:
                 result = task.result()
-                bot.logger.critical(f"Bot {name} was finished with result {result} and restarted")
+                await bot.logger.critical_async(f"Bot {name} was finished with result {result} and restarted")
             except asyncio.CancelledError:
-                bot.logger.error(f"Bot {name} was cancelled. Not started again")
+                await bot.logger.error_async(f"Bot {name} was cancelled. Not started again")
                 tasks.remove(task)
                 await close_bot_async(bot)
                 continue
             except (AttributeError, TypeError, KeyError, AssertionError) as e:
-                bot.logger.critical(f"Critical python {e.__class__.__name__} raised: {e}. Bot stopped. Fix the code. "
-                                    f"Full traceback:\n{format_exc()}")
+                await bot.logger.critical_async(f"Critical python {e.__class__.__name__} raised: {e}. "
+                                                f"Bot stopped. Fix the code. "
+                                                f"Full traceback:\n{format_exc()}")
                 tasks.remove(task)
                 await close_bot_async(bot)
                 continue
             except Exception as e:
-                bot.logger.critical(f"Bot {name} was raised with unhandled {e.__class__.__name__}: {e}",
-                                    f"and restarted. Full traceback:\n{format_exc()}")
+                await bot.logger.critical_async(f"Bot {name} was raised with unhandled {e.__class__.__name__}: {e}",
+                                                f"and restarted. Full traceback:\n{format_exc()}")
             await close_bot_async(bot)
 
             tasks.remove(task)

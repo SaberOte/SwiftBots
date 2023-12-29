@@ -14,7 +14,7 @@ class CalculatorApi(Controller):
     async def calculate(self, view: IBasicView, context: IBasicView.Context):
         message = str(context.message)
         num1, operation, num2 = message.split(' ')
-        self.info(f'User is requesting `{operation}` operation with numbers: {num1} and {num2}')
+        await view.logger.info_async(f'User is requesting `{operation}` operation with numbers: {num1} and {num2}')
         if operation == '-':
             await print_async(f'Result is {float(num1) - float(num2)}')
         elif operation == '+':
