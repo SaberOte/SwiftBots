@@ -41,6 +41,7 @@ class BotsApplication:
         assert (bot_logger_factory is None
                 or isinstance(bot_logger_factory, ILoggerFactory)), 'Logger must be of type ILogger'
 
+        name = name or view_type.__name__
         bot_logger_factory = bot_logger_factory or self.__logger_factory
         self.__bots.append(Bot(view_type, controller_classes, message_handler_class, bot_logger_factory, name))
 
@@ -52,9 +53,18 @@ class BotsApplication:
             self.__logger.critical('No bots used')
             return
 
+        self.__check_bot_repeats()
+
         _instantiate_in_bots(self.__bots)
 
         if custom_runner is None:
             asyncio.run(run_async(self.__bots))
         else:
             custom_runner(self.__bots)
+
+    def __check_bot_repeats(self) -> None:
+        names = set()
+        for bot in self.__bots:
+            assert bot.name not in names, \
+                f'Bot {bot.name} is defined twice. If you want to use same bots, give them different names'
+            names.add(bot.name)

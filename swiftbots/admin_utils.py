@@ -20,12 +20,29 @@ def admin_only_async(func):
     return wrapper
 
 
-async def shutdown_bot_async():
+async def shutdown_bot_async(bot_name: str = None) -> bool:
     """
-    Shutdown the instance. Won't restart
+    Shutdown the instance. Won't restart.
+    If param bot_name is provided, it closes the current task.
+    Otherwise, it closes the bot with name `bot_name`
+    :return: True if the bot was stopped, False if not found
     """
-    task = asyncio.current_task()
-    task.cancel()
+    if bot_name is None:
+        task = asyncio.current_task()
+        task.cancel('Canceling bot itself')
+        return True
+    else:
+        tasks = asyncio.all_tasks()
+        for task in tasks:
+            if task.get_name().casefold() == bot_name.casefold():
+                task.cancel('Bot was stopped by administrator.')
+                return True
+        return False
+
+
+async def get_list_bots_async() -> set[str]:
+    tasks = asyncio.all_tasks()
+    return {task.get_name() for task in tasks}
 
 
 async def send_telegram_message_async(message: str, admin: str, token: str) -> None:

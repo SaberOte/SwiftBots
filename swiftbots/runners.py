@@ -43,7 +43,7 @@ async def run_async(bots: list[Bot]):
                 result = task.result()
                 await bot.logger.critical_async(f"Bot {name} was finished with result {result} and restarted")
             except asyncio.CancelledError:
-                await bot.logger.error_async(f"Bot {name} was cancelled. Not started again")
+                await bot.logger.warn_async(f"Bot {name} was cancelled. Not started again")
                 tasks.remove(task)
                 await close_bot_async(bot)
                 continue

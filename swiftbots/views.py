@@ -32,7 +32,7 @@ class BasicView(IBasicView, ABC):
         return self.__bot
 
     async def _close_async(self):
-        pass
+        await self.logger.report_async(f'Bot {self.bot.name} was exited')
 
 
 class ChatView(IChatView, BasicView, ABC):
@@ -141,6 +141,7 @@ class TelegramView(ITelegramView, ChatView, ABC):
         self.__greeting_disabled = True
 
     async def _close_async(self):
+        await self.logger.report_async(f'Bot {self.bot.name} was exited')
         await self.http_session.close()
 
     async def _handle_server_connection_error_async(self) -> None:
@@ -317,6 +318,7 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
         self.__greeting_disabled = True
 
     async def _close_async(self):
+        await self.logger.report_async(f'Bot {self.bot.name} was exited')
         await self._http_session.close()
 
     async def _deconstruct_message_async(self, update: dict) -> Optional['ITelegramView.PreContext']:

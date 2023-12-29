@@ -55,7 +55,8 @@ class ChatMessageHandler(IChatMessageHandler):
         self.__controllers = controllers
 
         self.__build_commands(self.__controllers)
-        self.__logger.info(f'Initialized commands dict: {self.__commands}')
+        commands_represent = '\n'.join([f'"{command.command_name}": ({command.controller.__class__.__name__}){command.method}' for command in self.__commands])
+        self.__logger.info(f'Initialized commands:\n{commands_represent}')
 
         self.__register_default_controller()
 

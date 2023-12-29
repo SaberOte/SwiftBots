@@ -1,4 +1,4 @@
-"""The simplest demonstration how controller may work"""
+"""The simplest controller ever"""
 import asyncio
 
 from swiftbots.types import IBasicView
