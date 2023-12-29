@@ -41,6 +41,9 @@ def exc_wrapper(func):
 
 class SysIOLogger(ILogger):
 
+    def __init__(self, skip_prefix: bool) -> None:
+        self.__skip_prefix = skip_prefix
+
     def info(self, *args, **kwargs) -> None:
         """Save a message to stdout"""
         prefix = self._build_prefix('INFO', **kwargs)
@@ -86,9 +89,11 @@ class SysIOLogger(ILogger):
         """Save a report message to stderr"""
         self.report(*args, **kwargs)
 
-    def _build_prefix(self, message_type: str, skip_prefix: bool = False) -> str:
-        if skip_prefix:
+    def _build_prefix(self, message_type: str, skip_prefix: bool = None, skip_message_type: bool = False) -> str:
+        if skip_prefix or skip_prefix is None and self.__skip_prefix:
             return ''
+        if skip_message_type and self.bot_name:
+            return f'[{self.bot_name}] '
         if self.bot_name:
             return f'[{message_type} {self.bot_name}] '
         return f'[{message_type}] '
@@ -96,10 +101,8 @@ class SysIOLogger(ILogger):
 
 class AdminLogger(SysIOLogger):
 
-    __report_func: Callable
-    __report_func_async: Callable
-
-    def __init__(self, report_func: Callable, async_report_func: Callable):
+    def __init__(self, report_func: Callable, async_report_func: Callable, skip_prefix: bool):
+        super().__init__(skip_prefix)
         self.__report_func = report_func
         self.__report_func_async = async_report_func
 
@@ -110,10 +113,7 @@ class AdminLogger(SysIOLogger):
         Method with messaging to administrator must be
         provided in constructor of this logger
         """
-        prefix = self._build_prefix('REPORT', **kwargs)
-        message = prefix + ' '.join([str(arg) for arg in args])
-        print_stdout(message)
-        await self.__report_func_async(message)
+        await self.__stderr_and_report('REPORT', *args, is_async=True, is_stderr=False, **kwargs)
 
     @exc_wrapper
     def report(self, *args, **kwargs) -> None:
@@ -122,10 +122,7 @@ class AdminLogger(SysIOLogger):
         Method with messaging to administrator must be
         provided in constructor of this logger
         """
-        prefix = self._build_prefix('REPORT', **kwargs)
-        message = prefix + ' '.join([str(arg) for arg in args])
-        print_stdout(message)
-        self.__report_func(message)
+        self.__stderr_and_report('REPORT', *args, is_async=False, is_stderr=False, **kwargs)
 
     @exc_wrapper
     async def error_async(self, *args, **kwargs) -> None:
@@ -134,10 +131,7 @@ class AdminLogger(SysIOLogger):
         Method with messaging to administrator must be
         provided in constructor of this logger
         """
-        prefix = self._build_prefix('ERROR', **kwargs)
-        message = prefix + ' '.join([str(arg) for arg in args])
-        print_stderr(message)
-        await self.__report_func_async(message)
+        await self.__stderr_and_report('ERROR', *args, is_async=True, is_stderr=True, **kwargs)
         
     @exc_wrapper
     def error(self, *args, **kwargs) -> None:
@@ -146,10 +140,7 @@ class AdminLogger(SysIOLogger):
         Method with messaging to administrator must be
         provided in constructor of this logger
         """
-        prefix = self._build_prefix('ERROR', **kwargs)
-        message = prefix + ' '.join([str(arg) for arg in args])
-        print_stderr(message)
-        self.__report_func(message)
+        self.__stderr_and_report('ERROR', *args, is_async=False, is_stderr=True, **kwargs)
         
     @exc_wrapper
     async def critical_async(self, *args, **kwargs) -> None:
@@ -158,10 +149,7 @@ class AdminLogger(SysIOLogger):
         Method with messaging to administrator must be
         provided in constructor of this logger
         """
-        prefix = self._build_prefix('CRITICAL', **kwargs)
-        message = prefix + ' '.join([str(arg) for arg in args])
-        print_stderr(message)
-        await self.__report_func_async(message)
+        await self.__stderr_and_report('CRITICAL', *args, is_async=True, is_stderr=True, **kwargs)
     
     @exc_wrapper
     def critical(self, *args, **kwargs) -> None:
@@ -170,26 +158,35 @@ class AdminLogger(SysIOLogger):
         Method with messaging to administrator must be
         provided in constructor of this logger
         """
-        prefix = self._build_prefix('CRITICAL', **kwargs)
-        message = prefix + ' '.join([str(arg) for arg in args])
-        print_stderr(message)
-        self.__report_func(message)
+        self.__stderr_and_report('CRITICAL', *args, is_async=False, is_stderr=True, **kwargs)
+
+    def __stderr_and_report(self, reason: str, *args, is_async: bool, is_stderr: bool, **kwargs):
+        prefix = self._build_prefix(reason, **kwargs)
+        message = ' '.join([str(arg) for arg in args])
+        if is_stderr:
+            print_stderr(prefix+message)
+        else:
+            print_stdout(prefix+message)
+        if is_async:
+            return self.__report_func_async(message)
+        return self.__report_func(message)
 
 
 class SysIOLoggerFactory(ILoggerFactory):
 
+    def __init__(self, skip_prefix: bool = False):
+        self.skip_prefix = skip_prefix
+
     def get_logger(self) -> SysIOLogger:
-        return SysIOLogger()
+        return SysIOLogger(self.skip_prefix)
 
 
 class AdminLoggerFactory(ILoggerFactory):
 
-    __report_func: Callable
-    __report_func_async: Callable
-
-    def __init__(self, report_func: Callable, async_report_func: Callable):
+    def __init__(self, report_func: Callable, async_report_func: Callable, skip_prefix: bool = False):
         self.__report_func = report_func
         self.__report_func_async = async_report_func
+        self.__skip_prefix = skip_prefix
 
     def get_logger(self) -> AdminLogger:
-        return AdminLogger(self.__report_func, self.__report_func_async)
+        return AdminLogger(self.__report_func, self.__report_func_async, self.__skip_prefix)

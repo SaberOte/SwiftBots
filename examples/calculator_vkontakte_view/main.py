@@ -29,7 +29,7 @@ def main():
     logger_factory = configure_admin_logger_factory()
     app.use_logger(logger_factory)
 
-    app.add_bot(MyVkVIew, [CalculatorApi])
+    app.add_bot(MyVkVIew, [CalculatorApi], name='Awesome VK Bot')
 
     app.run()
 
