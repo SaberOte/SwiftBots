@@ -2,7 +2,7 @@ import asyncio
 from traceback import format_exc
 
 from swiftbots.bots import Bot
-from swiftbots.types import StartBotException
+from swiftbots.types import StartBotException, ExitApplicationException
 
 
 __ALL_TASKS: set[str] = set()
@@ -73,6 +73,11 @@ async def run_async(bots: list[Bot]):
                     tasks.add(new_task)
                 except Exception as e:
                     await bot.logger.critical_async(f"Couldn't start bot {ex}. Exception: {e}")
+            except ExitApplicationException:
+                for bot in bot_names.values():
+                    await close_bot_async(bot)
+                await bot.logger.report_async("Bots application was closed")
+                return
             except Exception as e:
                 await bot.logger.critical_async(f"Bot {name} was raised with unhandled {e.__class__.__name__}: {e}",
                                                 f"and restarted. Full traceback:\n{format_exc()}")

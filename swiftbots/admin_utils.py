@@ -7,7 +7,7 @@ import random
 from typing import TYPE_CHECKING
 
 from swiftbots.runners import get_all_tasks
-from swiftbots.types import StartBotException
+from swiftbots.types import StartBotException, ExitApplicationException
 
 if TYPE_CHECKING:
     from swiftbots.types import IChatView
@@ -21,6 +21,10 @@ def admin_only_async(func):
         else:
             await view.refuse_async(context)
     return wrapper
+
+
+def shutdown_app() -> None:
+    raise ExitApplicationException("Exited from administrator")
 
 
 async def shutdown_bot_async(bot_name: str = None) -> bool:

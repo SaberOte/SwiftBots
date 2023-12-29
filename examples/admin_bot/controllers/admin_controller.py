@@ -4,7 +4,8 @@ Example how to use admin bot to manage other bots in the same app
 """
 from swiftbots.types import ITelegramView
 from swiftbots.controllers import Controller
-from swiftbots.admin_utils import admin_only_async, shutdown_bot_async, get_bot_names_async, start_bot_async, get_all_tasks
+from swiftbots.admin_utils import (admin_only_async, shutdown_bot_async,
+                                   get_bot_names_async, start_bot_async, shutdown_app)
 
 
 class AdminApi(Controller):
@@ -13,9 +14,12 @@ class AdminApi(Controller):
     async def shutdown_bot(self, view: ITelegramView, context: ITelegramView.Context):
         """
         Shutdown some bot in the same app.
-        If arguments are empty, called command `exit`. Therefore, exit this bot itself
+        If arguments are empty, called command `exit`. Therefore, exit all bots.
         """
         bot_to_exit = context.arguments
+        if not bot_to_exit:
+            shutdown_app()
+            return
         result = await shutdown_bot_async(bot_to_exit)
         if not result:
             await view.send_async(f"Bot '{bot_to_exit}' was not found", context)
