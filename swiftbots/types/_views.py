@@ -191,7 +191,7 @@ class IChatView(IView, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def is_admin(self, user) -> bool:
+    async def is_admin_async(self, user) -> bool:
         """
         Whether the user is an admin or not
         """

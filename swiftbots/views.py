@@ -63,7 +63,7 @@ class ChatView(IChatView, BasicView, ABC):
         await self.logger.info_async(f'Forbidden. Context:\n{context}')
         await self.send_async(self.refuse_message, context)
 
-    async def is_admin(self, user) -> bool:
+    async def is_admin_async(self, user) -> bool:
         if self._admin is None:
             await self.logger.error_async(f"No `_admin` property is set for view {self.bot.name}")
             return False
@@ -274,6 +274,8 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
 
     async def custom_send_async(self, data: dict) -> dict:
         await self.logger.info_async(f"""Sent {data["user_id"]}:\n'{data["message"]}'""")
+        if 'random_id' not in data:
+            data['random_id'] = random.randint(-2 ** 31, 2 ** 31)
         return await self.fetch_async('messages.send', data)
 
     async def __handle_error_async(self, error: dict) -> None:

@@ -1,3 +1,5 @@
+import inspect
+
 from sys import stderr, stdout
 from typing import Callable
 from traceback import format_exc
@@ -18,13 +20,23 @@ def exc_wrapper(func):
     Using exc_wrapper is reasonable in methods where are used API
     requests in order to make a logger never throwable exceptions
     """
-    async def wrapper(*args, **kwargs):
+    async def async_wrapper(*args, **kwargs):
         try:
             return await func(*args, **kwargs)
         except Exception as e:
             print_stderr('[ERROR]', f"Raised {e.__class__.__name__} when using logger: {e}.\n"
                                     f"Full traceback: {format_exc()}")
-    return wrapper
+
+    def sync_wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            print_stderr('[ERROR]', f"Raised {e.__class__.__name__} when using logger: {e}.\n"
+                                    f"Full traceback: {format_exc()}")
+
+    if inspect.iscoroutinefunction(func):
+        return async_wrapper
+    return sync_wrapper
 
 
 class SysIOLogger(ILogger):
@@ -99,8 +111,8 @@ class AdminLogger(SysIOLogger):
         provided in constructor of this logger
         """
         prefix = self._build_prefix('REPORT', **kwargs)
-        print_stdout(prefix, *args, **kwargs)
         message = prefix + ' '.join([str(arg) for arg in args])
+        print_stdout(message)
         await self.__report_func_async(message)
 
     @exc_wrapper
@@ -111,8 +123,8 @@ class AdminLogger(SysIOLogger):
         provided in constructor of this logger
         """
         prefix = self._build_prefix('REPORT', **kwargs)
-        print_stdout(prefix, *args, **kwargs)
         message = prefix + ' '.join([str(arg) for arg in args])
+        print_stdout(message)
         self.__report_func(message)
 
     @exc_wrapper
@@ -123,8 +135,8 @@ class AdminLogger(SysIOLogger):
         provided in constructor of this logger
         """
         prefix = self._build_prefix('ERROR', **kwargs)
-        print_stderr(prefix, *args, **kwargs)
         message = prefix + ' '.join([str(arg) for arg in args])
+        print_stderr(message)
         await self.__report_func_async(message)
         
     @exc_wrapper
@@ -135,8 +147,8 @@ class AdminLogger(SysIOLogger):
         provided in constructor of this logger
         """
         prefix = self._build_prefix('ERROR', **kwargs)
-        print_stderr(prefix, *args, **kwargs)
         message = prefix + ' '.join([str(arg) for arg in args])
+        print_stderr(message)
         self.__report_func(message)
         
     @exc_wrapper
@@ -147,8 +159,8 @@ class AdminLogger(SysIOLogger):
         provided in constructor of this logger
         """
         prefix = self._build_prefix('CRITICAL', **kwargs)
-        print_stderr(prefix, *args, **kwargs)
         message = prefix + ' '.join([str(arg) for arg in args])
+        print_stderr(message)
         await self.__report_func_async(message)
     
     @exc_wrapper
@@ -159,8 +171,8 @@ class AdminLogger(SysIOLogger):
         provided in constructor of this logger
         """
         prefix = self._build_prefix('CRITICAL', **kwargs)
-        print_stderr(prefix, *args, **kwargs)
         message = prefix + ' '.join([str(arg) for arg in args])
+        print_stderr(message)
         self.__report_func(message)
 
 

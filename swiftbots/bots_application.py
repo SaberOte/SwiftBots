@@ -15,14 +15,15 @@ class BotsApplication:
 
     def __init__(self, logger_factory: ILoggerFactory = None):
         if logger_factory is None:
-            self.__logger_factory = SysIOLoggerFactory()
-        self.use_logger(self.__logger_factory)
+            logger_factory = SysIOLoggerFactory()
+        self.use_logger(logger_factory)
 
     def use_logger(self, logger_factory: ILoggerFactory) -> None:
         """
         Set logger factory and create instance
         """
         assert isinstance(logger_factory, ILoggerFactory), 'Logger factory must be of type ILoggerFactory'
+        self.__logger_factory = logger_factory
         self.__logger = logger_factory.get_logger()
 
     def add_bot(self, view_type: type[IView], controller_classes: list[type[IController]],
