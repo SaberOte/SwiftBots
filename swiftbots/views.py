@@ -258,11 +258,11 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
                f'{args}'
                f'v={self.__API_VERSION}')
 
-        if headers is None:
-            headers = {}
-        headers.update(self.__default_headers)
+        request_headers = self.__default_headers.copy()
+        if headers is not None:
+            request_headers.update(headers)
 
-        response = await self._http_session.post(url=url, data=data, headers=headers)
+        response = await self._http_session.post(url=url, data=data, headers=request_headers)
 
         answer = await response.json()
         if 'error' in answer and not ignore_errors:
