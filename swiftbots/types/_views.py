@@ -233,6 +233,14 @@ class IChatView(IView, ABC):
 class ITelegramView(IChatView, ABC):
 
     @abstractmethod
+    async def fetch_async(self, method: str, data: dict) -> dict | None:
+        """
+        Custom send post request to telegram api.
+        https://core.telegram.org/bots/api
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
     async def update_message_async(self, data: dict) -> dict:
         """
         Updating the message
@@ -300,6 +308,15 @@ class ITelegramView(IChatView, ABC):
 
 
 class IVkontakteView(IChatView, ABC):
+
+    @abstractmethod
+    async def fetch_async(self, method: str, data: dict = None,
+                          headers: dict = None, query_data: dict = None) -> dict | None:
+        """
+        Send custom post request.
+        https://dev.vk.com/ru/method
+        """
+        raise NotImplementedError()
 
     @abstractmethod
     async def send_sticker_async(self, sticker_id: int, context: 'IContext') -> dict:
