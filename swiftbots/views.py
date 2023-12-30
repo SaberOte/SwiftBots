@@ -249,7 +249,8 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
         #     self._logger.error(msg, update['message']['from']['id'])
 
     async def fetch_async(self, method: str, data: dict = None,
-                          headers: dict = None, query_data: dict = None) -> dict | None:
+                          headers: dict = None, query_data: dict = None,
+                          ignore_errors=False) -> dict | None:
 
         args = ''.join([f"{name}={value}&" for name, value in query_data.items()]) if query_data else ''
         url = (f'https://api.vk.com/method/'
@@ -264,7 +265,7 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
         response = await self._http_session.post(url=url, data=data, headers=headers)
 
         answer = await response.json()
-        if 'error' in answer:
+        if 'error' in answer and not ignore_errors:
             await self.__handle_error_async(answer)
             return answer
         return answer

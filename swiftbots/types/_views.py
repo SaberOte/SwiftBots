@@ -306,7 +306,8 @@ class IVkontakteView(IChatView, ABC):
 
     @abstractmethod
     async def fetch_async(self, method: str, data: dict = None,
-                          headers: dict = None, query_data: dict = None) -> dict | None:
+                          headers: dict = None, query_data: dict = None,
+                          ignore_errors=False) -> dict | None:
         """
         Send custom post request.
         https://dev.vk.com/ru/method
