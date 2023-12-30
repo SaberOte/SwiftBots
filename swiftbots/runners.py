@@ -74,8 +74,8 @@ async def run_async(bots: list[Bot]):
                 except Exception as e:
                     await bot.logger.critical_async(f"Couldn't start bot {ex}. Exception: {e}")
             except ExitApplicationException:
-                for bot in bot_names.values():
-                    await close_bot_async(bot)
+                for bot_to_exit in bot_names.values():
+                    await close_bot_async(bot_to_exit)
                 await bot.logger.report_async("Bots application was closed")
                 return
             except Exception as e:
