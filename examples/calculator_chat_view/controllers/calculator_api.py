@@ -13,7 +13,7 @@ class CalculatorApi(Controller):
         await view.logger.info_async(f'User is requesting ADD operation: {message}')
         num1, num2 = message.split(' ')
         result = float(num1) + float(num2)
-        await view.send_async(str(result), context)
+        await view.reply_async(str(result), context)
 
     async def subtract(self, view: IChatView, context: IChatView.Context):
         """
@@ -25,7 +25,7 @@ class CalculatorApi(Controller):
         await view.logger.info_async(f'User is requesting SUBTRACT operation: {message}')
         num1, num2 = message.split(' ')
         result = float(num1) - float(num2)
-        await view.send_async(str(result), context)
+        await view.reply_async(str(result), context)
 
     cmds = {
         'add': add,

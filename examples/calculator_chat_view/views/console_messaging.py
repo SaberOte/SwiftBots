@@ -20,5 +20,5 @@ class ConsoleView(ChatView):
             message = await input_async('-> ')
             yield self.PreContext(message, 'der Hund')
 
-    async def send_async(self, message, context):
+    async def send_async(self, message, user, data: dict = None):
         print(message)

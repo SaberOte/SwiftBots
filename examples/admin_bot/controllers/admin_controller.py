@@ -22,7 +22,7 @@ class AdminApi(Controller):
             return
         result = await shutdown_bot_async(bot_to_exit)
         if not result:
-            await view.send_async(f"Bot '{bot_to_exit}' was not found", context)
+            await view.reply_async(f"Bot '{bot_to_exit}' was not found", context)
 
     @admin_only_async
     async def list_bots(self, view: ITelegramView, context: ITelegramView.Context):
@@ -36,7 +36,7 @@ class AdminApi(Controller):
         stopped_tasks = f"Stopped tasks:\n- {', '.join(stopped)}" if stopped else 'No stopped tasks'
         message = all_tasks_message + running_tasks_message + stopped_tasks
 
-        await view.send_async(message, context)
+        await view.reply_async(message, context)
 
     @admin_only_async
     async def start_bot(self, view: ITelegramView, context: ITelegramView.Context):
@@ -45,13 +45,13 @@ class AdminApi(Controller):
         """
         bot_to_start = context.arguments
         if len(bot_to_start) == 0:
-            await view.send_async('You have to pass a name of the bot to start', context)
+            await view.reply_async('You have to pass a name of the bot to start', context)
             return
         result = await start_bot_async(bot_to_start)
         if result == 1:
-            await view.send_async(f"Bot '{bot_to_start}' is already running", context)
+            await view.reply_async(f"Bot '{bot_to_start}' is already running", context)
         if result == 2:
-            await view.send_async(f"Bot '{bot_to_start}' was not found", context)
+            await view.reply_async(f"Bot '{bot_to_start}' was not found", context)
 
     cmds = {
         'exit': shutdown_bot,

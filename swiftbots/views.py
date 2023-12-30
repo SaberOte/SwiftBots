@@ -1,6 +1,5 @@
 import aiohttp
 import asyncio
-import random
 
 from abc import ABC
 from typing import Optional, TYPE_CHECKING, AsyncGenerator
@@ -39,13 +38,16 @@ class ChatView(IChatView, BasicView, ABC):
 
     default_message_handler_class = ChatMessageHandler
 
+    async def reply_async(self, message: str, context: 'IContext', data: dict = None) -> dict:
+        return await self.send_async(message, context['sender'], data)
+
     async def error_async(self, context: 'IContext'):
         """
         Inform user there is internal error.
-        :param context: context with `sender` and `messages` fields
+        :param context: context with `sender` field
         """
         await self.logger.info_async(f'Error in view. Context: {context}')
-        await self.send_async(self.error_message, context)
+        await self.reply_async(self.error_message, context)
 
     async def unknown_command_async(self, context: 'IContext'):
         """
@@ -53,7 +55,7 @@ class ChatView(IChatView, BasicView, ABC):
         :param context: context with `sender` and `messages` fields
         """
         await self.logger.info_async(f'User sent unknown command. Context:\n{context}')
-        await self.send_async(self.unknown_error_message, context)
+        await self.reply_async(self.unknown_error_message, context)
 
     async def refuse_async(self, context: 'IContext'):
         """
@@ -61,7 +63,7 @@ class ChatView(IChatView, BasicView, ABC):
         :param context: context with `sender` and `messages` fields
         """
         await self.logger.info_async(f'Forbidden. Context:\n{context}')
-        await self.send_async(self.refuse_message, context)
+        await self.reply_async(self.refuse_message, context)
 
     async def is_admin_async(self, user) -> bool:
         if self._admin is None:
@@ -76,7 +78,7 @@ class TelegramView(ITelegramView, ChatView, ABC):
     __first_time_launched = True
     __should_skip_old_updates: bool
     __greeting_disabled = False
-    _http_session = None
+    _http_session: aiohttp.client.ClientSession = None
     ALLOWED_UPDATES = ["messages"]
 
     def __init__(self, token: str, admin: str = None, skip_old_updates: bool = True):
@@ -94,7 +96,7 @@ class TelegramView(ITelegramView, ChatView, ABC):
             self._http_session = aiohttp.ClientSession()
 
         if not self.__greeting_disabled and self._admin is not None:
-            await self.custom_send_async({'chat_id': self._admin, 'text': f'{self.bot.name} is started!'})
+            await self.send_async(f'{self.bot.name} is started!', self._admin)
 
         while True:
             try:
@@ -109,8 +111,9 @@ class TelegramView(ITelegramView, ChatView, ABC):
             #     msg = 'Unhandled:' + '\nAnswer is:\n' + str(update) + '\n' + format_exc()
             #     self._logger.error(msg, update['message']['from']['id'])
 
-    async def fetch_async(self, method: str, data: dict) -> dict | None:
-        response = await self._http_session.post(f'https://api.telegram.org/bot{self.__token}/{method}', json=data)
+    async def fetch_async(self, method: str, data: dict, headers: dict = None) -> dict | None:
+        response = await self._http_session.post(f'https://api.telegram.org/bot{self.__token}/{method}',
+                                                 json=data, headers=headers)
         answer = await response.json()
         if not answer['ok']:
             await self.__handle_error_async(answer)
@@ -120,29 +123,25 @@ class TelegramView(ITelegramView, ChatView, ABC):
     async def update_message_async(self, data: dict) -> dict:
         return await self.fetch_async('editMessageText', data)
 
-    async def send_async(self, message: str, context: 'IContext') -> dict:
-        data = {
-            "chat_id": context['sender'],
-            "text": message
-        }
+    async def send_async(self, message: str, user: str | int, data: dict = None) -> dict:
+        if data is None:
+            data = {}
+        data['chat_id'] = user
+        data['text'] = message
         return await self.fetch_async('sendMessage', data)
 
-    async def custom_send_async(self, data: dict) -> dict:
-        await self.logger.info_async(f"""Sent {data["chat_id"]}:\n'{data["text"]}'""")
-        return await self.fetch_async('sendMessage', data)
-
-    async def delete_message_async(self, message_id, context: 'ITelegramView.Context') -> dict:
-        data = {
-            "chat_id": context.sender,
-            "message_id": message_id
-        }
+    async def delete_message_async(self, message_id, context: 'ITelegramView.Context', data: dict = None) -> dict:
+        if data is None:
+            data = {}
+        data['chat_id'] = context.sender
+        data['message_id'] = message_id
         return await self.fetch_async('deleteMessage', data)
 
-    async def send_sticker_async(self, file_id: str, context: 'IContext') -> dict:
-        data = {
-            "chat_id": context['sender'],
-            "sticker": file_id
-        }
+    async def send_sticker_async(self, file_id: str, context: 'IContext', data: dict = None) -> dict:
+        if data is None:
+            data = {}
+        data['chat_id'] = context['sender']
+        data['sticker'] = file_id
         return await self.fetch_async('sendSticker', data)
 
     def disable_greeting(self) -> None:
@@ -235,7 +234,7 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
         key, server, ts = await self.__get_long_poll_server_async()
 
         if not self.__greeting_disabled and self._admin is not None:
-            await self.custom_send_async({'message': f'{self.bot.name} is started!', 'user_id': self._admin})
+            await self.send_async(f'{self.bot.name} is started!', self._admin)
 
         try:
             async for update in self.__get_updates_async(key, server, ts):
@@ -259,9 +258,8 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
                f'v={self.__API_VERSION}')
 
         if headers is None:
-            headers = self.__default_headers
-        else:
-            headers.update(self.__default_headers)
+            headers = {}
+        headers.update(self.__default_headers)
 
         response = await self._http_session.post(url=url, data=data, headers=headers)
 
@@ -271,31 +269,28 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
             return answer
         return answer
 
-    async def send_async(self, message: str, context: 'IContext') -> dict:
-        # if message out of 9000 letters, split it on chunks
+    async def send_async(self, message: str, user: int | str, data: dict = None) -> dict:
+        if data is None:
+            data = {}
+        # if the message out of 9000 letters, split it on chunks
         messages = [message[i:i + 9000] for i in range(0, len(message), 9000)]
         result = {}
         for msg in messages:
-            data = {
-                'user_id': context['sender'],
+            send_data = {
+                'user_id': int(user),
                 'message': msg,
                 'random_id': self.get_random_id()
             }
-            result = await self.fetch_async('messages.send', data)
+            send_data.update(data)
+            result = await self.fetch_async('messages.send', send_data)
         return result
 
-    async def send_sticker_async(self, sticker_id: str, context: 'IContext') -> dict:
-        data = {
-            'user_id': context['sender'],
-            'random_id': self.get_random_id(),
-            'sticker_id': sticker_id
-        }
-        return await self.fetch_async('messages.send', data)
-
-    async def custom_send_async(self, data: dict) -> dict:
-        await self.logger.info_async(f"""Sent {data["user_id"]}:\n'{data["message"]}'""")
-        if 'random_id' not in data:
-            data['random_id'] = self.get_random_id()
+    async def send_sticker_async(self, sticker_id: str, context: 'IContext', data: dict = None) -> dict:
+        if data is None:
+            data = {}
+        data['user_id'] = context['sender']
+        data['random_id'] = self.get_random_id()
+        data['sticker_id'] = sticker_id
         return await self.fetch_async('messages.send', data)
 
     async def __handle_error_async(self, error: dict) -> None:

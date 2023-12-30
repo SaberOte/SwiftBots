@@ -33,12 +33,6 @@ class IContext(dict, ABC):
         setattr(self, key, value)
 
 
-class FireContext(IContext):
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-
 class IView(ABC):
     """
     Abstract View class.
@@ -160,11 +154,22 @@ class IChatView(IView, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def send_async(self, message: str, context: 'IContext') -> None:
+    async def send_async(self, message: str, user: str | int, data: dict = None) -> dict:
         """
-        Sending message to a user.
+        Reply the user from context.
+        :param message: a message for a user.
+        :param user: a user target to send a message
+        :param data: additional data for sending request
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def reply_async(self, message: str, context: 'IContext', data: dict = None) -> dict:
+        """
+        Reply the user from context.
         :param message: a message for a user
-        :param context: dict with a `sender` key
+        :param context: ChatView context
+        :param data: additional data for sending request
         """
         raise NotImplementedError()
 
@@ -236,7 +241,7 @@ class ITelegramView(IChatView, ABC):
     async def fetch_async(self, method: str, data: dict) -> dict | None:
         """
         Custom send post request to telegram api.
-        https://core.telegram.org/bots/api
+        https://core.telegram.org/bots/api#available-methods
         """
         raise NotImplementedError()
 
@@ -249,24 +254,14 @@ class ITelegramView(IChatView, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def custom_send_async(self, data: dict) -> dict:
-        """
-        Standard send_async provides only message and chat_id arguments.
-        This method can contain any fields in data
-        :param data: dict with fields for telegram api bot.
-        Required parameters: `chat_id` and `text`
-        """
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def delete_message_async(self, message_id, context: 'IContext') -> dict:
+    async def delete_message_async(self, message_id, context: 'IContext', data: dict = None) -> dict:
         """
         Delete message `message_id`
         """
         raise NotImplementedError()
 
     @abstractmethod
-    async def send_sticker_async(self, file_id: str, context: 'IContext') -> dict:
+    async def send_sticker_async(self, file_id: str, context: 'IContext', data: dict = None) -> dict:
         """
         Send user a sticker with id `file_id`.
         Find out sticker file id: https://t.me/LeadConverterToolkitBot
@@ -319,7 +314,7 @@ class IVkontakteView(IChatView, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def send_sticker_async(self, sticker_id: int, context: 'IContext') -> dict:
+    async def send_sticker_async(self, sticker_id: int, context: 'IContext', data: dict = None) -> dict:
         """
         Send user a sticker with id `sticker_id`.
         Find out sticker id: https://vk.com/id_stickera
