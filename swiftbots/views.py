@@ -138,6 +138,13 @@ class TelegramView(ITelegramView, ChatView, ABC):
         }
         return await self.fetch_async('deleteMessage', data)
 
+    async def send_sticker_async(self, file_id: str, context: 'IContext') -> dict:
+        data = {
+            "chat_id": context['sender'],
+            "sticker": file_id
+        }
+        return await self.fetch_async('sendSticker', data)
+
     def disable_greeting(self) -> None:
         self.__greeting_disabled = True
 
@@ -272,15 +279,23 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
             data = {
                 'user_id': context['sender'],
                 'message': msg,
-                'random_id': random.randint(-2 ** 31, 2 ** 31)
+                'random_id': self.get_random_id()
             }
             result = await self.fetch_async('messages.send', data)
         return result
 
+    async def send_sticker_async(self, sticker_id: str, context: 'IContext') -> dict:
+        data = {
+            'user_id': context['sender'],
+            'random_id': self.get_random_id(),
+            'sticker_id': sticker_id
+        }
+        return await self.fetch_async('messages.send', data)
+
     async def custom_send_async(self, data: dict) -> dict:
         await self.logger.info_async(f"""Sent {data["user_id"]}:\n'{data["message"]}'""")
         if 'random_id' not in data:
-            data['random_id'] = random.randint(-2 ** 31, 2 ** 31)
+            data['random_id'] = self.get_random_id()
         return await self.fetch_async('messages.send', data)
 
     async def __handle_error_async(self, error: dict) -> None:

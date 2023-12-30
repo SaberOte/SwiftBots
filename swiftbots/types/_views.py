@@ -1,3 +1,5 @@
+import random
+
 from abc import ABC, abstractmethod
 from typing import Optional, AsyncGenerator, TYPE_CHECKING
 
@@ -255,6 +257,14 @@ class ITelegramView(IChatView, ABC):
         """
         raise NotImplementedError()
 
+    @abstractmethod
+    async def send_sticker_async(self, file_id: str, context: 'IContext') -> dict:
+        """
+        Send user a sticker with id `file_id`.
+        Find out sticker file id: https://t.me/LeadConverterToolkitBot
+        """
+        raise NotImplementedError()
+
     class PreContext(IContext):
         """
         3 required fields:
@@ -290,6 +300,18 @@ class ITelegramView(IChatView, ABC):
 
 
 class IVkontakteView(IChatView, ABC):
+
+    @abstractmethod
+    async def send_sticker_async(self, sticker_id: int, context: 'IContext') -> dict:
+        """
+        Send user a sticker with id `sticker_id`.
+        Find out sticker id: https://vk.com/id_stickera
+        """
+        raise NotImplementedError()
+
+    @staticmethod
+    def get_random_id() -> int:
+        return random.randint(-2 ** 31, 2 ** 31)
 
     class PreContext(IContext):
         """

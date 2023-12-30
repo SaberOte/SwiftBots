@@ -7,7 +7,7 @@ import random
 from typing import TYPE_CHECKING
 
 from swiftbots.runners import get_all_tasks
-from swiftbots.types import StartBotException, ExitApplicationException
+from swiftbots.types import StartBotException, ExitApplicationException, IVkontakteView
 
 if TYPE_CHECKING:
     from swiftbots.types import IChatView
@@ -105,7 +105,7 @@ async def send_vk_message_async(message: str, admin: str, token: str) -> None:
         data = {
             'user_id': admin,
             'message': message,
-            'random_id': random.randint(-2 ** 31, 2 ** 31)
+            'random_id': IVkontakteView.get_random_id()
         }
         url = f'https://api.vk.com/method/messages.send?v=5.199&access_token={token}'
         await session.post(url=url, data=data)
@@ -115,7 +115,7 @@ def send_vk_message(message: str, admin: str, token: str) -> None:
     data = {
         'user_id': admin,
         'message': message,
-        'random_id': random.randint(-2 ** 31, 2 ** 31)
+        'random_id': IVkontakteView.get_random_id()
     }
     encoded_data = urllib.parse.urlencode(data).encode()
     req = urllib.request.Request(f'https://api.vk.com/method/messages.send?v=5.199&access_token={token}',
