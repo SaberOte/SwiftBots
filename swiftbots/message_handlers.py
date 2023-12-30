@@ -23,7 +23,10 @@ class BasicMessageHandler(IBasicMessageHandler):
         self.__controller = controller
 
     async def handle_message_async(self, view: IView, context: IContext) -> None:
+        message = context['message']
+        del context['message']
         new_context = view.Context(**context)
+        new_context['raw_message'] = message
         await self.__controller.default(view, new_context)
 
 

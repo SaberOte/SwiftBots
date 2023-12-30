@@ -12,7 +12,7 @@ def print_async(*args, **kwargs):
 class CalculatorApi(Controller):
 
     async def calculate(self, view: IBasicView, context: IBasicView.Context):
-        message = str(context.message)
+        message = str(context.raw_message)
         try:
             num1, operation, num2 = message.split(' ')
         except:

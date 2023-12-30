@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 def admin_only_async(func):
     """Decorator. Should wrap controller method to prevent non admin execution"""
     async def wrapper(self, view: 'IChatView', context: 'IChatView.Context'):
+        """admin_only_wrapper"""
         if await view.is_admin_async(context.sender):
             return await func(self, view, context)
         else:
