@@ -47,12 +47,13 @@ class ChatMessageHandler(IChatMessageHandler):
     __controllers: list[IController]
     __default_controller: Optional[IController] = None
     __logger: ILogger
-    __commands: list[ControllerCommand] = []
+    __commands: list[ControllerCommand] = None
 
     def __init__(self, controllers: list[IController], logger: ILogger):
         self.__logger = logger
         self.__logger.info('Initializing ChatMessageHandler')
         self.__controllers = controllers
+        self.__commands = []
 
         self.__build_commands(self.__controllers)
         commands_represent = '\n'.join([f'"{command.command_name}": ({command.controller.__class__.__name__}){command.method}' for command in self.__commands])
