@@ -1,7 +1,6 @@
 TODOS
 =====
 - Create makefile
-- If anyone bot hasn't started, close all other
 - Finish adequate readme
 - Handle exception not in runner, but in the message handler.
 - In message handler create function which will execute methods itself

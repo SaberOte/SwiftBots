@@ -76,7 +76,7 @@ class TelegramView(ITelegramView, ChatView, ABC):
     __first_time_launched = True
     __should_skip_old_updates: bool
     __greeting_disabled = False
-    http_session = None
+    _http_session = None
     ALLOWED_UPDATES = ["messages"]
 
     def __init__(self, token: str, admin: str = None, skip_old_updates: bool = True):
@@ -90,8 +90,8 @@ class TelegramView(ITelegramView, ChatView, ABC):
         self.__should_skip_old_updates = skip_old_updates
 
     async def listen_async(self) -> AsyncGenerator['ITelegramView.PreContext', None]:
-        if self.http_session is None:
-            self.http_session = aiohttp.ClientSession()
+        if self._http_session is None:
+            self._http_session = aiohttp.ClientSession()
 
         if not self.__greeting_disabled and self._admin is not None:
             await self.custom_send_async({'chat_id': self._admin, 'text': f'{self.bot.name} is started!'})
@@ -110,7 +110,7 @@ class TelegramView(ITelegramView, ChatView, ABC):
             #     self._logger.error(msg, update['message']['from']['id'])
 
     async def fetch_async(self, method: str, data: dict) -> dict | None:
-        response = await self.http_session.post(f'https://api.telegram.org/bot{self.__token}/{method}', json=data)
+        response = await self._http_session.post(f'https://api.telegram.org/bot{self.__token}/{method}', json=data)
         answer = await response.json()
         if not answer['ok']:
             await self.__handle_error_async(answer)
@@ -143,7 +143,8 @@ class TelegramView(ITelegramView, ChatView, ABC):
 
     async def _close_async(self):
         await self.logger.report_async(f'Bot {self.bot.name} was exited')
-        await self.http_session.close()
+        if self._http_session is not None:
+            await self._http_session.close()
 
     async def _handle_server_connection_error_async(self) -> None:
         await self.logger.info_async(f'Connection ERROR in {self.bot.name}. Sleep 5 seconds')
@@ -204,7 +205,7 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
 
     _group_id: int
     _first_time_launched = True
-    _http_session: aiohttp.ClientSession
+    _http_session: aiohttp.ClientSession = None
     __API_VERSION = '5.199'
     __default_headers: dict
     __greeting_disabled: bool = False
@@ -322,7 +323,8 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
 
     async def _close_async(self):
         await self.logger.report_async(f'Bot {self.bot.name} was exited')
-        await self._http_session.close()
+        if self._http_session is not None:
+            await self._http_session.close()
 
     async def _deconstruct_message_async(self, update: dict) -> Optional['ITelegramView.PreContext']:
 

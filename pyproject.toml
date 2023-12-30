@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "swiftbots"
-version = "0.1.0"
+version = "0.1.1"
 description = "Python asynchronous web framework for rapid any-level bots development"
 authors = ["Polka <you@example.com>"]
 readme = "docs/README.md"
