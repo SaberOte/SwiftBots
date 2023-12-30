@@ -19,15 +19,16 @@ def get_available_commands_for_user(view: 'IView', is_admin: bool) -> dict[str: 
 
     for ctrl in view.bot.controllers:
         if len(ctrl.cmds) > 0:
+            filtered_cmds = __distinct_commands(ctrl.cmds)
             if is_admin:
-                commands = ctrl.cmds.keys()
+                commands = filtered_cmds.keys()
             else:
-                commands = filter(lambda cmd: not __is_function_admin_only_wrapped(ctrl.cmds[cmd]), ctrl.cmds.keys())
+                commands = filter(lambda cmd: not __is_function_admin_only_wrapped(ctrl.cmds[cmd]), filtered_cmds.keys())
             result[ctrl.__class__.__name__] = list(commands)
     return result
 
 
-def is_bot_has_default_message_handler(view: 'IView', context: 'IContext') -> bool:
+def is_bot_has_default_message_handler(view: 'IView') -> bool:
     for ctrl in view.bot.controllers:
         if ctrl.default is not None and callable(ctrl.default):
             return True
@@ -36,3 +37,11 @@ def is_bot_has_default_message_handler(view: 'IView', context: 'IContext') -> bo
 
 def __is_function_admin_only_wrapped(func: Callable) -> bool:
     return func.__doc__ is not None and 'admin_only_wrapper' in func.__doc__
+
+
+def __distinct_commands(commands: dict[str, Callable]) -> dict[str, Callable]:
+    filtered = {}
+    for command, method in commands.items():
+        if method not in filtered.values():
+            filtered[command] = method
+    return filtered
