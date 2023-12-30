@@ -129,10 +129,10 @@ class IBasicView(IView, ABC):
 
     class Context(IContext):
         """
-        1 required attribute `message` of any type
+        1 required attribute `raw_message` of any type
         """
         __doc__ += IView.Context.__doc__
-        message: object
+        raw_message: object
 
 
 class IChatView(IView, ABC):
