@@ -127,7 +127,7 @@ class TelegramView(ITelegramView, ChatView, ABC):
         if data is None:
             data = {}
 
-        messages = [message[i:i + 4000] for i in range(0, len(message), 4000)]
+        messages = [message[i:i + 4096] for i in range(0, len(message), 4096)]
         result = {}
         for msg in messages:
             send_data = {
@@ -281,8 +281,8 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
     async def send_async(self, message: str, user: int | str, data: dict = None) -> dict:
         if data is None:
             data = {}
-        # if the message out of 4000 letters, split it on chunks
-        messages = [message[i:i + 4000] for i in range(0, len(message), 4000)]
+        # if the message out of 4096 letters, split it on chunks
+        messages = [message[i:i + 4096] for i in range(0, len(message), 4096)]
         result = {}
         for msg in messages:
             send_data = {

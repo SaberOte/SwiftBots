@@ -83,7 +83,7 @@ async def start_bot_async(bot_name: str) -> int:
 
 async def send_telegram_message_async(message: str, admin: str, token: str) -> None:
     async with aiohttp.ClientSession() as session:
-        messages = [message[i:i + 4000] for i in range(0, len(message), 4000)]
+        messages = [message[i:i + 4096] for i in range(0, len(message), 4096)]
         for msg in messages:
             data = {
                 "chat_id": admin,
@@ -93,7 +93,7 @@ async def send_telegram_message_async(message: str, admin: str, token: str) -> N
 
 
 def send_telegram_message(message: str, admin: str, token: str) -> None:
-    messages = [message[i:i + 4000] for i in range(0, len(message), 4000)]
+    messages = [message[i:i + 4096] for i in range(0, len(message), 4096)]
     for msg in messages:
         data = {
             "chat_id": admin,
@@ -107,7 +107,7 @@ def send_telegram_message(message: str, admin: str, token: str) -> None:
 
 async def send_vk_message_async(message: str, admin: str, token: str) -> None:
     async with aiohttp.ClientSession() as session:
-        messages = [message[i:i + 4000] for i in range(0, len(message), 4000)]
+        messages = [message[i:i + 4096] for i in range(0, len(message), 4096)]
         for msg in messages:
             data = {
                 'user_id': admin,
@@ -119,7 +119,7 @@ async def send_vk_message_async(message: str, admin: str, token: str) -> None:
 
 
 def send_vk_message(message: str, admin: str, token: str) -> None:
-    messages = [message[i:i + 4000] for i in range(0, len(message), 4000)]
+    messages = [message[i:i + 4096] for i in range(0, len(message), 4096)]
     for msg in messages:
         data = {
             'user_id': admin,
