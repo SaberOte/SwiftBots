@@ -24,4 +24,4 @@ class Note(Base):
         return f"Note(id={self.id!r}, name={self.name!r})"
 
 
-Base.registry.configure()
+# Base.registry.configure()
