@@ -4,19 +4,14 @@ Tutorial: https://docs.sqlalchemy.org/en/20/orm/extensions/asyncio.html#synopsis
 """
 
 import re
+
 from datetime import datetime as dt
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-
 from swiftbots.types import IChatView
 from swiftbots.controllers import Controller
 
 from examples.notes_in_database.models.notes import Note
-
-
-engine = create_async_engine("sqlite+aiosqlite:///examples/notes_in_database/database/notes.sqlite3")
-# TODO: await engine.dispose()
 
 
 class Notes(Controller):
@@ -36,9 +31,7 @@ class Notes(Controller):
         name = match.group(1)
         text = match.group(2)
 
-        async_session = async_sessionmaker(engine)
-
-        async with async_session() as session:
+        async with self.async_db_session_maker() as session:
             note = await session.scalar(select(Note)
                                         .where(Note.name.is_(name)))
 
@@ -61,9 +54,7 @@ class Notes(Controller):
         if not name:
             await view.reply_async("No note name given", context)
 
-        async_session = async_sessionmaker(engine)
-
-        async with async_session() as session:
+        async with self.async_db_session_maker() as session:
             note = await session.scalar(select(Note)
                                         .where(Note.name.is_(name)))
 
@@ -85,9 +76,7 @@ class Notes(Controller):
         name = match.group(1)
         text = match.group(2)
 
-        async_session = async_sessionmaker(engine)
-
-        async with async_session() as session:
+        async with self.async_db_session_maker() as session:
             note = await session.scalar(select(Note)
                                         .where(Note.name.is_(name)))
 
@@ -105,9 +94,7 @@ class Notes(Controller):
     async def delete(self, view: IChatView, context: IChatView.Context):
         name = context.arguments
 
-        async_session = async_sessionmaker(engine)
-
-        async with async_session() as session:
+        async with self.async_db_session_maker() as session:
             note = await session.scalar(select(Note)
                                         .where(Note.name.is_(name)))
 
@@ -122,9 +109,7 @@ class Notes(Controller):
             await view.reply_async("Notes updated", context)
 
     async def list_notes(self, view: IChatView, context: IChatView.Context):
-        async_session = async_sessionmaker(engine)
-
-        async with async_session() as session:
+        async with self.async_db_session_maker() as session:
             notes = (await session.scalars(select(Note.name)
                                            .order_by(Note.modified))).all()
 

@@ -1,5 +1,8 @@
 import asyncio
+
 from typing import Callable, Optional
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine, AsyncSession
+from sqlalchemy.ext.asyncio.session import async_sessionmaker
 
 from swiftbots.runners import run_async
 from swiftbots.loggers import SysIOLoggerFactory
@@ -11,9 +14,12 @@ class BotsApplication:
 
     __logger: ILogger = None
     __logger_factory: ILoggerFactory = None
-    __bots: list[Bot] = []
+    __db_engine: Optional[AsyncEngine] = None
+    __db_session_maker: Optional[async_sessionmaker[AsyncSession]] = None
+    __bots: list[Bot] = None
 
     def __init__(self, logger_factory: ILoggerFactory = None):
+        self.__bots = []
         if logger_factory is None:
             logger_factory = SysIOLoggerFactory()
         self.use_logger(logger_factory)
@@ -25,6 +31,18 @@ class BotsApplication:
         assert isinstance(logger_factory, ILoggerFactory), 'Logger factory must be of type ILoggerFactory'
         self.__logger_factory = logger_factory
         self.__logger = logger_factory.get_logger()
+
+    def use_database(self, connection_string: str, pool_size: int = 5, max_overflow: int = 10) -> None:
+        """
+        This method must be called before adding bots to an app!
+        Examples of connections string:
+        sqlite+aiosqlite://~/tmp/db.sqlite3,
+        postgresql+asyncpg://nick:password123@localhost/database123,
+        mysql+asyncmy://nick:password123@localhost/database123.
+        It's necessary to use async drivers for database connection.
+        """
+        self.__db_engine = create_async_engine(connection_string, echo=False)
+        self.__db_session_maker = async_sessionmaker(self.__db_engine)
 
     def add_bot(self, view_type: type[IView], controller_classes: list[type[IController]],
                 message_handler_class: type[IMessageHandler] = None,
@@ -43,7 +61,8 @@ class BotsApplication:
 
         name = name or view_type.__name__
         bot_logger_factory = bot_logger_factory or self.__logger_factory
-        self.__bots.append(Bot(view_type, controller_classes, message_handler_class, bot_logger_factory, name))
+        self.__bots.append(Bot(view_type, controller_classes, message_handler_class, bot_logger_factory, name,
+                               self.__db_session_maker))
 
     def run(self, custom_runner: Callable = None) -> None:
         """
@@ -61,6 +80,11 @@ class BotsApplication:
             asyncio.run(run_async(self.__bots))
         else:
             custom_runner(self.__bots)
+
+        asyncio.run(self.__close_app())
+
+    async def __close_app(self):
+        await self.__db_engine.dispose()
 
     def __check_bot_repeats(self) -> None:
         names = set()

@@ -7,6 +7,8 @@ from examples.notes_in_database.controllers.notes import Notes
 def main():
     app = initialize_app()
 
+    app.use_database("sqlite+aiosqlite:///examples/notes_in_database/database/notes.sqlite3")
+
     app.add_bot(ConsoleView, [Notes])
 
     app.run()
