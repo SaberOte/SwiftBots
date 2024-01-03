@@ -4,6 +4,7 @@ Tutorial: https://docs.sqlalchemy.org/en/20/orm/extensions/asyncio.html#synopsis
 """
 
 import re
+from datetime import datetime as dt
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
@@ -35,19 +36,18 @@ class Notes(Controller):
         name = match.group(1)
         text = match.group(2)
 
-        async_session = async_sessionmaker(engine, expire_on_commit=False)
+        async_session = async_sessionmaker(engine)
 
         async with async_session() as session:
-            result = await session.scalars(select(Note)
-                                           .where(Note.name.is_(name))
-                                           .limit(1))
-            note = result.one_or_none()
+            note = await session.scalar(select(Note)
+                                        .where(Note.name.is_(name)))
 
             # Note already exists
             if note is not None:
                 await view.reply_async(f"Note '{name}' already exists. And it's overwritten. "
                                        f"Its previous text is:\n{note.text}", context)
                 note.text = text
+                note.modified = dt.utcnow()
 
             # Note doesn't exist
             else:
@@ -57,16 +57,82 @@ class Notes(Controller):
             await view.reply_async("Notes updated", context)
 
     async def read(self, view: IChatView, context: IChatView.Context):
-        pass
+        name = context.arguments
+        if not name:
+            await view.reply_async("No note name given", context)
+
+        async_session = async_sessionmaker(engine)
+
+        async with async_session() as session:
+            note = await session.scalar(select(Note)
+                                        .where(Note.name.is_(name)))
+
+            if note is None:
+                await view.reply_async("There's no note with such name", context)
+                return
+            await view.reply_async(note.text, context)
 
     async def update(self, view: IChatView, context: IChatView.Context):
-        pass
+        message = context.arguments
+
+        match = self.compiled_note_pattern.match(message)
+
+        if not match:
+            await view.reply_async("There are no name or text of new note. "
+                                   "Use the command like '++note note_name text_to_add'", context)
+            return
+
+        name = match.group(1)
+        text = match.group(2)
+
+        async_session = async_sessionmaker(engine)
+
+        async with async_session() as session:
+            note = await session.scalar(select(Note)
+                                        .where(Note.name.is_(name)))
+
+            # Note doesn't exist
+            if note is None:
+                await view.reply_async("There's no such note", context)
+                return
+
+            # Note exists
+            note.text += '\n' + text
+            note.modified = dt.utcnow()
+            await session.commit()
+            await view.reply_async("Notes updated", context)
 
     async def delete(self, view: IChatView, context: IChatView.Context):
-        pass
+        name = context.arguments
+
+        async_session = async_sessionmaker(engine)
+
+        async with async_session() as session:
+            note = await session.scalar(select(Note)
+                                        .where(Note.name.is_(name)))
+
+            # Note doesn't exist
+            if note is None:
+                await view.reply_async("There's no such note", context)
+                return
+
+            # Note exists
+            await session.delete(note)
+            await session.commit()
+            await view.reply_async("Notes updated", context)
 
     async def list_notes(self, view: IChatView, context: IChatView.Context):
-        pass
+        async_session = async_sessionmaker(engine)
+
+        async with async_session() as session:
+            notes = (await session.scalars(select(Note.name)
+                                           .order_by(Note.modified))).all()
+
+            if len(notes) == 0:
+                await view.reply_async("No notes", context)
+            else:
+                msg = '\n'.join(notes)
+                await view.reply_async(msg, context)
 
     cmds = {
         '+note': create,
