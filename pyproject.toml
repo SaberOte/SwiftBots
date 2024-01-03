@@ -8,6 +8,7 @@ readme = "docs/README.md"
 [tool.poetry.dependencies]
 python = ">=3.10.0, <3.12"
 aiohttp = "*"
+alembic = "^1.13.1"
 
 [tool.poetry.group.dev.dependencies]
 flake8 = "*"

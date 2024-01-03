@@ -7,21 +7,25 @@ from swiftbots.controllers import Controller
 
 class Notes(Controller):
 
-    async def add(self, view: IChatView, context: IChatView.Context):
+    async def create(self, view: IChatView, context: IChatView.Context):
         pass
 
-    async def remove(self, view: IChatView, context: IChatView.Context):
+    async def read(self, view: IChatView, context: IChatView.Context):
+        pass
+
+    async def update(self, view: IChatView, context: IChatView.Context):
+        pass
+
+    async def delete(self, view: IChatView, context: IChatView.Context):
         pass
 
     async def list_notes(self, view: IChatView, context: IChatView.Context):
         pass
 
-    async def update_note(self, view: IChatView, context: IChatView.Context):
-        pass
-
     cmds = {
-        '+node': add,
-        '-note': remove,
+        '+node': create,
+        'note': read,
+        '++note': update,
+        '-note': delete,
         'notes': list_notes,
-        '++note': update_note
     }
