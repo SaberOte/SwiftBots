@@ -83,41 +83,51 @@ async def start_bot_async(bot_name: str) -> int:
 
 async def send_telegram_message_async(message: str, admin: str, token: str) -> None:
     async with aiohttp.ClientSession() as session:
-        data = {
-            "chat_id": admin,
-            "text": message
-        }
-        await session.post(f'https://api.telegram.org/bot{token}/sendMessage', json=data)
+        messages = [message[i:i + 4000] for i in range(0, len(message), 4000)]
+        for msg in messages:
+            data = {
+                "chat_id": admin,
+                "text": msg
+            }
+            await session.post(f'https://api.telegram.org/bot{token}/sendMessage', json=data)
 
 
 def send_telegram_message(message: str, admin: str, token: str) -> None:
-    data = {
-        "chat_id": admin,
-        "text": message
-    }
-    encoded_data = urllib.parse.urlencode(data).encode()
-    req = urllib.request.Request(f'https://api.telegram.org/bot{token}/sendMessage', data=encoded_data, method='POST')
-    urllib.request.urlopen(req)
+    messages = [message[i:i + 4000] for i in range(0, len(message), 4000)]
+    for msg in messages:
+        data = {
+            "chat_id": admin,
+            "text": msg
+        }
+        encoded_data = urllib.parse.urlencode(data).encode()
+        req = urllib.request.Request(f'https://api.telegram.org/bot{token}/sendMessage',
+                                     data=encoded_data, method='POST')
+        urllib.request.urlopen(req)
 
 
 async def send_vk_message_async(message: str, admin: str, token: str) -> None:
     async with aiohttp.ClientSession() as session:
-        data = {
-            'user_id': admin,
-            'message': message,
-            'random_id': IVkontakteView.get_random_id()
-        }
-        url = f'https://api.vk.com/method/messages.send?v=5.199&access_token={token}'
-        await session.post(url=url, data=data)
+        messages = [message[i:i + 4000] for i in range(0, len(message), 4000)]
+        for msg in messages:
+            data = {
+                'user_id': admin,
+                'message': msg,
+                'random_id': IVkontakteView.get_random_id()
+            }
+            url = f'https://api.vk.com/method/messages.send?v=5.199&access_token={token}'
+            await session.post(url=url, data=data)
 
 
 def send_vk_message(message: str, admin: str, token: str) -> None:
-    data = {
-        'user_id': admin,
-        'message': message,
-        'random_id': IVkontakteView.get_random_id()
-    }
-    encoded_data = urllib.parse.urlencode(data).encode()
-    req = urllib.request.Request(f'https://api.vk.com/method/messages.send?v=5.199&access_token={token}',
-                                 data=encoded_data, method='POST')
-    urllib.request.urlopen(req)
+    messages = [message[i:i + 4000] for i in range(0, len(message), 4000)]
+    for msg in messages:
+        data = {
+            'user_id': admin,
+            'message': msg,
+            'random_id': IVkontakteView.get_random_id()
+        }
+
+        encoded_data = urllib.parse.urlencode(data).encode()
+        req = urllib.request.Request(f'https://api.vk.com/method/messages.send?v=5.199&access_token={token}',
+                                     data=encoded_data, method='POST')
+        urllib.request.urlopen(req)

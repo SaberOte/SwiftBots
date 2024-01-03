@@ -126,9 +126,17 @@ class TelegramView(ITelegramView, ChatView, ABC):
     async def send_async(self, message: str, user: str | int, data: dict = None) -> dict:
         if data is None:
             data = {}
-        data['chat_id'] = user
-        data['text'] = message
-        return await self.fetch_async('sendMessage', data)
+
+        messages = [message[i:i + 4000] for i in range(0, len(message), 4000)]
+        result = {}
+        for msg in messages:
+            send_data = {
+                'chat_id': user,
+                'text': msg
+            }
+            send_data.update(data)
+            result = await self.fetch_async('sendMessage', send_data)
+        return result
 
     async def delete_message_async(self, message_id, context: 'ITelegramView.Context', data: dict = None) -> dict:
         if data is None:
@@ -273,8 +281,8 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
     async def send_async(self, message: str, user: int | str, data: dict = None) -> dict:
         if data is None:
             data = {}
-        # if the message out of 9000 letters, split it on chunks
-        messages = [message[i:i + 9000] for i in range(0, len(message), 9000)]
+        # if the message out of 4000 letters, split it on chunks
+        messages = [message[i:i + 4000] for i in range(0, len(message), 4000)]
         result = {}
         for msg in messages:
             send_data = {
