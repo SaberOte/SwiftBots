@@ -33,7 +33,7 @@ class Notes(Controller):
 
         async with self.async_db_session_maker() as session:
             note = await session.scalar(select(Note)
-                                        .where(Note.name.is_(name)))
+                                        .where(Note.name == name))
 
             # Note already exists
             if note is not None:
@@ -56,7 +56,7 @@ class Notes(Controller):
 
         async with self.async_db_session_maker() as session:
             note = await session.scalar(select(Note)
-                                        .where(Note.name.is_(name)))
+                                        .where(Note.name == name))
 
             if note is None:
                 await view.reply_async("There's no note with such name", context)
@@ -78,7 +78,7 @@ class Notes(Controller):
 
         async with self.async_db_session_maker() as session:
             note = await session.scalar(select(Note)
-                                        .where(Note.name.is_(name)))
+                                        .where(Note.name == name))
 
             # Note doesn't exist
             if note is None:
@@ -96,7 +96,7 @@ class Notes(Controller):
 
         async with self.async_db_session_maker() as session:
             note = await session.scalar(select(Note)
-                                        .where(Note.name.is_(name)))
+                                        .where(Note.name == name))
 
             # Note doesn't exist
             if note is None:
