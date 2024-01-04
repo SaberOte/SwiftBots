@@ -5,6 +5,7 @@ from traceback import format_exc
 from swiftbots.bots import Bot, close_bot_async
 from swiftbots.types import StartBotException, ExitApplicationException, ExitBotException, IContext, IChatView
 from swiftbots.utils import ErrorRateMonitor
+from swiftbots.controllers import close_controllers_in_bots_async
 
 
 __ALL_TASKS: set[str] = set()
@@ -66,11 +67,11 @@ async def start_async_listener(bot: Bot):
 async def run_async(bots: list[Bot]):
     tasks: set[asyncio.Task] = set()
 
-    bot_names: dict[str, Bot] = {bot.name: bot for bot in bots}
+    bots_dict: dict[str, Bot] = {bot.name: bot for bot in bots}
     global __ALL_TASKS
-    __ALL_TASKS = bot_names.keys()
+    __ALL_TASKS = bots_dict.keys()
 
-    for name, bot in bot_names.items():
+    for name, bot in bots_dict.items():
         task = asyncio.create_task(start_async_listener(bot), name=name)
         tasks.add(task)
 
@@ -80,7 +81,7 @@ async def run_async(bots: list[Bot]):
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for task in done:
             name = task.get_name()
-            bot = bot_names[name]
+            bot = bots_dict[name]
             try:
                 result = task.result()
                 await bot.logger.critical_async(f"Bot {name} was finished with result {result} and restarted")
@@ -94,18 +95,18 @@ async def run_async(bots: list[Bot]):
                 # Special exception instance for starting bots from admin panel
                 try:
                     bot_name_to_start = str(ex)
-                    bot_to_start = bot_names[str(ex)]
+                    bot_to_start = bots_dict[str(ex)]
                     new_task = asyncio.create_task(start_async_listener(bot_to_start), name=bot_name_to_start)
                     tasks.add(new_task)
                 except Exception as e:
                     await bot.logger.critical_async(f"Couldn't start bot {ex}. Exception: {e}")
                 continue
             except ExitApplicationException:
-                for bot_to_exit in bot_names.values():
+                await close_controllers_in_bots_async(bots_dict.values())
+
+                for task in tasks:
+                    bot_name_to_exit = task.get_name()
+                    bot_to_exit = bots_dict[bot_name_to_exit]
                     await close_bot_async(bot_to_exit)
                 await bot.logger.report_async("Bots application was closed")
                 return
-
-            tasks.remove(task)
-            new_task = asyncio.create_task(start_async_listener(bot), name=name)
-            tasks.add(new_task)

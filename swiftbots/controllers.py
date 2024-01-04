@@ -1,10 +1,13 @@
 from abc import ABC
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
 from swiftbots.types import IController
+
+if TYPE_CHECKING:
+    from swiftbots.bots import Bot
 
 
 class Controller(IController, ABC):
@@ -27,5 +30,16 @@ class Controller(IController, ABC):
             "Application hasn't database engine. Call use_database for application before running"
         return self.__db_session_maker
 
+    async def soft_close_async(self) -> None:
+        pass
+
     def init(self, db_session_maker: async_sessionmaker[AsyncSession]) -> None:
         self.__db_session_maker = db_session_maker
+
+
+async def close_controllers_in_bots_async(bots: list['Bot']):
+    controllers = set()
+    for bot in bots:
+        controllers.update(bot.controllers)
+    for controller in controllers:
+        await controller.soft_close_async()

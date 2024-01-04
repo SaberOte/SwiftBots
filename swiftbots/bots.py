@@ -98,6 +98,6 @@ async def close_bot_async(bot: Bot):
     Call `_close` method of bot to softly close all connections
     """
     try:
-        await bot.view._close_async()
+        await bot.view.soft_close_async()
     except Exception as e:
         await bot.logger.error_async(f'Raised an exception `{e}` when a view closing method called:\n{format_exc()}')

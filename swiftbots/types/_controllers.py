@@ -34,3 +34,9 @@ class IController(ABC):
         Must be used in only 1 task or thread.
         """
         raise NotImplementedError()
+
+    async def soft_close_async(self) -> None:
+        """
+        Close all connections softly before shutting down an application
+        """
+        raise NotImplementedError()
