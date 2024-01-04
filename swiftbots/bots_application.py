@@ -84,7 +84,8 @@ class BotsApplication:
         asyncio.run(self.__close_app())
 
     async def __close_app(self):
-        await self.__db_engine.dispose()
+        if self.__db_engine is not None:
+            await self.__db_engine.dispose()
 
     def __check_bot_repeats(self) -> None:
         names = set()

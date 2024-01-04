@@ -51,6 +51,7 @@ class IView(ABC):
 
         :return: dict with additional information. Required fields described in derived types
         """
+        yield 1
         raise NotImplementedError()
 
     @abstractmethod

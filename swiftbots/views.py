@@ -92,7 +92,7 @@ class TelegramView(ITelegramView, ChatView, ABC):
         self.__should_skip_old_updates = skip_old_updates
 
     async def listen_async(self) -> AsyncGenerator['ITelegramView.PreContext', None]:
-        if self._http_session is None:
+        if self._http_session is None or self._http_session.closed:
             self._http_session = aiohttp.ClientSession()
 
         if not self.__greeting_disabled and self._admin is not None:
@@ -159,6 +159,7 @@ class TelegramView(ITelegramView, ChatView, ABC):
         await self.logger.report_async(f'Bot {self.bot.name} was exited')
         if self._http_session is not None:
             await self._http_session.close()
+            self._http_session = None
 
     async def _handle_server_connection_error_async(self) -> None:
         await self.logger.info_async(f'Connection ERROR in {self.bot.name}. Sleep 5 seconds')
@@ -236,7 +237,7 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
         }
 
     async def listen_async(self):
-        if self._http_session is None:
+        if self._http_session is None or self._http_session.closed:
             self._http_session = aiohttp.ClientSession()
 
         key, server, ts = await self.__get_long_poll_server_async()
@@ -344,6 +345,7 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
         await self.logger.report_async(f'Bot {self.bot.name} was exited')
         if self._http_session is not None:
             await self._http_session.close()
+            self._http_session = None
 
     async def _deconstruct_message_async(self, update: dict) -> Optional['ITelegramView.PreContext']:
 

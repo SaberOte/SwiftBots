@@ -1,8 +1,12 @@
 import re
+import asyncio
+
+from traceback import format_exc
 from typing import Callable, Optional
 
-from swiftbots.types import (IController, ILogger, IChatView, IView,
-                             IBasicMessageHandler, IChatMessageHandler, IContext)
+from swiftbots.types import (IController, ILogger, IChatView, IView, ExitBotException,
+                             IBasicMessageHandler, IChatMessageHandler, IContext,
+                             StartBotException, ExitApplicationException)
 
 
 class BasicMessageHandler(IBasicMessageHandler):
@@ -26,6 +30,7 @@ class BasicMessageHandler(IBasicMessageHandler):
         message = context['message']
         del context['message']
         new_context = view.Context(**context, raw_message=message)
+        # await do_method_async(self.__controller.default.__func__, self.__controller, view, new_context)
         await self.__controller.default(view, new_context)
 
 
@@ -126,6 +131,7 @@ class ChatMessageHandler(IChatMessageHandler):
 
         del context['message']
         new_context = view.Context(raw_message=message, arguments=arguments, command=command_name, **context)
+        # await do_method_async(method, controller, view, new_context)
         await method(controller, view=view, context=new_context)
 
     def __build_commands(self, controllers: list[IController]):

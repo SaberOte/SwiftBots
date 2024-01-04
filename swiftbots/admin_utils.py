@@ -2,7 +2,6 @@ import asyncio
 import aiohttp
 import urllib.request
 import urllib.parse
-import random
 
 from typing import TYPE_CHECKING
 

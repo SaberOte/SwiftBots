@@ -1,3 +1,4 @@
+from traceback import format_exc
 from typing import Optional
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio.session import AsyncSession
@@ -90,3 +91,13 @@ def _instantiate_in_bots(bots: list[Bot]) -> None:
     _set_views(bots)
     _set_controllers(bots)
     _set_message_handlers(bots)
+
+
+async def close_bot_async(bot: Bot):
+    """
+    Call `_close` method of bot to softly close all connections
+    """
+    try:
+        await bot.view._close_async()
+    except Exception as e:
+        await bot.logger.error_async(f'Raised an exception `{e}` when a view closing method called:\n{format_exc()}')

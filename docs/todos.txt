@@ -1,9 +1,7 @@
 TODOS
 =====
-- Create makefile
 - Finish adequate readme
-- Handle exception not in runner, but in the message handler.
-- In message handler create function which will execute methods itself
+- Add logging everywhere in views
 - Develop tasks/scheduler
 - Problem with context. Make normal polymorphism
 - Make creation of user folder (inject as python command)
@@ -11,5 +9,4 @@ TODOS
 - Make REST api view
 - Use colorama to write `warning` messages with yellow outline
 - Stop using protected attributes outside classes
-- Notify user when there's internal error
 - Message from admin sending functions doesn't log if raised

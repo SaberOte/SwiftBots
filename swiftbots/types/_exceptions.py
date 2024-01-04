@@ -4,3 +4,7 @@ class StartBotException(Exception):
 
 class ExitApplicationException(Exception):
     pass
+
+
+class ExitBotException(Exception):
+    pass
