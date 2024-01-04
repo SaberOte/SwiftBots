@@ -13,6 +13,16 @@ class Controller(IController, ABC):
 
     @property
     def async_db_session_maker(self) -> async_sessionmaker[AsyncSession]:
+        """
+        Receive one async Database session to make transactions.
+        Using is like:
+        ```
+        async with self.async_db_session_maker() as session:
+            session.add(some_other_object)
+            session.commit()
+        ```
+        Must be used in only 1 task or thread.
+        """
         assert self.__db_session_maker is not None, \
             "Application hasn't database engine. Call use_database for application before running"
         return self.__db_session_maker
