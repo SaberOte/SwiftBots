@@ -74,7 +74,7 @@ class IView(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def _close_async(self):
+    async def soft_close_async(self):
         """
         Before shutting down, a bot calls this method.
         Close database connections, http clients, etc.
@@ -247,10 +247,13 @@ class ITelegramView(IChatView, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def update_message_async(self, data: dict) -> dict:
+    async def update_message_async(self, text: str, message_id: int, context: 'IContext', data: dict = None) -> dict:
         """
         Updating the message
-        :param data: should contain at least "text", "message_id", "chat_id"
+        :param text: new message.
+        :param message_id: message id
+        :param context: context from user.
+        :param data: additional data if needed.
         """
         raise NotImplementedError()
 

@@ -30,7 +30,7 @@ class BasicView(IBasicView, ABC):
     def bot(self) -> 'Bot':
         return self.__bot
 
-    async def _close_async(self):
+    async def soft_close_async(self):
         await self.logger.report_async(f'Bot {self.bot.name} was exited')
 
 
@@ -120,7 +120,12 @@ class TelegramView(ITelegramView, ChatView, ABC):
             return None
         return answer
 
-    async def update_message_async(self, data: dict) -> dict:
+    async def update_message_async(self, text: str, message_id: int, context: 'IContext', data: dict = None) -> dict:
+        if data is None:
+            data = {}
+        data['text'] = text
+        data['message_id'] = message_id
+        data['chat_id'] = context['sender']
         return await self.fetch_async('editMessageText', data)
 
     async def send_async(self, message: str, user: str | int, data: dict = None) -> dict:
@@ -155,7 +160,7 @@ class TelegramView(ITelegramView, ChatView, ABC):
     def disable_greeting(self) -> None:
         self.__greeting_disabled = True
 
-    async def _close_async(self):
+    async def soft_close_async(self):
         await self.logger.report_async(f'Bot {self.bot.name} was exited')
         if self._http_session is not None:
             await self._http_session.close()
@@ -363,7 +368,7 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
     def disable_greeting(self) -> None:
         self.__greeting_disabled = True
 
-    async def _close_async(self):
+    async def soft_close_async(self):
         await self.logger.report_async(f'Bot {self.bot.name} was exited')
         if self._http_session is not None:
             await self._http_session.close()
