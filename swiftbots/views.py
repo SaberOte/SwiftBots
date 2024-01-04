@@ -278,6 +278,11 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
         return answer
 
     async def send_async(self, message: str, user: int | str, data: dict = None) -> dict:
+        """
+        :returns: {
+                      "response":5
+                  }, where response is message id
+        """
         if data is None:
             data = {}
         # if the message out of 4096 letters, split it on chunks
