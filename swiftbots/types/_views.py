@@ -316,6 +316,17 @@ class IVkontakteView(IChatView, ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    async def update_message_async(self, message: str, message_id: int, context: 'IContext', data: dict = None) -> dict:
+        """
+        Updating the message
+        :param message: new message.
+        :param message_id: message id, which received from `response` field from send request.
+        :param context: context from user.
+        :param data: additional data if needed.
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
     async def send_sticker_async(self, sticker_id: int, context: 'IContext', data: dict = None) -> dict:
         """
         Send user a sticker with id `sticker_id`.

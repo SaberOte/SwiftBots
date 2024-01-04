@@ -240,13 +240,11 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
         if self._http_session is None or self._http_session.closed:
             self._http_session = aiohttp.ClientSession()
 
-        key, server, ts = await self.__get_long_poll_server_async()
-
         if not self.__greeting_disabled and self._admin is not None:
             await self.send_async(f'{self.bot.name} is started!', self._admin)
 
         try:
-            async for update in self.__get_updates_async(key, server, ts):
+            async for update in self.__get_updates_async():
                 pre_context = await self._deconstruct_message_async(update)
                 if pre_context:
                     yield pre_context
@@ -295,6 +293,14 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
             result = await self.fetch_async('messages.send', send_data)
         return result
 
+    async def update_message_async(self, message: str, message_id: int, context: 'IContext', data: dict = None) -> dict:
+        if data is None:
+            data = {}
+        data['peer_id'] = context['sender']
+        data['message_id'] = message_id
+        data['message'] = message
+        return await self.fetch_async('messages.edit', data)
+
     async def send_sticker_async(self, sticker_id: str, context: 'IContext', data: dict = None) -> dict:
         if data is None:
             data = {}
@@ -323,20 +329,31 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
         ts = result['response']['ts']
         return key, server, ts
 
-    async def __get_updates_async(self, key: str, server: str, ts: str) -> AsyncGenerator[dict, None]:
+    async def __get_updates_async(self) -> AsyncGenerator[dict, None]:
         """
         https://dev.vk.com/ru/api/bots-long-poll/getting-started#Подключение
         """
+        key, server, ts = await self.__get_long_poll_server_async()
+
         timeout = '25'
         while True:
             url = f"{server}?act=a_check&key={key}&ts={ts}&wait={timeout}"
             ans = await self._http_session.post(url=url)
             result = await ans.json()
-            updates = result['updates']
-            if len(updates) != 0:
-                ts = result['ts']
-                for update in updates:
-                    yield update
+            if 'updates' in result:
+                updates = result['updates']
+                if len(updates) != 0:
+                    ts = result['ts']
+                    for update in updates:
+                        yield update
+            else:
+                failed = result['failed']
+                if failed == 1:
+                    ts = result['ts']
+                elif failed in [2, 3]:
+                    key, server, ts = await self.__get_long_poll_server_async()
+                else:
+                    raise Exception("Unknown failed")
 
     def disable_greeting(self) -> None:
         self.__greeting_disabled = True
