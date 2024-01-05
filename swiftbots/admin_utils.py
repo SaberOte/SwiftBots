@@ -127,7 +127,8 @@ async def send_vk_message_async(message: str, admin: str, token: str, data: dict
             send_data = {
                 'user_id': admin,
                 'message': msg,
-                'random_id': IVkontakteView.get_random_id()
+                'random_id': IVkontakteView.get_random_id(),
+                'dont_parse_links': 1
             }
             send_data.update(data)
             url = f'https://api.vk.com/method/messages.send?v=5.199&access_token={token}'
@@ -142,7 +143,8 @@ def send_vk_message(message: str, admin: str, token: str, data: dict = None) -> 
         send_data = {
             'user_id': admin,
             'message': msg,
-            'random_id': IVkontakteView.get_random_id()
+            'random_id': IVkontakteView.get_random_id(),
+            'dont_parse_links': 1
         }
         send_data.update(data)
 
