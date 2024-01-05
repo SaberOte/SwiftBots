@@ -11,7 +11,7 @@ def print_async(*args, **kwargs):
 
 class CalculatorApi(Controller):
 
-    async def calculate(self, view: IBasicView, context: IBasicView.Context):
+    async def default(self, view: IBasicView, context: IBasicView.Context):
         message = str(context.raw_message)
         try:
             num1, operation, num2 = message.split(' ')
@@ -30,5 +30,3 @@ class CalculatorApi(Controller):
             await print_async(f'Result is {float(num1) / float(num2)}')
         else:
             await print_async(f'Unknown operation {operation}')
-
-    default = calculate
