@@ -80,53 +80,73 @@ async def start_bot_async(bot_name: str) -> int:
     return 2
 
 
-async def send_telegram_message_async(message: str, admin: str, token: str) -> None:
+async def send_telegram_message_async(message: str, admin: str, token: str, data: dict = None) -> None:
+    if data is None:
+        data = {}
+
+    is_traceback = 'Traceback' in message and 'parse_mode' not in data
     async with aiohttp.ClientSession() as session:
         messages = [message[i:i + 4096] for i in range(0, len(message), 4096)]
         for msg in messages:
-            data = {
+            send_data = {
                 "chat_id": admin,
-                "text": msg
+                "text": f'```\n{msg}\n```' if is_traceback else msg
             }
-            await session.post(f'https://api.telegram.org/bot{token}/sendMessage', json=data)
+            if is_traceback:
+                send_data["parse_mode"] = "markdown"
+            send_data.update(data)
+            await session.post(f'https://api.telegram.org/bot{token}/sendMessage', json=send_data)
 
 
-def send_telegram_message(message: str, admin: str, token: str) -> None:
+def send_telegram_message(message: str, admin: str, token: str, data: dict = None) -> None:
+    if data is None:
+        data = {}
+    is_traceback = 'Traceback' in message and 'parse_mode' not in data
     messages = [message[i:i + 4096] for i in range(0, len(message), 4096)]
     for msg in messages:
-        data = {
+        send_data = {
             "chat_id": admin,
-            "text": msg
+            "text": f'```\n{msg}\n```' if is_traceback else msg
         }
-        encoded_data = urllib.parse.urlencode(data).encode()
+        if is_traceback:
+            send_data['parse_mode'] = 'markdown'
+        send_data.update(data)
+
+        encoded_data = urllib.parse.urlencode(send_data).encode()
         req = urllib.request.Request(f'https://api.telegram.org/bot{token}/sendMessage',
                                      data=encoded_data, method='POST')
         urllib.request.urlopen(req)
 
 
-async def send_vk_message_async(message: str, admin: str, token: str) -> None:
+async def send_vk_message_async(message: str, admin: str, token: str, data: dict = None) -> None:
+    if data is None:
+        data = {}
     async with aiohttp.ClientSession() as session:
         messages = [message[i:i + 4096] for i in range(0, len(message), 4096)]
         for msg in messages:
-            data = {
+            send_data = {
                 'user_id': admin,
                 'message': msg,
                 'random_id': IVkontakteView.get_random_id()
             }
+            send_data.update(data)
             url = f'https://api.vk.com/method/messages.send?v=5.199&access_token={token}'
-            await session.post(url=url, data=data)
+            await session.post(url=url, data=send_data)
 
 
-def send_vk_message(message: str, admin: str, token: str) -> None:
+def send_vk_message(message: str, admin: str, token: str, data: dict = None) -> None:
+    if data is None:
+        data = {}
     messages = [message[i:i + 4096] for i in range(0, len(message), 4096)]
     for msg in messages:
-        data = {
+        send_data = {
             'user_id': admin,
             'message': msg,
             'random_id': IVkontakteView.get_random_id()
         }
+        send_data.update(data)
 
-        encoded_data = urllib.parse.urlencode(data).encode()
+        encoded_data = urllib.parse.urlencode(send_data).encode()
         req = urllib.request.Request(f'https://api.vk.com/method/messages.send?v=5.199&access_token={token}',
                                      data=encoded_data, method='POST')
         urllib.request.urlopen(req)
