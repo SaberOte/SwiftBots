@@ -20,13 +20,13 @@ async def delegate_to_handler_async(bot: Bot, context: IContext) -> None:
     try:
         await bot.message_handler.handle_message_async(bot.view, context)
     except (AttributeError, TypeError, KeyError, AssertionError) as e:
-        await bot.logger.critical_async(f"Fix the code! Critical '{e.__class__.__name__}' "
+        await bot.logger.critical_async(f"Fix the code! Critical `{e.__class__.__name__}` "
                                         f"raised:\n{e}.\nFull traceback:\n{format_exc()}")
         if isinstance(bot.view, IChatView):
             await bot.view.error_async(context)
     except Exception as e:
-        await bot.logger.error_async(f"Bot {bot.name} was raised with unhandled {e.__class__.__name__} "
-                                     f"and kept on working:\n'{e}'.\nFull traceback:\n{format_exc()}")
+        await bot.logger.error_async(f"Bot {bot.name} was raised with unhandled `{e.__class__.__name__}` "
+                                     f"and kept on working:\n{e}.\nFull traceback:\n{format_exc()}")
         if isinstance(bot.view, IChatView):
             await bot.view.error_async(context)
 
@@ -42,13 +42,13 @@ async def start_async_listener(bot: Bot):
         try:
             pre_context = await generator.__anext__()
         # except (AttributeError, TypeError, KeyError, AssertionError) as e:
-        #     await bot.logger.critical_async(f"Fix the code! Critical '{e.__class__.__name__}' "
+        #     await bot.logger.critical_async(f"Fix the code! Critical {e.__class__.__name__} "
         #                                     f"raised: {e}. Full traceback:\n{format_exc()}")
         #     continue
         except RestartListeningException:
             continue
         except Exception as e:
-            await bot.logger.error_async(f"Bot {bot.name} was raised with unhandled {e.__class__.__name__}"
+            await bot.logger.error_async(f"Bot {bot.name} was raised with unhandled `{e.__class__.__name__}`"
                                          f" and kept on listening:\n{e}.\nFull traceback:\n{format_exc()}")
             if err_monitor.since_start < 3:
                 raise ExitBotException(f"Bot {bot.name} raises immediately after start listening. "
