@@ -1,21 +1,22 @@
 from abc import ABC
-from typing import Optional, TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
 from traceback import format_exc
 
-from sqlalchemy.ext.asyncio import async_sessionmaker
-from sqlalchemy.ext.asyncio.session import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from swiftbots.types import IController
+from swiftbots.types import ITask, ILogger
 
 if TYPE_CHECKING:
     from swiftbots.bots import Bot
 
 
-class Controller(IController, ABC):
+class Task(ITask, ABC):
 
-    __db_session_maker = Optional[async_sessionmaker[AsyncSession]]
+    __db_session_maker = async_sessionmaker[AsyncSession] | None
+    logger: ILogger
 
-    def init(self, db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:
+    def init(self, logger: ILogger, db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:
+        self.logger = logger
         self.__db_session_maker = db_session_maker
 
     @property
@@ -38,13 +39,15 @@ class Controller(IController, ABC):
         pass
 
 
-async def close_controllers_in_bots_async(bots: Sequence['Bot']):
-    controllers = set()
+async def close_tasks_in_bots_async(bots: list['Bot']):
+    tasks = set()
     for bot in bots:
-        controllers.update(bot.controllers)
-    for controller in controllers:
+        if bot.tasks:
+            tasks.update(bot.tasks)
+    for task in tasks:
         try:
-            await controller.soft_close_async()
+            await task.soft_close_async()
         except Exception as e:
             await bots[0].logger.error_async(
                 f'Raised an exception `{e}` when a view closing method called:\n{format_exc()}')
+

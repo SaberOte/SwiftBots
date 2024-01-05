@@ -1,22 +1,16 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Optional, TYPE_CHECKING
 
-from sqlalchemy.ext.asyncio import async_sessionmaker
-from sqlalchemy.ext.asyncio.session import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-if TYPE_CHECKING:
-    from swiftbots.bots import Bot
+from swiftbots.types import ILogger
 
 
-class IController(ABC):
-
-    cmds: dict[str, Callable] = {}
-    default: Optional[Callable] = None
+class ITask(ABC):
 
     @abstractmethod
-    def init(self, db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:
+    def init(self, logger: ILogger, db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:
         """
-        Initialize all controller attributes
+        Initialize all task attributes
         """
         raise NotImplementedError()
 
@@ -31,7 +25,7 @@ class IController(ABC):
             session.add(some_other_object)
             session.commit()
         ```
-        Must be used in only 1 task or thread.
+        Must be used in only 1 asyncio task or thread.
         """
         raise NotImplementedError()
 

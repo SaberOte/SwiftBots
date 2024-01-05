@@ -106,8 +106,10 @@ async def run_async(bots: list[Bot]):
                 except Exception as e:
                     await bot.logger.critical_async(f"Couldn't start bot {ex}. Exception: {e}")
             except ExitApplicationException:
+                # close ctrls
                 await close_controllers_in_bots_async(bots_dict.values())
 
+                # close bots already
                 for a_task in tasks:
                     bot_name_to_exit = a_task.get_name()
                     bot_to_exit = bots_dict[bot_name_to_exit]
