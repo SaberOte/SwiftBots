@@ -3,7 +3,8 @@ import asyncio
 from traceback import format_exc
 
 from swiftbots.bots import Bot, close_bot_async
-from swiftbots.types import StartBotException, ExitApplicationException, ExitBotException, IContext, IChatView
+from swiftbots.types import (StartBotException, ExitApplicationException, ExitBotException,
+                             IContext, IChatView, RestartListeningException)
 from swiftbots.utils import ErrorRateMonitor
 from swiftbots.controllers import close_controllers_in_bots_async
 
@@ -18,17 +19,14 @@ def get_all_tasks() -> set[str]:
 async def delegate_to_handler_async(bot: Bot, context: IContext) -> None:
     try:
         await bot.message_handler.handle_message_async(bot.view, context)
-    except (asyncio.CancelledError, StartBotException, ExitApplicationException, ExitBotException):
-        # rethrow it to runner
-        raise
     except (AttributeError, TypeError, KeyError, AssertionError) as e:
-        await bot.logger.critical_async(f"Fix the code! Critical python {e.__class__.__name__} "
-                                        f"raised: {e}. Full traceback:\n{format_exc()}")
+        await bot.logger.critical_async(f"Fix the code! Critical '{e.__class__.__name__}' "
+                                        f"raised:\n{e}.\nFull traceback:\n{format_exc()}")
         if isinstance(bot.view, IChatView):
             await bot.view.error_async(context)
     except Exception as e:
-        await bot.logger.error_async(f"Bot {bot.name} was raised with unhandled {e.__class__.__name__}:"
-                                     f" {e} and kept on working. Full traceback:\n{format_exc()}")
+        await bot.logger.error_async(f"Bot {bot.name} was raised with unhandled {e.__class__.__name__} "
+                                     f"and kept on working:\n'{e}'.\nFull traceback:\n{format_exc()}")
         if isinstance(bot.view, IChatView):
             await bot.view.error_async(context)
 
@@ -43,16 +41,18 @@ async def start_async_listener(bot: Bot):
     while True:
         try:
             pre_context = await generator.__anext__()
-        except (asyncio.CancelledError, StartBotException, ExitApplicationException, ExitBotException):
-            # it should be processed in the runner
-            raise
+        # except (AttributeError, TypeError, KeyError, AssertionError) as e:
+        #     await bot.logger.critical_async(f"Fix the code! Critical '{e.__class__.__name__}' "
+        #                                     f"raised: {e}. Full traceback:\n{format_exc()}")
+        #     continue
+        except RestartListeningException:
+            continue
         except Exception as e:
-            await bot.logger.error_async(f"Bot {bot.name} was raised with unhandled {e.__class__.__name__}:"
-                                         f" {e} and kept on listening. Full traceback:\n{format_exc()}")
+            await bot.logger.error_async(f"Bot {bot.name} was raised with unhandled {e.__class__.__name__}"
+                                         f" and kept on listening:\n{e}.\nFull traceback:\n{format_exc()}")
             if err_monitor.since_start < 3:
-                await bot.logger.critical_async(f"Bot {bot.name} raises immediately after start listening. "
-                                                f"Shutdown this")
-                raise ExitBotException()
+                raise ExitBotException(f"Bot {bot.name} raises immediately after start listening. "
+                                       f"Shutdown this")
             rate = err_monitor.evoke()
             if rate > 5:
                 await bot.logger.error_async(f"Bot {bot.name} sleeps for 30 seconds.")
@@ -86,11 +86,16 @@ async def run_async(bots: list[Bot]):
                 result = task.result()
                 await bot.logger.critical_async(f"Bot {name} was finished with result {result} and restarted")
             except (asyncio.CancelledError, ExitBotException) as ex:
-                if ex is asyncio.CancelledError:
+                if isinstance(ex, asyncio.CancelledError):
                     await bot.logger.warn_async(f"Bot {name} was cancelled. Not started again")
+                elif isinstance(ex, ExitBotException):
+                    await bot.logger.critical_async(f"Bot {name} was exited with message: {ex}")
                 tasks.remove(task)
                 await close_bot_async(bot)
-                continue
+            except RestartListeningException:
+                tasks.remove(task)
+                new_task = asyncio.create_task(start_async_listener(bot), name=name)
+                tasks.add(new_task)
             except StartBotException as ex:
                 # Special exception instance for starting bots from admin panel
                 try:
@@ -100,12 +105,11 @@ async def run_async(bots: list[Bot]):
                     tasks.add(new_task)
                 except Exception as e:
                     await bot.logger.critical_async(f"Couldn't start bot {ex}. Exception: {e}")
-                continue
             except ExitApplicationException:
                 await close_controllers_in_bots_async(bots_dict.values())
 
-                for task in tasks:
-                    bot_name_to_exit = task.get_name()
+                for a_task in tasks:
+                    bot_name_to_exit = a_task.get_name()
                     bot_to_exit = bots_dict[bot_name_to_exit]
                     await close_bot_async(bot_to_exit)
                 await bot.logger.report_async("Bots application was closed")

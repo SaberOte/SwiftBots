@@ -1,10 +1,14 @@
-class StartBotException(Exception):
+class StartBotException(BaseException):
     pass
 
 
-class ExitApplicationException(Exception):
+class ExitApplicationException(BaseException):
     pass
 
 
-class ExitBotException(Exception):
+class ExitBotException(BaseException):
+    pass
+
+
+class RestartListeningException(BaseException):
     pass

@@ -2,6 +2,7 @@ TODOS
 =====
 - Finish adequate readme
 - Add logging everywhere in views
+- Make notes dealing with sql alchemy accordingly to documentation style
 - Develop tasks/scheduler
 - Problem with context. Make normal polymorphism
 - Make creation of user folder (inject as python command)

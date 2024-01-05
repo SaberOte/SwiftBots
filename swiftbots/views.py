@@ -4,7 +4,8 @@ import asyncio
 from abc import ABC
 from typing import Optional, TYPE_CHECKING, AsyncGenerator
 
-from swiftbots.types import ILogger, IBasicView, IChatView, ITelegramView, IVkontakteView, IContext
+from swiftbots.types import (ILogger, IBasicView, IChatView, ITelegramView, IVkontakteView,
+                             IContext, ExitBotException, RestartListeningException)
 from swiftbots.admin_utils import shutdown_bot_async
 from swiftbots.message_handlers import BasicMessageHandler, ChatMessageHandler
 
@@ -111,13 +112,20 @@ class TelegramView(ITelegramView, ChatView, ABC):
             #     msg = 'Unhandled:' + '\nAnswer is:\n' + str(update) + '\n' + format_exc()
             #     self._logger.error(msg, update['message']['from']['id'])
 
-    async def fetch_async(self, method: str, data: dict, headers: dict = None) -> dict | None:
-        response = await self._http_session.post(f'https://api.telegram.org/bot{self.__token}/{method}',
-                                                 json=data, headers=headers)
+    async def fetch_async(self, method: str, data: dict, headers: dict = None, ignore_errors=False) -> dict | None:
+        url = f'https://api.telegram.org/bot{self.__token}/{method}'
+        response = await self._http_session.post(url=url, json=data, headers=headers)
+
         answer = await response.json()
-        if not answer['ok']:
-            await self.__handle_error_async(answer)
-            return None
+
+        if not answer['ok'] and not ignore_errors:
+            state = await self._handle_error_async(answer)
+            if state == 0:  # repeat request
+                await asyncio.sleep(4)
+                response = await self._http_session.post(url=url, json=data, headers=headers)
+                answer = await response.json()
+            if not answer['ok']:
+                raise RestartListeningException()
         return answer
 
     async def update_message_async(self, text: str, message_id: int, context: 'IContext', data: dict = None) -> dict:
@@ -192,23 +200,56 @@ class TelegramView(ITelegramView, ChatView, ABC):
             "limit": 1,
             "allowed_updates": self.ALLOWED_UPDATES
         }
-        if self.__first_time_launched or self.__skip_old_updates_async:
+        if self.__first_time_launched or self._skip_old_updates_async:
             self.first_time_launched = False
-            data['offset'] = await self.__skip_old_updates_async()
+            data['offset'] = await self._skip_old_updates_async()
         while True:
-            ans = await self.fetch_async('getUpdates', data)
+            ans = await self.fetch_async('getUpdates', data, ignore_errors=True)
+            if not ans['ok']:
+                state = await self._handle_error_async(ans)
+                if state == 0:
+                    await asyncio.sleep(5)
+                    yield self._get_updates_async()
+                else:
+                    raise ExitBotException(f"Error {ans} while recieving long polling server")
             if len(ans['result']) != 0:
                 data['offset'] = ans['result'][0]['update_id'] + 1
                 yield ans
 
-    async def __handle_error_async(self, error: dict) -> None:
-        if error['error_code'] == 409:
-            await shutdown_bot_async()
-            await self.logger.critical_async('Error code 409. Another telegram instance is working. '
-                                             'Shutting down this instance')
-        await self.logger.error_async(f"Error {error['error_code']} from TG API: {error['description']}")
+    async def _handle_error_async(self, error: dict) -> int:
+        """
+        https://core.telegram.org/api/errors
+        :returns: whether code should continue executing after the error.
+        -1 if bot should be exited. Never returns, raises BaseException
+        0 if it should just repeat request.
+        1 if it's better to finish this request. The same subsequent requests will fail too.
+        """
+        error_code: int = error['error_code']
+        error_msg: str = error['description']
+        msg = f"Error {error_code} from TG API: {error_msg}"
+        # notify administrator and repeat request
+        if error_code in (400, 403, 404, 406, 500, 303):
+            await self.logger.error_async(msg)
+            return 1
+        # too many requests (flood)
+        elif error_code == 420:
+            await self.logger.error_async(f"{self.bot.name} reached Flood error. Fix the code")
+            await asyncio.sleep(10)
+            return 0
+        # unauthorized
+        elif error_code == 401:
+            await self.logger.critical_async(msg)
+            raise ExitBotException(msg)
+        elif error_code == 409:
+            msg = ('Error code 409. Another telegram instance is working. '
+                   'Shutting down this instance')
+            await self.logger.critical_async(msg)
+            raise ExitBotException(msg)
+        else:
+            await self.logger.error_async('Unknown error. Add code' + msg)
+            return 1
 
-    async def __skip_old_updates_async(self):
+    async def _skip_old_updates_async(self):
         data = {
             "timeout": 0,
             "limit": 1,
@@ -249,7 +290,7 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
             await self.send_async(f'{self.bot.name} is started!', self._admin)
 
         try:
-            async for update in self.__get_updates_async():
+            async for update in self._get_updates_async():
                 pre_context = await self._deconstruct_message_async(update)
                 if pre_context:
                     yield pre_context
@@ -278,8 +319,13 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
 
         answer = await response.json()
         if 'error' in answer and not ignore_errors:
-            await self.__handle_error_async(answer)
-            return answer
+            state = await self._handle_error_async(answer)
+            if state == 0:  # repeat request
+                await asyncio.sleep(5)
+                response = await self._http_session.post(url=url, data=data, headers=request_headers)
+                answer = await response.json()
+            if 'error' in answer:
+                raise RestartListeningException()
         return answer
 
     async def send_async(self, message: str, user: int | str, data: dict = None) -> dict:
@@ -319,52 +365,6 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
         data['sticker_id'] = sticker_id
         return await self.fetch_async('messages.send', data)
 
-    async def __handle_error_async(self, error: dict) -> None:
-        error_code: int = error['error']['error_code']
-        error_msg: str = error['error']['error_msg']
-        msg = f"Error {error_code} from VK API: {error_msg}"
-        if error_code == 100:
-            await shutdown_bot_async()
-            await self.logger.critical_async(msg)
-        await self.logger.error_async(msg)
-
-    async def __get_long_poll_server_async(self) -> tuple[str, str, str]:
-        """
-        https://dev.vk.com/ru/api/bots-long-poll/getting-started#Подключение
-        """
-        data = {'group_id': self._group_id}
-        result = await self.fetch_async('groups.getLongPollServer', query_data=data)
-        key = result['response']['key']
-        server = result['response']['server']
-        ts = result['response']['ts']
-        return key, server, ts
-
-    async def __get_updates_async(self) -> AsyncGenerator[dict, None]:
-        """
-        https://dev.vk.com/ru/api/bots-long-poll/getting-started#Подключение
-        """
-        key, server, ts = await self.__get_long_poll_server_async()
-
-        timeout = '25'
-        while True:
-            url = f"{server}?act=a_check&key={key}&ts={ts}&wait={timeout}"
-            ans = await self._http_session.post(url=url)
-            result = await ans.json()
-            if 'updates' in result:
-                updates = result['updates']
-                if len(updates) != 0:
-                    ts = result['ts']
-                    for update in updates:
-                        yield update
-            else:
-                failed = result['failed']
-                if failed == 1:
-                    ts = result['ts']
-                elif failed in [2, 3]:
-                    key, server, ts = await self.__get_long_poll_server_async()
-                else:
-                    raise Exception("Unknown failed")
-
     def disable_greeting(self) -> None:
         self.__greeting_disabled = True
 
@@ -386,3 +386,79 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
     async def _handle_server_connection_error_async(self) -> None:
         await self.logger.info_async(f'Connection ERROR in {self.bot.name}. Sleep 5 seconds')
         await asyncio.sleep(5)
+
+    async def _handle_error_async(self, error: dict) -> int:
+        """
+        https://dev.vk.com/ru/reference/errors
+        :returns: whether code should continue executing after the error.
+        -1 if bot should be exited. Never returns, raises BaseException
+        0 if it should just repeat request.
+        1 if it's better to finish this request. The same subsequent requests will fail too.
+        """
+        error_code: int = error['error']['error_code']
+        error_msg: str = error['error']['error_msg']
+        msg = f"Error {error_code} from VK API: {error_msg}"
+        # just need to wait and repeat request
+        if error_code in (1, 10):
+            await self.logger.error_async(msg)
+            return 0
+        # notify administrator
+        elif error_code in (3, 8, 9, 14, 15, 16, 17, 18, 23, 24, 29, 30, 113, 150, 200, 201, 203, 300, 500, 600, 603):
+            await self.logger.error_async(msg)
+            return 1
+        # too many requests
+        elif error_code == 6:
+            await self.logger.error_async(f"{self.bot.name} reached too many requests error. Fix the code")
+            await asyncio.sleep(10)
+            return 0
+        # unforgivable errors
+        elif error_code in (2, 4, 5, 7, 11, 20, 21, 27, 28, 100, 101):
+            await self.logger.critical_async(msg)
+            raise ExitBotException(msg)
+        else:
+            await self.logger.critical_async('Need no add error codes in code for VK! Error:' + msg)
+            return 1
+
+    async def _get_long_poll_server_async(self) -> tuple[str, str, str]:
+        """
+        https://dev.vk.com/ru/api/bots-long-poll/getting-started#Подключение
+        """
+        data = {'group_id': self._group_id}
+        result = await self.fetch_async('groups.getLongPollServer', query_data=data)
+        if 'error' in result:
+            state = await self._handle_error_async(result)
+            if state == 0:
+                await asyncio.sleep(5)
+                return await self._get_long_poll_server_async()
+            else:
+                raise ExitBotException(f"Error {result} while recieving long polling server")
+        key = result['response']['key']
+        server = result['response']['server']
+        ts = result['response']['ts']
+        return key, server, ts
+
+    async def _get_updates_async(self) -> AsyncGenerator[dict, None]:
+        """
+        https://dev.vk.com/ru/api/bots-long-poll/getting-started#Подключение
+        """
+        key, server, ts = await self._get_long_poll_server_async()
+
+        timeout = '25'
+        while True:
+            url = f"{server}?act=a_check&key={key}&ts={ts}&wait={timeout}"
+            ans = await self._http_session.post(url=url)
+            result = await ans.json()
+            if 'updates' in result:
+                updates = result['updates']
+                if len(updates) != 0:
+                    ts = result['ts']
+                    for update in updates:
+                        yield update
+            else:
+                failed = result['failed']
+                if failed == 1:
+                    ts = result['ts']
+                elif failed in [2, 3]:
+                    key, server, ts = await self._get_long_poll_server_async()
+                else:
+                    raise Exception("Unknown failed")

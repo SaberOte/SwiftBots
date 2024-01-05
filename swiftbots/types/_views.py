@@ -239,7 +239,7 @@ class IChatView(IView, ABC):
 class ITelegramView(IChatView, ABC):
 
     @abstractmethod
-    async def fetch_async(self, method: str, data: dict) -> dict | None:
+    async def fetch_async(self, method: str, data: dict, ignore_errors=False) -> dict | None:
         """
         Custom send post request to telegram api.
         https://core.telegram.org/bots/api#available-methods
