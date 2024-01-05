@@ -42,7 +42,7 @@ class BotsApplication:
         It's necessary to use async drivers for database connection.
         """
         self.__db_engine = create_async_engine(connection_string, echo=False)
-        self.__db_session_maker = async_sessionmaker(self.__db_engine)
+        self.__db_session_maker = async_sessionmaker(self.__db_engine, expire_on_commit=False)
 
     def add_bot(self, view_type: type[IView], controller_classes: list[type[IController]],
                 message_handler_class: type[IMessageHandler] = None,
