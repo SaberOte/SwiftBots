@@ -11,3 +11,4 @@ TODOS
 - Use colorama to write `warning` messages with yellow outline
 - Stop using protected attributes outside classes
 - Message from admin sending functions doesn't log if raised
+- Make license. Scheduler has GPL

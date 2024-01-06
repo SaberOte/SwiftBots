@@ -64,6 +64,12 @@ async def start_async_listener(bot: Bot):
         await delegate_to_handler_async(bot, pre_context)
 
 
+async def start_bot(bot: 'Bot') -> None:
+    if bot.view:
+        await start_async_listener(bot)
+    if bot.tasks:
+
+
 async def run_async(bots: list[Bot]):
     tasks: set[asyncio.Task] = set()
 
@@ -72,7 +78,7 @@ async def run_async(bots: list[Bot]):
     __ALL_TASKS = bots_dict.keys()
 
     for name, bot in bots_dict.items():
-        task = asyncio.create_task(start_async_listener(bot), name=name)
+        task = asyncio.create_task(start_bot(bot), name=name)
         tasks.add(task)
 
     while 1:
@@ -94,14 +100,14 @@ async def run_async(bots: list[Bot]):
                 await close_bot_async(bot)
             except RestartListeningException:
                 tasks.remove(task)
-                new_task = asyncio.create_task(start_async_listener(bot), name=name)
+                new_task = asyncio.create_task(start_bot(bot), name=name)
                 tasks.add(new_task)
             except StartBotException as ex:
                 # Special exception instance for starting bots from admin panel
                 try:
                     bot_name_to_start = str(ex)
                     bot_to_start = bots_dict[str(ex)]
-                    new_task = asyncio.create_task(start_async_listener(bot_to_start), name=bot_name_to_start)
+                    new_task = asyncio.create_task(start_bot(bot_to_start), name=bot_name_to_start)
                     tasks.add(new_task)
                 except Exception as e:
                     await bot.logger.critical_async(f"Couldn't start bot {ex}. Exception: {e}")

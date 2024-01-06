@@ -1,15 +1,15 @@
 [tool.poetry]
 name = "swiftbots"
-version = "0.1.8"
+version = "1.0.0dev"
 description = "Python asynchronous web framework for rapid any-level bots development"
 authors = ["Polka <you@example.com>"]
 readme = "docs/README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.10.0, <3.12"
-aiohttp = "*"
-alembic = "*"
-sqlalchemy = {extras = ["asyncio"], version = "*"}
+alembic = "^1.13.1"
+aiohttp = "^3.9.1"
+sqlalchemy = {extras = ["asyncio"], version = "^2.0.25"}
 
 [tool.poetry.group.dev.dependencies]
 flake8 = "*"
