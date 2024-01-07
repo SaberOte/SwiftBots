@@ -1,8 +1,8 @@
 """The simplest controller ever"""
 import asyncio
 
-from swiftbots.types import IBasicView
 from swiftbots.controllers import Controller
+from swiftbots.types import IBasicView
 
 
 def print_async(*args, **kwargs):

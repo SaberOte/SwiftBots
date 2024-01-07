@@ -1,10 +1,17 @@
 from traceback import format_exc
 from typing import Optional
+
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
-from swiftbots.types import (IView, IController, IMessageHandler, ILogger, ILoggerFactory,
-                             ITask)
+from swiftbots.types import (
+    IController,
+    ILogger,
+    ILoggerFactory,
+    IMessageHandler,
+    ITask,
+    IView,
+)
 
 
 class Bot:

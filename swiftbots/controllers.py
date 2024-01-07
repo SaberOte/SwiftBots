@@ -1,6 +1,6 @@
 from abc import ABC
-from typing import Optional, TYPE_CHECKING, Sequence
 from traceback import format_exc
+from typing import TYPE_CHECKING, Optional, Sequence
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio.session import AsyncSession

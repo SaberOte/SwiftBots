@@ -4,14 +4,13 @@ Tutorial: https://docs.sqlalchemy.org/en/20/orm/extensions/asyncio.html#synopsis
 """
 
 import re
-
 from datetime import datetime as dt
 
 from sqlalchemy import select
-from swiftbots.types import IChatView
-from swiftbots.controllers import Controller
 
 from examples.notes_in_database.models.notes import Note
+from swiftbots.controllers import Controller
+from swiftbots.types import IChatView
 
 
 class Notes(Controller):

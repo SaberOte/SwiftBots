@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from swiftbots.types import IView, IController, ILogger, IContext
+    from swiftbots.types import IContext, IController, ILogger, IView
 
 
 class IMessageHandler(ABC):

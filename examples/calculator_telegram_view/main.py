@@ -1,11 +1,15 @@
 import os
 
-from swiftbots import initialize_app
-from swiftbots.admin_utils import send_telegram_message_async, send_telegram_message
-from swiftbots.loggers import AdminLoggerFactory
-
+from examples.calculator_telegram_view.controllers.calculator_api import (
+    CalculatorApi,
+)
 from examples.calculator_telegram_view.views.telegram_view import MyTgView
-from examples.calculator_telegram_view.controllers.calculator_api import CalculatorApi
+from swiftbots import initialize_app
+from swiftbots.admin_utils import (
+    send_telegram_message,
+    send_telegram_message_async,
+)
+from swiftbots.loggers import AdminLoggerFactory
 
 
 def configure_admin_logger_factory():

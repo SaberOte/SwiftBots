@@ -2,9 +2,9 @@
 """The simplest demonstration how controller may work
 with commands and a vkontakte view"""
 
-from swiftbots.types import IVkontakteView
-from swiftbots.controllers import Controller
 from swiftbots.admin_utils import admin_only_async
+from swiftbots.controllers import Controller
+from swiftbots.types import IVkontakteView
 
 
 class CalculatorApi(Controller):

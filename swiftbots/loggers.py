@@ -1,8 +1,7 @@
 import inspect
-
 from sys import stderr, stdout
-from typing import Callable
 from traceback import format_exc
+from typing import Callable
 
 from swiftbots.types import ILogger, ILoggerFactory
 

@@ -1,10 +1,10 @@
 from abc import ABC
-from typing import TYPE_CHECKING
 from traceback import format_exc
+from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from swiftbots.types import ITask, ILogger
+from swiftbots.types import ILogger, ITask
 
 if TYPE_CHECKING:
     from swiftbots.bots import Bot

@@ -1,13 +1,17 @@
 import asyncio
-
 from traceback import format_exc
 
 from swiftbots.bots import Bot, soft_close_bot_async
-from swiftbots.types import (StartBotException, ExitApplicationException, ExitBotException,
-                             IContext, IChatView, RestartListeningException)
-from swiftbots.utils import ErrorRateMonitor
 from swiftbots.controllers import soft_close_controllers_in_bots_async
-
+from swiftbots.types import (
+    ExitApplicationException,
+    ExitBotException,
+    IChatView,
+    IContext,
+    RestartListeningException,
+    StartBotException,
+)
+from swiftbots.utils import ErrorRateMonitor
 
 __ALL_TASKS: set[str] = set()
 

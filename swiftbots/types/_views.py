@@ -1,11 +1,10 @@
 import random
-
 from abc import ABC, abstractmethod
-from typing import Optional, AsyncGenerator, TYPE_CHECKING
+from typing import TYPE_CHECKING, AsyncGenerator, Optional
 
 if TYPE_CHECKING:
-    from swiftbots.types import ILogger, IMessageHandler
     from swiftbots.bots import Bot
+    from swiftbots.types import ILogger, IMessageHandler
 
 
 class IContext(dict, ABC):

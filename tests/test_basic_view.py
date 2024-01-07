@@ -1,11 +1,11 @@
 import asyncio
+
 import pytest
 
-from swiftbots.controllers import Controller
-from swiftbots.views import BasicView
 from swiftbots import initialize_app
 from swiftbots.admin_utils import shutdown_app
-
+from swiftbots.controllers import Controller
+from swiftbots.views import BasicView
 
 global_var = 0
 

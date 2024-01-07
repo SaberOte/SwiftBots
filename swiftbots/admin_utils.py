@@ -1,12 +1,16 @@
 import asyncio
-import aiohttp
-import urllib.request
 import urllib.parse
-
+import urllib.request
 from typing import TYPE_CHECKING
 
+import aiohttp
+
 from swiftbots.runners import get_all_tasks
-from swiftbots.types import StartBotException, ExitApplicationException, IVkontakteView
+from swiftbots.types import (
+    ExitApplicationException,
+    IVkontakteView,
+    StartBotException,
+)
 
 if TYPE_CHECKING:
     from swiftbots.types import IChatView

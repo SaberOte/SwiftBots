@@ -1,8 +1,15 @@
 import re
 from typing import Callable, Optional
 
-from swiftbots.types import (IController, ILogger, IChatView, IView, IBasicMessageHandler, IChatMessageHandler,
-                             IContext)
+from swiftbots.types import (
+    IBasicMessageHandler,
+    IChatMessageHandler,
+    IChatView,
+    IContext,
+    IController,
+    ILogger,
+    IView,
+)
 
 
 class BasicMessageHandler(IBasicMessageHandler):

@@ -1,7 +1,8 @@
-from swiftbots import initialize_app
-
+from examples.bot_with_tasks.controllers.basic_controller import (
+    BasicController,
+)
 from examples.bot_with_tasks.views.basic_view import SimpleView
-from examples.bot_with_tasks.controllers.basic_controller import BasicController
+from swiftbots import initialize_app
 
 
 def main():

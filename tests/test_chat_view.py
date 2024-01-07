@@ -1,11 +1,11 @@
 import asyncio
+
 import pytest
 
-from swiftbots.controllers import Controller
-from swiftbots.views import ChatView
 from swiftbots import initialize_app
 from swiftbots.admin_utils import shutdown_app
-
+from swiftbots.controllers import Controller
+from swiftbots.views import ChatView
 
 global_message = ''
 global_user = ''

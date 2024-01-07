@@ -1,12 +1,20 @@
-import aiohttp
 import asyncio
-
 from abc import ABC
-from typing import Optional, TYPE_CHECKING, AsyncGenerator
+from typing import TYPE_CHECKING, AsyncGenerator, Optional
 
-from swiftbots.types import (ILogger, IBasicView, IChatView, ITelegramView, IVkontakteView,
-                             IContext, ExitBotException, RestartListeningException)
+import aiohttp
+
 from swiftbots.message_handlers import BasicMessageHandler, ChatMessageHandler
+from swiftbots.types import (
+    ExitBotException,
+    IBasicView,
+    IChatView,
+    IContext,
+    ILogger,
+    ITelegramView,
+    IVkontakteView,
+    RestartListeningException,
+)
 
 if TYPE_CHECKING:
     from swiftbots.bots import Bot

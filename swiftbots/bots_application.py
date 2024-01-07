@@ -1,15 +1,26 @@
 import asyncio
 import random
 import string
-
 from typing import Callable, Optional
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine, AsyncSession
+
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    create_async_engine,
+)
 from sqlalchemy.ext.asyncio.session import async_sessionmaker
 
-from swiftbots.runners import run_async
-from swiftbots.loggers import SysIOLoggerFactory
 from swiftbots.bots import Bot, _instantiate_in_bots
-from swiftbots.types import IMessageHandler, IController, ILogger, IView, ILoggerFactory, ITask
+from swiftbots.loggers import SysIOLoggerFactory
+from swiftbots.runners import run_async
+from swiftbots.types import (
+    IController,
+    ILogger,
+    ILoggerFactory,
+    IMessageHandler,
+    ITask,
+    IView,
+)
 
 
 class BotsApplication:
