@@ -65,3 +65,13 @@ class ILoggerFactory:
     @abstractmethod
     def get_logger(self) -> ILogger:
         raise NotImplementedError()
+
+
+class ILoggerProvider(ABC):
+
+    @property
+    def logger(self) -> 'ILogger':
+        raise NotImplementedError()
+
+    def _set_logger(self, logger: 'ILogger') -> None:
+        raise NotImplementedError()

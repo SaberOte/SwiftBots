@@ -58,8 +58,9 @@ class BotsApplication:
         self.__db_session_maker = async_sessionmaker(self.__db_engine, expire_on_commit=False)
 
     def add_bot(self, view_class: type[IView] | None, controller_classes: list[type[IController]],
-                task_classes: list[type[ITask]] | None = None, message_handler_class: type[IMessageHandler] | None = None,
-                name: str | None = None, bot_logger_factory: ILoggerFactory | None = None) -> None:
+                task_classes: list[type[ITask]] | None = None,
+                message_handler_class: type[IMessageHandler] | None = None, name: str | None = None,
+                bot_logger_factory: ILoggerFactory | None = None) -> None:
         """
         the method adds a bot.
         It's required to have at least one controller in a bot.

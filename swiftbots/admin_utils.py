@@ -17,7 +17,8 @@ if TYPE_CHECKING:
     from swiftbots.types import IChatView, IController
 
 
-def admin_only_async(func: Callable[['IController', 'IChatView', 'IChatView.Context'], Coroutine[Any, Any, None]]) -> Callable[['IController', 'IChatView', 'IChatView.Context'], Coroutine[Any, Any, None]]:
+def admin_only_async(func: Callable[['IController', 'IChatView', 'IChatView.Context'], Coroutine[Any, Any, None]]) \
+        -> Callable[['IController', 'IChatView', 'IChatView.Context'], Coroutine[Any, Any, None]]:
     """Decorator. Should wrap controller method to prevent non-admin execution"""
     async def wrapper(self: 'IController', view: 'IChatView', context: 'IChatView.Context') -> None:
         """admin_only_wrapper"""

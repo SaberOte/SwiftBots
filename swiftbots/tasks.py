@@ -4,13 +4,20 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from swiftbots.abstract_classes import (
+    AbstractAsyncHttpClientProvider,
+    AbstractDatabaseConnectionProvider,
+    AbstractLoggerProvider,
+    AbstractSoftClosable,
+)
 from swiftbots.types import ILogger, ITask
 
 if TYPE_CHECKING:
     from swiftbots.bots import Bot
 
 
-class Task(ITask, ABC):
+class Task(ITask, AbstractDatabaseConnectionProvider, AbstractLoggerProvider, AbstractAsyncHttpClientProvider,
+           AbstractSoftClosable, ABC):
 
     __db_session_maker = async_sessionmaker[AsyncSession] | None
 
@@ -20,12 +27,6 @@ class Task(ITask, ABC):
         self._set_db_session_maker(db_session_maker)
         if name:
             self.name = name
-
-    async def _soft_close_async(self) -> None:
-        await self.soft_close_async()
-
-    async def soft_close_async(self) -> None:
-        pass
 
 
 async def soft_close_tasks_in_bots_async(bots: list['Bot']) -> None:

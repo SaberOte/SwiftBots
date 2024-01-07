@@ -1,18 +1,19 @@
 import inspect
+import logging
 from collections.abc import Callable, Coroutine
-from abc import ABC
-from sys import stderr, stdout
 from traceback import format_exc
 
 from swiftbots.types import ILogger, ILoggerFactory
 
 
 def print_stdout(*args, **kwargs) -> None:
-    print(*args, file=stdout, **kwargs)
+    # TODO: recraete all logging system
+    logging.info(' '.join([str(arg) for arg in args]))
 
 
 def print_stderr(*args, **kwargs) -> None:
-    print(*args, file=stderr, **kwargs)
+    # TODO: recraete all logging system
+    logging.error(' '.join([str(arg) for arg in args]))
 
 
 def exc_wrapper(func: Callable) -> None:
@@ -43,6 +44,7 @@ class SysIOLogger(ILogger):
 
     def __init__(self, skip_prefix: bool) -> None:
         self.__skip_prefix = skip_prefix
+        logging.basicConfig(format='%(message)s', level=logging.NOTSET)
 
     def info(self, *args, **kwargs) -> None:
         """Save a message to stdout"""
@@ -190,14 +192,3 @@ class AdminLoggerFactory(ILoggerFactory):
 
     def get_logger(self) -> AdminLogger:
         return AdminLogger(self.__report_func, self.__report_func_async, self.__skip_prefix)
-
-
-class AbstractLoggerProvider(ABC):
-    __logger: ILogger
-
-    @property
-    def logger(self) -> ILogger:
-        return self.__logger
-
-    def _set_logger(self, logger: ILogger) -> None:
-        self.__logger = logger

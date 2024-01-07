@@ -3,12 +3,16 @@ from abc import ABC, abstractmethod
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from swiftbots.types import ILogger
-from swiftbots.database_connection_providers import AbstractDatabaseConnectionProvider
-from swiftbots.loggers import AbstractLoggerProvider
+from swiftbots.types import (
+    IAsyncHttpClientProvider,
+    IDatabaseConnectionProvider,
+    ILogger,
+    ILoggerProvider,
+    ISoftClosable,
+)
 
 
-class ITask(AbstractDatabaseConnectionProvider, AbstractLoggerProvider, ABC):
+class ITask(IDatabaseConnectionProvider, ILoggerProvider, IAsyncHttpClientProvider, ISoftClosable, ABC):
     name: str
     enabled_at_start: bool = True
 
@@ -23,18 +27,5 @@ class ITask(AbstractDatabaseConnectionProvider, AbstractLoggerProvider, ABC):
              name: str) -> None:
         """
         Initialize all task attributes
-        """
-        raise NotImplementedError()
-
-    async def _soft_close_async(self) -> None:
-        """
-        Close all connections softly before shutting down an application
-        """
-        raise NotImplementedError()
-
-    async def soft_close_async(self) -> None:
-        """
-        Close all connections softly before shutting down an application.
-        User defined additional method
         """
         raise NotImplementedError()

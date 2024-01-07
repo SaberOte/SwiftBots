@@ -12,6 +12,7 @@ extend-select = [
     "E",
     "UP",
     "ANN",
+    "T20",
 ]
 
 ignore = [
@@ -33,5 +34,6 @@ quote-style = "single"
 
 [per-file-ignores]
 "__init__.py" = ["F403"]
-"**/{tests,examples}/*" = ["ANN"]
+"**/{tests,examples}/*" = ["ANN", "T201"]
+
 #"**/{alembic}/*" = ["ALL"]

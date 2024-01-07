@@ -8,7 +8,6 @@ from swiftbots.types import (
     ExitBotException,
     IChatView,
     IContext,
-    IView,
     RestartListeningException,
     StartBotException,
 )

@@ -1,13 +1,25 @@
-TODOS
-=====
-- Finish adequate readme.
-- Add logging everywhere in views
-- Develop tasks/scheduler
-- Problem with context. Make normal polymorphism.
-- Make creation of user folder (inject as python command).
-- Make REST api view.
-- Use standard python Logging (helps to colorize).
-- Stop using protected attributes outside classes OR mark as pylint exception.
+ERRORS
+======
+- Add logs everywhere in views
 - Message from admin sending functions doesn't log if raised.
-- Make license. Scheduler has GPL.
-- Add test for database context (sqlite inmemory)
+
+NEW FEATURES
+============
+- Make REST api view.
+- Develop tasks/scheduler
+- Make creation of user folder (inject as python command).
+
+REFACTORING
+===========
+- Finish adequate readme.
+- Make license like GPL
+- Finish mypy refactoring.
+- Try pyright instead of mypy
+- Integrate `logging` module
+- Problem with context. Make normal polymorphism.
+- Stop using protected attributes outside classes OR mark as pylint exception.
+
+TODOS TESTS
+===========
+- Check in tests DatabaseConnectionProvider (sqlite inmemory).
+- Check AbstractMessangerView

@@ -1,11 +1,16 @@
 import asyncio
-from abc import ABC, abstractmethod
+from abc import ABC
 from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING, Optional
 
-import aiohttp
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from swiftbots.abstract_classes import (
+    AbstractAsyncHttpClientProvider,
+    AbstractLoggerProvider,
+    AbstractMessengerView,
+    AbstractSoftClosable,
+)
 from swiftbots.message_handlers import BasicMessageHandler, ChatMessageHandler
 from swiftbots.types import (
     ExitBotException,
@@ -22,7 +27,8 @@ if TYPE_CHECKING:
     from swiftbots.bots import Bot
 
 
-class BasicView(IBasicView, ABC):
+class BasicView(IBasicView, AbstractLoggerProvider, AbstractLoggerProvider, AbstractAsyncHttpClientProvider,
+                AbstractSoftClosable, ABC):
 
     default_message_handler_class = BasicMessageHandler
     __bot: 'Bot'
@@ -35,12 +41,6 @@ class BasicView(IBasicView, ABC):
     @property
     def bot(self) -> 'Bot':
         return self.__bot
-
-    async def soft_close_async(self) -> None:
-        pass
-
-    async def _soft_close_async(self) -> None:
-        await self.soft_close_async()
 
 
 class ChatView(IChatView, BasicView, ABC):
@@ -81,58 +81,7 @@ class ChatView(IChatView, BasicView, ABC):
         return str(self._admin) == str(user)
 
 
-class AbstractInternetChatView(IChatView, ABC):
-    _http_session: aiohttp.client.ClientSession
-    __greeting_disabled = False
-
-    def disable_greeting(self) -> None:
-        self.__greeting_disabled = True
-
-    async def listen_async(self) -> AsyncGenerator['IChatView.PreContext', None]:
-        await self._ensure_http_session_created()
-
-        if not self.__greeting_disabled and self._admin is not None:
-            await self.send_async(f'{self.bot.name} is started!', self._admin)
-
-        try:
-            async for update in self._get_updates_async():
-                pre_context = await self._deconstruct_message_async(update)
-                if pre_context:
-                    yield pre_context
-
-        except aiohttp.ServerConnectionError:
-            await self._handle_server_connection_error_async()
-        # except Exception as e:
-        #     msg = 'Unhandled:' + '\nAnswer is:\n' + str(update) + '\n' + format_exc()
-        #     self._logger.error(msg, update['message']['from']['id'])
-
-    async def _soft_close_async(self) -> None:
-        await self.logger.report_async(f'Bot {self.bot.name} was exited')
-        await self._ensure_http_session_closed()
-
-    async def _handle_server_connection_error_async(self) -> None:
-        await self.logger.info_async(f'Connection ERROR in {self.bot.name}. Sleep 5 seconds')
-        await asyncio.sleep(5)
-
-    @abstractmethod
-    async def _get_updates_async(self) -> AsyncGenerator[dict, None]:
-        yield {}  # py charm pisses off without this
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def _deconstruct_message_async(self, update: dict) -> Optional['IChatView.PreContext']:
-        raise NotImplementedError()
-
-    async def _ensure_http_session_created(self) -> None:
-        if '_http_session' not in vars(self):
-            self._http_session = aiohttp.ClientSession()
-
-    async def _ensure_http_session_closed(self) -> None:
-        if '_http_session' in vars(self) and not self._http_session.closed:
-            await self._http_session.close()
-
-
-class TelegramView(ITelegramView, ChatView, AbstractInternetChatView, ABC):
+class TelegramView(ITelegramView, AbstractMessengerView, ChatView, ABC):
     __token: str
     __first_time_launched = True
     __should_skip_old_updates: bool
@@ -313,13 +262,13 @@ class TelegramView(ITelegramView, ChatView, AbstractInternetChatView, ABC):
         return -1
 
 
-class VkontakteView(IVkontakteView, ChatView, AbstractInternetChatView, ABC):
+class VkontakteView(IVkontakteView, AbstractMessengerView, ChatView, ABC):
 
     _group_id: int
     __API_VERSION = '5.199'
     __default_headers: dict
 
-    def __init__(self, token: str, group_id: int, admin: int = None):
+    def __init__(self, token: str, group_id: int, admin: int | None = None):
         """
         :param token: Auth token of bot
         :param admin: admin id to send reports or errors. Optional
@@ -378,7 +327,8 @@ class VkontakteView(IVkontakteView, ChatView, AbstractInternetChatView, ABC):
             result = await self.fetch_async('messages.send', send_data)
         return result
 
-    async def update_message_async(self, message: str, message_id: int, context: 'IContext', data: dict | None = None) -> dict:
+    async def update_message_async(self, message: str, message_id: int, context: 'IContext',
+                                   data: dict | None = None) -> dict:
         if data is None:
             data = {}
         data['peer_id'] = context['sender']
@@ -394,7 +344,7 @@ class VkontakteView(IVkontakteView, ChatView, AbstractInternetChatView, ABC):
         data['sticker_id'] = sticker_id
         return await self.fetch_async('messages.send', data)
 
-    async def _deconstruct_message_async(self, update: dict) -> 'IChatView.PreContext':
+    async def _deconstruct_message_async(self, update: dict) -> 'IContext':
         message = update['object']['message']
         text: str = message['text']
         sender: int = message['from_id']

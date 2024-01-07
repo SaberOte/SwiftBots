@@ -1,11 +1,11 @@
 import random
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any
+
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from swiftbots.database_connection_providers import AbstractDatabaseConnectionProvider
-from swiftbots.loggers import AbstractLoggerProvider
+from swiftbots.types import IAsyncHttpClientProvider, IDatabaseConnectionProvider, ILoggerProvider, ISoftClosable
 
 if TYPE_CHECKING:
     from swiftbots.bots import Bot
@@ -37,7 +37,7 @@ class IContext(dict, ABC):
         setattr(self, key, value)
 
 
-class IView(AbstractDatabaseConnectionProvider, AbstractLoggerProvider, ABC):
+class IView(IDatabaseConnectionProvider, ILoggerProvider, IAsyncHttpClientProvider, ISoftClosable, ABC):
     """
     Abstract View class.
     Never inherit this class outside swiftbots module!
@@ -46,7 +46,7 @@ class IView(AbstractDatabaseConnectionProvider, AbstractLoggerProvider, ABC):
     default_message_handler_class: type['IMessageHandler']
 
     @abstractmethod
-    async def listen_async(self) -> AsyncGenerator['IView.PreContext', None]:
+    async def listen_async(self) -> AsyncGenerator['IContext', None]:
         """
         Input pipe for commands from outer resource.
         Method must use "yield" operator to return dict.
@@ -56,7 +56,7 @@ class IView(AbstractDatabaseConnectionProvider, AbstractLoggerProvider, ABC):
         :return: Dict with additional information.
         Required fields described in derived types
         """
-        yield 1
+        yield IContext()  # it's needed because PyCharm pisses off when there's no yield
         raise NotImplementedError()
 
     @abstractmethod
@@ -70,21 +70,6 @@ class IView(AbstractDatabaseConnectionProvider, AbstractLoggerProvider, ABC):
     @abstractmethod
     def bot(self) -> 'Bot':
         """Get the bot instance"""
-        raise NotImplementedError()
-
-    @abstractmethod
-    async def _soft_close_async(self) -> None:
-        """
-        Before shutting down, a bot calls this method.
-        Close database connections, http clients, etc.
-        """
-        raise NotImplementedError()
-
-    async def soft_close_async(self) -> None:
-        """
-        Before shutting down, a bot calls this method.
-        Close database connections, http clients, etc.
-        """
         raise NotImplementedError()
 
     class PreContext(IContext, ABC):
@@ -114,17 +99,17 @@ class IBasicView(IView, ABC):
     """
 
     @abstractmethod
-    async def listen_async(self) -> AsyncGenerator['IBasicView.Context', None]:
+    async def listen_async(self) -> AsyncGenerator['IContext', None]:
         """
         Must yield dict with some information, that will be helpful when processing by controller.
         """
+        yield IContext()  # it's needed because PyCharm pisses off when there's no yield
         raise NotImplementedError()
 
     class PreContext(IContext):
         """
         1 required attribute `message` of any type
         """
-        __doc__ += IView.PreContext.__doc__
         message: object
 
         def __init__(self, message: object, **kwargs):
@@ -134,7 +119,6 @@ class IBasicView(IView, ABC):
         """
         1 required attribute `raw_message` of any type
         """
-        __doc__ += IView.Context.__doc__
         raw_message: object
 
 
@@ -148,20 +132,21 @@ class IChatView(IView, ABC):
     unknown_error_message = 'Unknown command'
     refuse_message = 'Access forbidden'
 
-    _admin = None
+    _admin: Any = None
 
     @abstractmethod
-    async def listen_async(self) -> AsyncGenerator['IChatView.PreContext', None]:
+    async def listen_async(self) -> AsyncGenerator['IContext', None]:
         """
         For a ChatView listen_async must yield a Context with at least 2 fields: `sender` and `message`.
         `sender` needed for replying answer to a user.
         `message` needed for processing it by a message handler and forwarding to
         the appropriate controller and executing the appropriate command.
         """
+        yield IContext()  # it's needed because PyCharm pisses off when there's no yield
         raise NotImplementedError()
 
     @abstractmethod
-    async def send_async(self, message: str, user: str | int, data: dict = None) -> dict:
+    async def send_async(self, message: str, user: str | int, data: dict | None = None) -> dict:
         """
         Reply to the user from context.
         :param message: A message for a user.
@@ -171,7 +156,7 @@ class IChatView(IView, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def reply_async(self, message: str, context: 'IContext', data: dict = None) -> dict:
+    async def reply_async(self, message: str, context: 'IContext', data: dict | None = None) -> dict:
         """
         Reply to the user from context.
         :param message: A message for a user
@@ -218,7 +203,6 @@ class IChatView(IView, ABC):
         1 optional but mostly useful field:
         sender - user from who message was sent
         """
-        __doc__ += IView.Context.__doc__
         message: str
         sender: str
 
@@ -235,7 +219,6 @@ class IChatView(IView, ABC):
 
         If default method was called, raw_message, command and arguments will both contain not modified message.
         """
-        __doc__ += IView.Context.__doc__
         raw_message: str
         arguments: str
         command: str
@@ -253,7 +236,7 @@ class ITelegramView(IChatView, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def update_message_async(self, text: str, message_id: int, context: 'IContext', data: dict = None) -> dict:
+    async def update_message_async(self, text: str, message_id: int, context: 'IContext', data: dict | None = None) -> dict:
         """
         Updating the message
         :param text: new message.
@@ -264,14 +247,14 @@ class ITelegramView(IChatView, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def delete_message_async(self, message_id: int, context: 'IContext', data: dict = None) -> dict:
+    async def delete_message_async(self, message_id: int, context: 'IContext', data: dict | None = None) -> dict:
         """
         Delete message `message_id`
         """
         raise NotImplementedError()
 
     @abstractmethod
-    async def send_sticker_async(self, file_id: str, context: 'IContext', data: dict = None) -> dict:
+    async def send_sticker_async(self, file_id: str, context: 'IContext', data: dict | None = None) -> dict:
         """
         Send user a sticker with id `file_id`.
         Find out sticker file id: https://t.me/LeadConverterToolkitBot
@@ -285,7 +268,6 @@ class ITelegramView(IChatView, ABC):
         sender - user from who message was received
         username - user's symbolic username: `no username` if user has no symbolic username
         """
-        __doc__ += IView.Context.__doc__
         message: str
         sender: str
         username: str
@@ -304,7 +286,6 @@ class ITelegramView(IChatView, ABC):
 
         If default method was called, raw_message, command and arguments will both contain not modified message.
         """
-        __doc__ += IView.Context.__doc__
         raw_message: str
         arguments: str
         command: str
@@ -315,8 +296,8 @@ class ITelegramView(IChatView, ABC):
 class IVkontakteView(IChatView, ABC):
 
     @abstractmethod
-    async def fetch_async(self, method: str, data: dict = None,
-                          headers: dict = None, query_data: dict = None,
+    async def fetch_async(self, method: str, data: dict | None= None,
+                          headers: dict | None = None, query_data: dict | None = None,
                           ignore_errors: bool = False) -> dict:
         """
         Send custom post request.
@@ -325,7 +306,7 @@ class IVkontakteView(IChatView, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def update_message_async(self, message: str, message_id: int, context: 'IContext', data: dict = None) -> dict:
+    async def update_message_async(self, message: str, message_id: int, context: 'IContext', data: dict | None = None) -> dict:
         """
         Updating the message
         :param message: new message.
@@ -336,7 +317,7 @@ class IVkontakteView(IChatView, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def send_sticker_async(self, sticker_id: int, context: 'IContext', data: dict = None) -> dict:
+    async def send_sticker_async(self, sticker_id: int, context: 'IContext', data: dict | None = None) -> dict:
         """
         Send a sticker to a user with id `sticker_id`.
         Find out sticker id: https://vk.com/id_stickera
@@ -354,7 +335,6 @@ class IVkontakteView(IChatView, ABC):
         sender - user from who message was received
         message_id - identified of message
         """
-        __doc__ += IView.Context.__doc__
         message: str
         sender: int
         message_id: int
@@ -373,7 +353,6 @@ class IVkontakteView(IChatView, ABC):
 
         If default method was called, raw_message, command and arguments will both contain not modified message.
         """
-        __doc__ += IView.Context.__doc__
         raw_message: str
         arguments: str
         command: str
