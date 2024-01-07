@@ -58,7 +58,7 @@ def _set_views(bots: list[Bot]) -> None:
     for bot in bots:
         if bot.view_class:
             bot.view = bot.view_class()
-            bot.view.init(bot)
+            bot.view.init(bot, bot.db_session_maker)
 
 
 def _set_controllers(bots: list[Bot]) -> None:
@@ -107,12 +107,13 @@ def _set_tasks(bots: list[Bot]) -> None:
             tasks = []
             for task_class in task_classes:
                 task = task_class()
-                if task.name is None:
-                    task.name = task_class.__name__
-                    assert task.name not in task_names, (f"Duplicate task names {task.name}. Use "
-                                                         f"unique `name` property for tasks or unique task class names")
-                    task_names.add(task.name)
-                task.init(bot.logger, bot.db_session_maker)
+                name: str | None = task.name
+                if name is None:
+                    name = task_class.__name__
+                    assert name not in task_names, (f"Duplicate task names {name}. Use "
+                                                    f"unique `name` property for tasks or unique task class names")
+                    task_names.add(name)
+                task.init(bot.logger, bot.db_session_maker, name)
                 tasks.append(task)
             bot.tasks = tasks
 

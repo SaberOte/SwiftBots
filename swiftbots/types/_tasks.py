@@ -4,22 +4,30 @@ from abc import ABC, abstractmethod
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from swiftbots.types import ILogger
+from swiftbots.database_connection_providers import AbstractDatabaseConnectionProvider
 
 
-class ITask(ABC):
+class ITask(AbstractDatabaseConnectionProvider, ABC):
+    name: str
+    enabled_at_start: bool = True
 
     @property
     @abstractmethod
     def interval(self) -> dt.timedelta:
+        """Envoke task every `interval`"""
         pass
 
-    name: str = None
-
     @abstractmethod
-    def init(self, logger: ILogger, db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:
+    def init(self, logger: ILogger, db_session_maker: async_sessionmaker[AsyncSession] | None,
+             name: str) -> None:
         """
         Initialize all task attributes
         """
+        raise NotImplementedError()
+
+    @property
+    @abstractmethod
+    def logger(self) -> ILogger:
         raise NotImplementedError()
 
     @property
@@ -33,7 +41,7 @@ class ITask(ABC):
             session.add(some_other_object)
             session.commit()
         ```
-        Must be used in only 1 asyncio task or thread.
+        Must be used in only one asyncio task or thread.
         """
         raise NotImplementedError()
 

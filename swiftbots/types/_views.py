@@ -2,6 +2,9 @@ import random
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING, Optional
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from swiftbots.database_connection_providers import AbstractDatabaseConnectionProvider
 
 if TYPE_CHECKING:
     from swiftbots.bots import Bot
@@ -11,7 +14,7 @@ if TYPE_CHECKING:
 class IContext(dict, ABC):
     """
     Abstract Context class.
-    Dict inheritance allows to use the context like a regular dict,
+    Dict inheritance allows using the context like a regular dict,
     but provides a type hinting while using as a controller method argument type.
     """
 
@@ -33,7 +36,7 @@ class IContext(dict, ABC):
         setattr(self, key, value)
 
 
-class IView(ABC):
+class IView(AbstractDatabaseConnectionProvider, ABC):
     """
     Abstract View class.
     Never inherit this class outside swiftbots module!
@@ -47,15 +50,16 @@ class IView(ABC):
         Input pipe for commands from outer resource.
         Method must use "yield" operator to return dict.
         Must be asynchronous.
-        If view shouldn't listen any outer resource, this method should run endless async task.
+        If view shouldn't listen to any outer resource, this method should run an endless async task.
 
-        :return: dict with additional information. Required fields described in derived types
+        :return: Dict with additional information.
+        Required fields described in derived types
         """
         yield 1
         raise NotImplementedError()
 
     @abstractmethod
-    def init(self, bot: 'Bot') -> None:
+    def init(self, bot: 'Bot', db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:
         """
         Initialize the View
         """
@@ -83,7 +87,7 @@ class IView(ABC):
 
     class PreContext(IContext, ABC):
         """
-        Declaration how pre context should look like
+        Declaration how precontext should look like
         when it yielded from view listener and starts
         processing in the message handler.
         """
@@ -157,18 +161,18 @@ class IChatView(IView, ABC):
     @abstractmethod
     async def send_async(self, message: str, user: str | int, data: dict = None) -> dict:
         """
-        Reply the user from context.
-        :param message: a message for a user.
-        :param user: a user target to send a message
-        :param data: additional data for sending request
+        Reply to the user from context.
+        :param message: A message for a user.
+        :param user: A user target to send a message
+        :param data: Additional data for sending request
         """
         raise NotImplementedError()
 
     @abstractmethod
     async def reply_async(self, message: str, context: 'IContext', data: dict = None) -> dict:
         """
-        Reply the user from context.
-        :param message: a message for a user
+        Reply to the user from context.
+        :param message: A message for a user
         :param context: ChatView context
         :param data: additional data for sending request
         """
@@ -178,15 +182,15 @@ class IChatView(IView, ABC):
     async def error_async(self, context: 'IContext') -> dict:
         """
         Inform a user there is internal error.
-        :param context: context with `sender` and `messages` fields
+        :param context: Context with `sender` and `messages` fields
         """
         raise NotImplementedError()
 
     @abstractmethod
     async def unknown_command_async(self, context: 'IContext') -> dict:
         """
-        If a user sends some unknown shit, then needed say him about that
-        :param context: context with `sender` and `messages` fields
+        If a user sends some unknown shit, then it's needed to say his about that.
+        :param context: Context with `sender` and `messages` fields
         """
         raise NotImplementedError()
 
@@ -194,7 +198,7 @@ class IChatView(IView, ABC):
     async def refuse_async(self, context: 'IContext') -> dict:
         """
         If a user can't use it, then he must be aware.
-        :param context: context with `sender` and `messages` fields
+        :param context: Context with `sender` and `messages` fields
         """
         raise NotImplementedError()
 
@@ -274,10 +278,10 @@ class ITelegramView(IChatView, ABC):
 
     class PreContext(IContext):
         """
-        3 required fields:
+        Three required fields:
         message - raw message from sender.
         sender - user from who message was received
-        username - user's symbolic username. `no username` if user has no symbolic username
+        username - user's symbolic username: `no username` if user has no symbolic username
         """
         __doc__ += IView.Context.__doc__
         message: str
@@ -289,7 +293,7 @@ class ITelegramView(IChatView, ABC):
 
     class Context(IContext):
         """
-        5 required fields:
+        Five required fields:
         raw_message - not modified message.
         arguments - message with cut out command part (empty string if not given).
         command - part of the message what was matched as a command.

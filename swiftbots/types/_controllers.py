@@ -4,8 +4,10 @@ from collections.abc import Callable
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
+from swiftbots.database_connection_providers import AbstractDatabaseConnectionProvider
 
-class IController(ABC):
+
+class IController(AbstractDatabaseConnectionProvider, ABC):
 
     cmds: dict[str, Callable] = {}
     default: None or Callable = None
@@ -14,21 +16,6 @@ class IController(ABC):
     def init(self, db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:
         """
         Initialize all controller attributes
-        """
-        raise NotImplementedError()
-
-    @property
-    @abstractmethod
-    def async_db_session_maker(self) -> async_sessionmaker[AsyncSession]:
-        """
-        Receive one async Database session to make transactions.
-        Using is like:
-        ```
-        async with self.async_db_session_maker() as session:
-            session.add(some_other_object)
-            session.commit()
-        ```
-        Must be used in only one task or thread.
         """
         raise NotImplementedError()
 

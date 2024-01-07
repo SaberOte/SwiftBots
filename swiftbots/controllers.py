@@ -14,26 +14,8 @@ if TYPE_CHECKING:
 
 class Controller(IController, ABC):
 
-    __db_session_maker = async_sessionmaker[AsyncSession] | None
-
     def init(self, db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:
-        self.__db_session_maker = db_session_maker
-
-    @property
-    def async_db_session_maker(self) -> async_sessionmaker[AsyncSession]:
-        """
-        Receive one async Database session to make transactions.
-        Using is like:
-        ```
-        async with self.async_db_session_maker() as session:
-            session.add(some_other_object)
-            session.commit()
-        ```
-        Must be used in only 1 task or thread.
-        """
-        assert self.__db_session_maker, \
-            "Application hasn't database engine. Call use_database for application before running"
-        return self.__db_session_maker
+        self._set_db_session_maker(db_session_maker)
 
     async def soft_close_async(self) -> None:
         pass

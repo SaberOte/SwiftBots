@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING, Optional
 
 import aiohttp
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from swiftbots.message_handlers import BasicMessageHandler, ChatMessageHandler
 from swiftbots.types import (
@@ -27,9 +28,10 @@ class BasicView(IBasicView, ABC):
     __bot: 'Bot'
     __logger: Optional['ILogger']
 
-    def init(self, bot: 'Bot') -> None:
+    def init(self, bot: 'Bot', db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:
         self.__bot = bot
         self.__logger = bot.logger
+        self._set_db_session_maker(db_session_maker)
 
     @property
     def logger(self) -> ILogger:
