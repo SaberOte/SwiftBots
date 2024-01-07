@@ -1,0 +1,10 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff check
+        entry: ruff check .
+        require_serial: true
+        language: python
+        language_version: python3
+        types_or: [cython, pyi, python]
