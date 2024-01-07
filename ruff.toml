@@ -6,7 +6,7 @@ select = [
 #   "ALL",
     "F",
     "I",
-    "ASYNC"
+    "ASYNC" 
 #    "E",
 #    "UP",
 #    "ANN"
