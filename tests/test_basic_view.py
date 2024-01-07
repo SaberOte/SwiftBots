@@ -41,6 +41,6 @@ class TestBasicView:
         app.add_bot(MyBasicView, [MyController])
 
         app.run()
-
+        assert False
         global global_var
         assert global_var == 71
