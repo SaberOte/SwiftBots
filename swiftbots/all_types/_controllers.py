@@ -4,7 +4,7 @@ from collections.abc import Callable
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
-from swiftbots.types import IAsyncHttpClientProvider, IDatabaseConnectionProvider, ISoftClosable
+from swiftbots.all_types import IAsyncHttpClientProvider, IDatabaseConnectionProvider, ISoftClosable
 
 
 class IController(IDatabaseConnectionProvider, IAsyncHttpClientProvider, ISoftClosable, ABC):

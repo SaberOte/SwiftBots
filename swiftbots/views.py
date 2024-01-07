@@ -12,7 +12,7 @@ from swiftbots.abstract_classes import (
     AbstractSoftClosable,
 )
 from swiftbots.message_handlers import BasicMessageHandler, ChatMessageHandler
-from swiftbots.types import (
+from swiftbots.all_types import (
     ExitBotException,
     IBasicView,
     IChatView,

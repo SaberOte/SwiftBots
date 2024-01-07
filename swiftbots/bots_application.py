@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio.session import async_sessionmaker
 from swiftbots.bots import Bot, _instantiate_in_bots
 from swiftbots.loggers import SysIOLoggerFactory
 from swiftbots.runners import run_async
-from swiftbots.types import (
+from swiftbots.all_types import (
     IController,
     ILogger,
     ILoggerFactory,

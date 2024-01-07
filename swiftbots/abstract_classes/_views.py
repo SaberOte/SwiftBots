@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 import aiohttp
 
-from swiftbots.types import IChatView, IContext
+from swiftbots.all_types import IChatView, IContext
 
 if TYPE_CHECKING:
     pass

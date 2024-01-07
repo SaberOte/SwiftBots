@@ -4,7 +4,7 @@ with commands and a vkontakte view"""
 
 from swiftbots.admin_utils import admin_only_async
 from swiftbots.controllers import Controller
-from swiftbots.types import IVkontakteView
+from swiftbots.all_types import IVkontakteView
 
 
 class CalculatorApi(Controller):

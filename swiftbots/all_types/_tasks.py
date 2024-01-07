@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from swiftbots.types import (
+from swiftbots.all_types import (
     IAsyncHttpClientProvider,
     IDatabaseConnectionProvider,
     ILogger,

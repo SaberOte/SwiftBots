@@ -1,6 +1,6 @@
 from abc import ABC
 
-from swiftbots.types import ISoftClosable
+from swiftbots.all_types import ISoftClosable
 
 
 class AbstractSoftClosable(ISoftClosable, ABC):

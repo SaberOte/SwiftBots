@@ -4,7 +4,7 @@ with commands and a chat view"""
 
 from swiftbots.admin_utils import admin_only_async
 from swiftbots.controllers import Controller
-from swiftbots.types import ITelegramView
+from swiftbots.all_types import ITelegramView
 
 
 class CalculatorApi(Controller):

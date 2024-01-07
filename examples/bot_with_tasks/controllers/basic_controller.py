@@ -3,7 +3,7 @@ import asyncio
 
 from swiftbots.admin_utils import shutdown_app
 from swiftbots.controllers import Controller
-from swiftbots.types import IBasicView
+from swiftbots.all_types import IBasicView
 
 
 def print_async(*args, **kwargs):

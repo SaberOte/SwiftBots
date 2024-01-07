@@ -2,7 +2,7 @@ from abc import ABC
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from swiftbots.types import IDatabaseConnectionProvider
+from swiftbots.all_types import IDatabaseConnectionProvider
 
 
 class AbstractDatabaseConnectionProvider(IDatabaseConnectionProvider, ABC):

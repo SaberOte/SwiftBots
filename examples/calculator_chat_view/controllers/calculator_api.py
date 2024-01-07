@@ -2,7 +2,7 @@
 with commands and a chat view"""
 
 from swiftbots.controllers import Controller
-from swiftbots.types import IChatView
+from swiftbots.all_types import IChatView
 
 
 class CalculatorApi(Controller):

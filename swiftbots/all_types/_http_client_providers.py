@@ -2,7 +2,7 @@ from abc import ABC
 
 from aiohttp.client import ClientSession
 
-from swiftbots.types import ISoftClosable
+from swiftbots.all_types import ISoftClosable
 
 
 class IAsyncHttpClientProvider(ISoftClosable, ABC):

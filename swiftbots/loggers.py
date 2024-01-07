@@ -3,7 +3,7 @@ import logging
 from collections.abc import Callable, Coroutine
 from traceback import format_exc
 
-from swiftbots.types import ILogger, ILoggerFactory
+from swiftbots.all_types import ILogger, ILoggerFactory
 
 
 def print_stdout(*args, **kwargs) -> None:
@@ -94,11 +94,9 @@ class SysIOLogger(ILogger):
     def _build_prefix(self, message_type: str, skip_prefix: bool = None, skip_message_type: bool = False) -> str:
         if skip_prefix or skip_prefix is None and self.__skip_prefix:
             return ''
-        if skip_message_type and self.bot_name:
+        if skip_message_type:
             return f'[{self.bot_name}] '
-        if self.bot_name:
-            return f'[{message_type} {self.bot_name}] '
-        return f'[{message_type}] '
+        return f'[{message_type} {self.bot_name}] '
 
 
 class AdminLogger(SysIOLogger):

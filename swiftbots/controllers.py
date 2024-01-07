@@ -11,7 +11,7 @@ from swiftbots.abstract_classes import (
     AbstractDatabaseConnectionProvider,
     AbstractSoftClosable,
 )
-from swiftbots.types import IController
+from swiftbots.all_types import IController
 
 if TYPE_CHECKING:
     from swiftbots.bots import Bot

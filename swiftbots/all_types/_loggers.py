@@ -7,7 +7,7 @@ class ILogger(ABC):
     Logs can be provided by controllers, views or framework classes
     """
 
-    bot_name: str = None
+    bot_name: str
 
     @abstractmethod
     async def info_async(self, *args, skip_prefix: bool = False) -> None:

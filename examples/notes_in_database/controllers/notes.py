@@ -10,7 +10,7 @@ from sqlalchemy import select
 
 from examples.notes_in_database.models.notes import Note
 from swiftbots.controllers import Controller
-from swiftbots.types import IChatView
+from swiftbots.all_types import IChatView
 
 
 class Notes(Controller):

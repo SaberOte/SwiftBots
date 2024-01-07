@@ -10,7 +10,7 @@ from swiftbots.admin_utils import (
     start_bot_async,
 )
 from swiftbots.controllers import Controller
-from swiftbots.types import ITelegramView
+from swiftbots.all_types import ITelegramView
 
 
 class AdminApi(Controller):

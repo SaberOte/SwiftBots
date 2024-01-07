@@ -3,7 +3,7 @@ from traceback import format_exc
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
-from swiftbots.types import (
+from swiftbots.all_types import (
     IController,
     ILogger,
     ILoggerFactory,

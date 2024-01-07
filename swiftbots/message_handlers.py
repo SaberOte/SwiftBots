@@ -1,7 +1,7 @@
 import re
 from collections.abc import Callable
 
-from swiftbots.types import (
+from swiftbots.all_types import (
     IBasicMessageHandler,
     IChatMessageHandler,
     IChatView,

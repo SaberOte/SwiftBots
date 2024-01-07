@@ -10,7 +10,7 @@ from swiftbots.abstract_classes import (
     AbstractLoggerProvider,
     AbstractSoftClosable,
 )
-from swiftbots.types import ILogger, ITask
+from swiftbots.all_types import ILogger, ITask
 
 if TYPE_CHECKING:
     from swiftbots.bots import Bot

@@ -1,5 +1,5 @@
 from swiftbots.bots_application import BotsApplication
-from swiftbots.types import ILoggerFactory
+from swiftbots.all_types import ILoggerFactory
 
 
 def initialize_app(logger_factory: ILoggerFactory | None = None) -> BotsApplication:

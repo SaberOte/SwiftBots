@@ -7,14 +7,14 @@ from typing import TYPE_CHECKING, Any
 import aiohttp
 
 from swiftbots.runners import get_all_tasks
-from swiftbots.types import (
+from swiftbots.all_types import (
     ExitApplicationException,
     IVkontakteView,
     StartBotException,
 )
 
 if TYPE_CHECKING:
-    from swiftbots.types import IChatView, IController
+    from swiftbots.all_types import IChatView, IController
 
 
 def admin_only_async(func: Callable[['IController', 'IChatView', 'IChatView.Context'], Coroutine[Any, Any, None]]) \

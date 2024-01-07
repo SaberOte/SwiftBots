@@ -2,7 +2,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from swiftbots.types import IView
+    from swiftbots.all_types import IView
 
 
 def get_available_commands_for_user(view: 'IView', is_admin: bool) -> dict[str: list[str]]:

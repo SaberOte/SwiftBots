@@ -9,13 +9,13 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from swiftbots.types import IContext, IController, ILogger, IView
+    from swiftbots.all_types import IContext, IController, ILogger, IView
 
 
 class IMessageHandler(ABC):
     """
     Abstract class of Message Handler.
-    About what message handlers do read swiftbots.types._message_handlers docstring.
+    About what message handlers do read swiftbots.all_types._message_handlers docstring.
     """
 
     @abstractmethod

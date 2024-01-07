@@ -2,7 +2,7 @@ from abc import ABC
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from swiftbots.types import ILogger, ILoggerProvider
+    from swiftbots.all_types import ILogger, ILoggerProvider
 
 
 class AbstractLoggerProvider(ILoggerProvider, ABC):

@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from swiftbots.types import IAsyncHttpClientProvider, IDatabaseConnectionProvider, ILoggerProvider, ISoftClosable
+from swiftbots.all_types import IAsyncHttpClientProvider, IDatabaseConnectionProvider, ILoggerProvider, ISoftClosable
 
 if TYPE_CHECKING:
     from swiftbots.bots import Bot
-    from swiftbots.types import ILogger, IMessageHandler
+    from swiftbots.all_types import ILogger, IMessageHandler
 
 
 class IContext(dict, ABC):

@@ -3,7 +3,7 @@ from traceback import format_exc
 
 from swiftbots.bots import Bot, soft_close_bot_async
 from swiftbots.controllers import soft_close_controllers_in_bots_async
-from swiftbots.types import (
+from swiftbots.all_types import (
     ExitApplicationException,
     ExitBotException,
     IChatView,
