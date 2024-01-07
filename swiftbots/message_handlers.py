@@ -1,12 +1,8 @@
 import re
-import asyncio
-
-from traceback import format_exc
 from typing import Callable, Optional
 
-from swiftbots.types import (IController, ILogger, IChatView, IView, ExitBotException,
-                             IBasicMessageHandler, IChatMessageHandler, IContext,
-                             StartBotException, ExitApplicationException)
+from swiftbots.types import (IController, ILogger, IChatView, IView, IBasicMessageHandler, IChatMessageHandler,
+                             IContext)
 
 
 class BasicMessageHandler(IBasicMessageHandler):

@@ -13,8 +13,8 @@ from examples.admin_bot.controllers.calculator_api import CalculatorApi
 def configure_admin_logger_factory():
     token = os.environ.get('TELEGRAM_TOKEN')
     admin = os.environ.get('TELEGRAM_ADMIN_ID')
-    assert token, f'Missing environment variable "TELEGRAM_TOKEN"'
-    assert admin, f'Missing environment variable "TELEGRAM_ADMIN_ID"'
+    assert token, 'Missing environment variable "TELEGRAM_TOKEN"'
+    assert admin, 'Missing environment variable "TELEGRAM_ADMIN_ID"'
 
     def report_func(msg):
         send_telegram_message(msg, admin, token)

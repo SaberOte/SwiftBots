@@ -6,7 +6,6 @@ from typing import Optional, TYPE_CHECKING, AsyncGenerator
 
 from swiftbots.types import (ILogger, IBasicView, IChatView, ITelegramView, IVkontakteView,
                              IContext, ExitBotException, RestartListeningException)
-from swiftbots.admin_utils import shutdown_bot_async
 from swiftbots.message_handlers import BasicMessageHandler, ChatMessageHandler
 
 if TYPE_CHECKING:

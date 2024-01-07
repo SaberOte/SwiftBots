@@ -16,7 +16,7 @@ from examples.notes_in_database.models.notes import Note
 
 class Notes(Controller):
 
-    compiled_note_pattern = re.compile(rf'^(\S+)\s+(\S+.*)$', re.IGNORECASE | re.DOTALL)
+    compiled_note_pattern = re.compile(r'^(\S+)\s+(\S+.*)$', re.IGNORECASE | re.DOTALL)
 
     async def create(self, view: IChatView, context: IChatView.Context):
         message = context.arguments

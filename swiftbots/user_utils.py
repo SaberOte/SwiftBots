@@ -1,13 +1,13 @@
 from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
-    from swiftbots.types import IContext, IView
+    from swiftbots.types import IView
 
 
 def get_available_commands_for_user(view: 'IView', is_admin: bool) -> dict[str: list[str]]:
     """
     :returns: dictionary of controllers and their commands.
-    Key is a name of controller, value is list of commands which available for this user.
+    Key is a name of controller, value is a list of commands which are available for this user.
     Example:
     {
       'CalculatorApi': ['add', 'subtract', 'multiply'],

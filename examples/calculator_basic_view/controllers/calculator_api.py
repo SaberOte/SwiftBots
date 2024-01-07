@@ -15,7 +15,7 @@ class CalculatorApi(Controller):
         message = str(context.raw_message)
         try:
             num1, operation, num2 = message.split(' ')
-        except:
+        except ValueError:
             await print_async('Wrong Format')
             return
 

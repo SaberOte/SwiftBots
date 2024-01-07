@@ -63,7 +63,7 @@ class BotsApplication:
         assert len(controller_classes) > 0, 'No controllers'
         assert view_class is None or issubclass(view_class, IView), 'view must be of type IView'
         assert task_classes is None or len(task_classes) > 0, 'Empty task classes list provided'
-        assert task_classes or view_class, f'Required to have at least either tasks or view'
+        assert task_classes or view_class, 'Required to have at least either tasks or view'
         assert (message_handler_class is None or issubclass(message_handler_class, IMessageHandler)), \
             'Message handler must be a TYPE and inherit IMessageHandler'
         for controller_type in controller_classes:
