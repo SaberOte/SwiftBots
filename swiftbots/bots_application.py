@@ -25,23 +25,23 @@ from swiftbots.types import (
 
 class BotsApplication:
 
-    __logger: ILogger = None
-    __logger_factory: ILoggerFactory = None
+    __logger: ILogger
+    __logger_factory: ILoggerFactory
     __db_engine: AsyncEngine | None = None
     __db_session_maker: async_sessionmaker[AsyncSession] | None = None
-    __bots: list[Bot] = None
+    __bots: list[Bot]
 
-    def __init__(self, logger_factory: ILoggerFactory = None):
+    def __init__(self, logger_factory: ILoggerFactory | None = None):
         self.__bots = []
-        if logger_factory is None:
-            logger_factory = SysIOLoggerFactory()
-        self.use_logger(logger_factory)
+        if logger_factory:
+            self.use_logger(logger_factory)
 
     def use_logger(self, logger_factory: ILoggerFactory) -> None:
         """
-        Set logger factory and create instance
+        Set logger factory and create an instance
         """
         assert isinstance(logger_factory, ILoggerFactory), 'Logger factory must be of type ILoggerFactory'
+        assert len(self.__bots) == 0, 'Call `use_logger` before to add first bot'
         self.__logger_factory = logger_factory
         self.__logger = logger_factory.get_logger()
 
@@ -58,10 +58,11 @@ class BotsApplication:
         self.__db_session_maker = async_sessionmaker(self.__db_engine, expire_on_commit=False)
 
     def add_bot(self, view_class: type[IView] | None, controller_classes: list[type[IController]],
-                task_classes: list[type[ITask]] = None, message_handler_class: type[IMessageHandler] = None,
-                name: str | None = None, bot_logger_factory: ILoggerFactory = None) -> None:
+                task_classes: list[type[ITask]] | None = None, message_handler_class: type[IMessageHandler] | None = None,
+                name: str | None = None, bot_logger_factory: ILoggerFactory | None = None) -> None:
         """
-        Adds a bot. It's required to have at least one controller in a bot.
+        the method adds a bot.
+        It's required to have at least one controller in a bot.
         And there's required to contain either one view or at least one task (or both).
         :param view_class: class of view. Must inherit BasicView, ChatView, TelegramView, VkontakteView or another.
         :param controller_classes: list of controllers. Required to have at least one controller.
@@ -84,6 +85,7 @@ class BotsApplication:
                 assert issubclass(task_class, ITask), 'Tasks must be of type ITask'
         assert (bot_logger_factory is None
                 or isinstance(bot_logger_factory, ILoggerFactory)), 'Logger must be of type ILogger'
+        self.__ensure_logger_set()
 
         if not name:
             if view_class:
@@ -95,9 +97,9 @@ class BotsApplication:
         self.__bots.append(Bot(controller_classes, view_class, task_classes, message_handler_class,
                                bot_logger_factory, name, self.__db_session_maker))
 
-    def run(self, custom_runner: Callable = None) -> None:
+    def run(self, custom_runner: Callable[[list['Bot']], None] | None = None) -> None:
         """
-        Start application to listen all the bots in asynchronous event loop
+        Start application to listen to all the bots in asynchronous event loop
         """
         if len(self.__bots) == 0:
             self.__logger.critical('No bots used')
@@ -117,6 +119,10 @@ class BotsApplication:
     async def __close_app(self) -> None:
         if self.__db_engine is not None:
             await self.__db_engine.dispose()
+
+    def __ensure_logger_set(self) -> None:
+        if '__logger' not in vars(self):
+            self.use_logger(SysIOLoggerFactory())
 
     def __check_bot_repeats(self) -> None:
         names = set()

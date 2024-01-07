@@ -332,7 +332,7 @@ class IVkontakteView(IChatView, ABC):
     @abstractmethod
     async def send_sticker_async(self, sticker_id: int, context: 'IContext', data: dict = None) -> dict:
         """
-        Send user a sticker with id `sticker_id`.
+        Send a sticker to a user with id `sticker_id`.
         Find out sticker id: https://vk.com/id_stickera
         """
         raise NotImplementedError()

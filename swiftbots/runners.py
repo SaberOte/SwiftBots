@@ -8,6 +8,7 @@ from swiftbots.types import (
     ExitBotException,
     IChatView,
     IContext,
+    IView,
     RestartListeningException,
     StartBotException,
 )
@@ -21,6 +22,8 @@ def get_all_tasks() -> set[str]:
 
 
 async def delegate_to_handler_async(bot: Bot, context: IContext) -> None:
+    assert bot.view and bot.message_handler, ("Method delegate_to_handler_async can't be called "
+                                              "without a view or message handler in a bot")
     try:
         await bot.message_handler.handle_message_async(bot.view, context)
     except (AttributeError, TypeError, KeyError, AssertionError) as e:
@@ -40,6 +43,7 @@ async def start_async_listener(bot: Bot) -> None:
     Launches all bot views, and sends all updates to their message handlers.
     Runs asynchronously.
     """
+    assert bot.view, "Method start async listener can't be called without a view in a bot"
     err_monitor = ErrorRateMonitor(cooldown=60)
     generator = bot.view.listen_async()
     while True:
@@ -81,7 +85,7 @@ async def run_async(bots: list[Bot]) -> None:
 
     bots_dict: dict[str, Bot] = {bot.name: bot for bot in bots}
     global __ALL_TASKS
-    __ALL_TASKS = bots_dict.keys()
+    __ALL_TASKS = set(bots_dict.keys())
 
     for name, bot in bots_dict.items():
         task = asyncio.create_task(start_bot(bot), name=name)
@@ -103,7 +107,6 @@ async def run_async(bots: list[Bot]) -> None:
                 elif isinstance(ex, ExitBotException):
                     await bot.logger.critical_async(f"Bot {name} was exited with message: {ex}")
                 tasks.remove(task)
-                await soft_close_bot_async(bot)
             except RestartListeningException:
                 tasks.remove(task)
                 new_task = asyncio.create_task(start_bot(bot), name=name)
@@ -119,7 +122,7 @@ async def run_async(bots: list[Bot]) -> None:
                     await bot.logger.critical_async(f"Couldn't start bot {ex}. Exception: {e}")
             except ExitApplicationException:
                 # close ctrls
-                await soft_close_controllers_in_bots_async(bots_dict.values())
+                await soft_close_controllers_in_bots_async(list(bots_dict.values()))
 
                 # close bots already
                 for a_task in tasks:

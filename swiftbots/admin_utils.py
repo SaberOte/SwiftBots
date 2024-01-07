@@ -1,8 +1,8 @@
 import asyncio
 import urllib.parse
 import urllib.request
-from collections.abc import Callable
-from typing import TYPE_CHECKING
+from collections.abc import Callable, Coroutine
+from typing import TYPE_CHECKING, Any
 
 import aiohttp
 
@@ -17,12 +17,12 @@ if TYPE_CHECKING:
     from swiftbots.types import IChatView, IController
 
 
-def admin_only_async(func: Callable) -> Callable:
+def admin_only_async(func: Callable[['IController', 'IChatView', 'IChatView.Context'], Coroutine[Any, Any, None]]) -> Callable[['IController', 'IChatView', 'IChatView.Context'], Coroutine[Any, Any, None]]:
     """Decorator. Should wrap controller method to prevent non-admin execution"""
     async def wrapper(self: 'IController', view: 'IChatView', context: 'IChatView.Context') -> None:
         """admin_only_wrapper"""
         if await view.is_admin_async(context.sender):
-            return await func(self, view, context)
+            await func(self, view, context)
         else:
             await view.refuse_async(context)
     return wrapper
@@ -50,7 +50,7 @@ async def shutdown_bot_async(bot_name: str) -> bool:
         return False
 
 
-async def get_bot_names_async() -> (set[str], set[str], set[str]):
+async def get_bot_names_async() -> tuple[set[str], set[str], set[str]]:
     """
     :returns: 1. a set of all the tasks in app;
     2. set of running tasks;
@@ -79,13 +79,13 @@ async def start_bot_async(bot_name: str) -> int:
             return 1
 
     all_tasks = get_all_tasks()
-    for task in all_tasks:
-        if task.casefold() == bot_name.casefold():
-            raise StartBotException(task)
+    for task_name in all_tasks:
+        if task_name.casefold() == bot_name.casefold():
+            raise StartBotException(task_name)
     return 2
 
 
-async def send_telegram_message_async(message: str, admin: str, token: str, data: dict = None) -> None:
+async def send_telegram_message_async(message: str, admin: str, token: str, data: dict[str, Any] | None = None) -> None:
     if data is None:
         data = {}
 
@@ -103,7 +103,7 @@ async def send_telegram_message_async(message: str, admin: str, token: str, data
             await session.post(f'https://api.telegram.org/bot{token}/sendMessage', json=send_data)
 
 
-def send_telegram_message(message: str, admin: str, token: str, data: dict = None) -> None:
+def send_telegram_message(message: str, admin: str, token: str, data: dict[str, Any] | None = None) -> None:
     if data is None:
         data = {}
     is_traceback = 'Traceback' in message and 'parse_mode' not in data
@@ -123,7 +123,7 @@ def send_telegram_message(message: str, admin: str, token: str, data: dict = Non
         urllib.request.urlopen(req)
 
 
-async def send_vk_message_async(message: str, admin: str, token: str, data: dict = None) -> None:
+async def send_vk_message_async(message: str, admin: str, token: str, data: dict[str, Any] | None = None) -> None:
     if data is None:
         data = {}
     async with aiohttp.ClientSession() as session:
@@ -140,7 +140,7 @@ async def send_vk_message_async(message: str, admin: str, token: str, data: dict
             await session.post(url=url, data=send_data)
 
 
-def send_vk_message(message: str, admin: str, token: str, data: dict = None) -> None:
+def send_vk_message(message: str, admin: str, token: str, data: dict[str, Any] | None = None) -> None:
     if data is None:
         data = {}
     messages = [message[i:i + 4096] for i in range(0, len(message), 4096)]

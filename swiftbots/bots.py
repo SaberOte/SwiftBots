@@ -17,7 +17,7 @@ class Bot:
     """A storage of controllers and views"""
 
     name: str
-    __logger: ILogger = None
+    __logger: ILogger
     __db_session_maker: async_sessionmaker[AsyncSession] | None = None
 
     view_class: type[IView] | None
@@ -35,12 +35,12 @@ class Bot:
         return self.__logger
 
     @property
-    def db_session_maker(self) -> async_sessionmaker[AsyncSession]:
+    def db_session_maker(self) -> async_sessionmaker[AsyncSession] | None:
         return self.__db_session_maker
 
     def __init__(self, controller_classes: list[type[IController]], view_class: type[IView] | None,
                  task_classes: list[type[ITask]] | None, message_handler_class: type[IMessageHandler] | None,
-                 logger_factory: ILoggerFactory | None, name: str, db_session_maker: async_sessionmaker | None):
+                 logger_factory: ILoggerFactory, name: str, db_session_maker: async_sessionmaker | None):
         self.view_class = view_class
         self.controller_classes = controller_classes
         self.task_classes = task_classes
@@ -100,7 +100,7 @@ def _set_tasks(bots: list[Bot]) -> None:
     """
     Instantiate and set tasks
     """
-    task_names = set()
+    task_names: set[str] = set()
     for bot in bots:
         if bot.task_classes:
             task_classes = bot.task_classes

@@ -1,5 +1,5 @@
 import asyncio
-from abc import ABC
+from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING, Optional
 
@@ -81,13 +81,61 @@ class ChatView(IChatView, BasicView, ABC):
         return str(self._admin) == str(user)
 
 
-class TelegramView(ITelegramView, ChatView, ABC):
+class AbstractInternetChatView(IChatView, ABC):
+    _http_session: aiohttp.client.ClientSession
+    __greeting_disabled = False
 
+    def disable_greeting(self) -> None:
+        self.__greeting_disabled = True
+
+    async def listen_async(self) -> AsyncGenerator['IChatView.PreContext', None]:
+        await self._ensure_http_session_created()
+
+        if not self.__greeting_disabled and self._admin is not None:
+            await self.send_async(f'{self.bot.name} is started!', self._admin)
+
+        try:
+            async for update in self._get_updates_async():
+                pre_context = await self._deconstruct_message_async(update)
+                if pre_context:
+                    yield pre_context
+
+        except aiohttp.ServerConnectionError:
+            await self._handle_server_connection_error_async()
+        # except Exception as e:
+        #     msg = 'Unhandled:' + '\nAnswer is:\n' + str(update) + '\n' + format_exc()
+        #     self._logger.error(msg, update['message']['from']['id'])
+
+    async def soft_close_async(self) -> None:
+        await self.logger.report_async(f'Bot {self.bot.name} was exited')
+        await self._ensure_http_session_closed()
+
+    async def _handle_server_connection_error_async(self) -> None:
+        await self.logger.info_async(f'Connection ERROR in {self.bot.name}. Sleep 5 seconds')
+        await asyncio.sleep(5)
+
+    @abstractmethod
+    async def _get_updates_async(self) -> AsyncGenerator[dict, None]:
+        yield {}  # py charm pisses off without this
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def _deconstruct_message_async(self, update: dict) -> Optional['IChatView.PreContext']:
+        raise NotImplementedError()
+
+    async def _ensure_http_session_created(self) -> None:
+        if '_http_session' not in vars(self):
+            self._http_session = aiohttp.ClientSession()
+
+    async def _ensure_http_session_closed(self) -> None:
+        if '_http_session' in vars(self) and not self._http_session.closed:
+            await self._http_session.close()
+
+
+class TelegramView(ITelegramView, ChatView, AbstractInternetChatView, ABC):
     __token: str
     __first_time_launched = True
     __should_skip_old_updates: bool
-    __greeting_disabled = False
-    _http_session: aiohttp.client.ClientSession = None
     ALLOWED_UPDATES = ["messages"]
 
     def __init__(self, token: str, admin: str = None, skip_old_updates: bool = True):
@@ -99,26 +147,6 @@ class TelegramView(ITelegramView, ChatView, ABC):
         self.__token = token
         self._admin = admin
         self.__should_skip_old_updates = skip_old_updates
-
-    async def listen_async(self) -> AsyncGenerator['ITelegramView.PreContext', None]:
-        if self._http_session is None or self._http_session.closed:
-            self._http_session = aiohttp.ClientSession()
-
-        if not self.__greeting_disabled and self._admin is not None:
-            await self.send_async(f'{self.bot.name} is started!', self._admin)
-
-        while True:
-            try:
-                async for update in self._get_updates_async():
-                    pre_context = await self._deconstruct_message_async(update)
-                    if pre_context:
-                        yield pre_context
-
-            except aiohttp.ServerConnectionError:
-                await self._handle_server_connection_error_async()
-            # except Exception as e:
-            #     msg = 'Unhandled:' + '\nAnswer is:\n' + str(update) + '\n' + format_exc()
-            #     self._logger.error(msg, update['message']['from']['id'])
 
     async def fetch_async(self, method: str, data: dict, headers: dict = None,
                           ignore_errors: bool = False) -> dict | None:
@@ -136,6 +164,33 @@ class TelegramView(ITelegramView, ChatView, ABC):
             if not answer['ok']:
                 raise RestartListeningException()
         return answer
+    """ TODO: совместить 2 метода
+    async def fetch_async(self, method: str, data: dict | None = None,
+                          headers: dict | None = None, query_data: dict | None = None,
+                          ignore_errors: bool = False) -> dict:
+
+        args = ''.join([f"{name}={value}&" for name, value in query_data.items()]) if query_data else ''
+        url = (f'https://api.vk.com/method/'
+               f'{method}?'
+               f'{args}'
+               f'v={self.__API_VERSION}')
+
+        request_headers = self.__default_headers.copy()
+        if headers is not None:
+            request_headers.update(headers)
+
+        response = await self._http_session.post(url=url, data=data, headers=request_headers)
+
+        answer = await response.json()
+        if 'error' in answer and not ignore_errors:
+            state = await self._handle_error_async(answer)
+            if state == 0:  # repeat request
+                await asyncio.sleep(5)
+                response = await self._http_session.post(url=url, data=data, headers=request_headers)
+                answer = await response.json()
+            if 'error' in answer:
+                raise RestartListeningException()
+        return answer"""
 
     async def update_message_async(self, text: str, message_id: int, context: 'IContext', data: dict = None) -> dict:
         if data is None:
@@ -173,19 +228,6 @@ class TelegramView(ITelegramView, ChatView, ABC):
         data['chat_id'] = context['sender']
         data['sticker'] = file_id
         return await self.fetch_async('sendSticker', data)
-
-    def disable_greeting(self) -> None:
-        self.__greeting_disabled = True
-
-    async def soft_close_async(self) -> None:
-        await self.logger.report_async(f'Bot {self.bot.name} was exited')
-        if self._http_session is not None:
-            await self._http_session.close()
-            self._http_session = None
-
-    async def _handle_server_connection_error_async(self) -> None:
-        await self.logger.info_async(f'Connection ERROR in {self.bot.name}. Sleep 5 seconds')
-        await asyncio.sleep(5)
 
     async def _deconstruct_message_async(self, update: dict) -> Optional['ITelegramView.PreContext']:
         update = update['result'][0]
@@ -271,14 +313,11 @@ class TelegramView(ITelegramView, ChatView, ABC):
         return -1
 
 
-class VkontakteView(IVkontakteView, ChatView, ABC):
+class VkontakteView(IVkontakteView, ChatView, AbstractInternetChatView, ABC):
 
     _group_id: int
-    _first_time_launched = True
-    _http_session: aiohttp.ClientSession = None
     __API_VERSION = '5.199'
     __default_headers: dict
-    __greeting_disabled: bool = False
 
     def __init__(self, token: str, group_id: int, admin: int = None):
         """
@@ -291,27 +330,8 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
             'Authorization': f'Bearer {token}'
         }
 
-    async def listen_async(self) -> AsyncGenerator['IVkontakteView.PreContext', None]:
-        if self._http_session is None or self._http_session.closed:
-            self._http_session = aiohttp.ClientSession()
-
-        if not self.__greeting_disabled and self._admin is not None:
-            await self.send_async(f'{self.bot.name} is started!', self._admin)
-
-        try:
-            async for update in self._get_updates_async():
-                pre_context = await self._deconstruct_message_async(update)
-                if pre_context:
-                    yield pre_context
-
-        except aiohttp.ServerConnectionError:
-            await self._handle_server_connection_error_async()
-        # except Exception as e:
-        #     msg = 'Unhandled:' + '\nAnswer is:\n' + str(update) + '\n' + format_exc()
-        #     self._logger.error(msg, update['message']['from']['id'])
-
-    async def fetch_async(self, method: str, data: dict = None,
-                          headers: dict = None, query_data: dict = None,
+    async def fetch_async(self, method: str, data: dict | None = None,
+                          headers: dict | None = None, query_data: dict | None = None,
                           ignore_errors: bool = False) -> dict:
 
         args = ''.join([f"{name}={value}&" for name, value in query_data.items()]) if query_data else ''
@@ -337,7 +357,7 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
                 raise RestartListeningException()
         return answer
 
-    async def send_async(self, message: str, user: int | str, data: dict = None) -> dict:
+    async def send_async(self, message: str, user: int | str, data: dict | None = None) -> dict:
         """
         :returns: {
                       "response": 5
@@ -358,7 +378,7 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
             result = await self.fetch_async('messages.send', send_data)
         return result
 
-    async def update_message_async(self, message: str, message_id: int, context: 'IContext', data: dict = None) -> dict:
+    async def update_message_async(self, message: str, message_id: int, context: 'IContext', data: dict | None = None) -> dict:
         if data is None:
             data = {}
         data['peer_id'] = context['sender']
@@ -366,7 +386,7 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
         data['message'] = message
         return await self.fetch_async('messages.edit', data)
 
-    async def send_sticker_async(self, sticker_id: str, context: 'IContext', data: dict = None) -> dict:
+    async def send_sticker_async(self, sticker_id: int, context: 'IContext', data: dict | None = None) -> dict:
         if data is None:
             data = {}
         data['user_id'] = context['sender']
@@ -374,27 +394,13 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
         data['sticker_id'] = sticker_id
         return await self.fetch_async('messages.send', data)
 
-    def disable_greeting(self) -> None:
-        self.__greeting_disabled = True
-
-    async def soft_close_async(self) -> None:
-        await self.logger.report_async(f'Bot {self.bot.name} was exited')
-        if self._http_session is not None:
-            await self._http_session.close()
-            self._http_session = None
-
-    async def _deconstruct_message_async(self, update: dict) -> Optional['ITelegramView.PreContext']:
-
+    async def _deconstruct_message_async(self, update: dict) -> 'IChatView.PreContext':
         message = update['object']['message']
         text: str = message['text']
         sender: int = message['from_id']
         message_id: int = message['id']
         await self.logger.info_async(f"Came message from '{sender}': '{text}'")
         return self.PreContext(message=text, sender=sender, message_id=message_id)
-
-    async def _handle_server_connection_error_async(self) -> None:
-        await self.logger.info_async(f'Connection ERROR in {self.bot.name}. Sleep 5 seconds')
-        await asyncio.sleep(5)
 
     async def _handle_error_async(self, error: dict) -> int:
         """
