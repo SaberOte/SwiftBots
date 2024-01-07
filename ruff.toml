@@ -1,0 +1,35 @@
+line-length = 121
+indent-width = 4
+target-version = "py310"
+
+[lint]
+select = [
+#   "ALL",
+    "F",
+    "I",
+    "ASYNC",
+    "W",
+    "E",
+    "UP",
+    "ANN"
+]
+
+ignore = [
+    # annotate `self`. wtf ?????
+    "ANN101",
+    # annotate `__init__` ???????
+    "ANN204",
+    # annotate *args :/
+    "ANN002",
+    # annotate **kwargs ...
+    "ANN003",
+]
+
+[format]
+indent-style = "space"
+quote-style = "single"
+
+[per-file-ignores]
+"__init__.py" = ["F403"]
+"**/{tests,examples}/*" = ["ANN"]
+#"**/{alembic}/*" = ["ALL"]

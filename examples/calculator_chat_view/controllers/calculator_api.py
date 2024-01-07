@@ -1,8 +1,8 @@
 """The simplest demonstration how controller may work
 with commands and a chat view"""
 
-from swiftbots.types import IChatView
 from swiftbots.controllers import Controller
+from swiftbots.types import IChatView
 
 
 class CalculatorApi(Controller):

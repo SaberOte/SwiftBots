@@ -1,8 +1,8 @@
 """The simplest controller ever"""
 import asyncio
 
-from swiftbots.types import IBasicView
 from swiftbots.controllers import Controller
+from swiftbots.types import IBasicView
 
 
 def print_async(*args, **kwargs):
@@ -15,7 +15,7 @@ class CalculatorApi(Controller):
         message = str(context.raw_message)
         try:
             num1, operation, num2 = message.split(' ')
-        except:
+        except ValueError:
             await print_async('Wrong Format')
             return
 

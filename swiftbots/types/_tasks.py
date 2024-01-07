@@ -1,3 +1,4 @@
+import datetime as dt
 from abc import ABC, abstractmethod
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -6,6 +7,13 @@ from swiftbots.types import ILogger
 
 
 class ITask(ABC):
+
+    @property
+    @abstractmethod
+    def interval(self) -> dt.timedelta:
+        pass
+
+    name: str = None
 
     @abstractmethod
     def init(self, logger: ILogger, db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:

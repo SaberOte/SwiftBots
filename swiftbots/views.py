@@ -1,13 +1,21 @@
-import aiohttp
 import asyncio
-
 from abc import ABC
-from typing import Optional, TYPE_CHECKING, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING, Optional
 
-from swiftbots.types import (ILogger, IBasicView, IChatView, ITelegramView, IVkontakteView,
-                             IContext, ExitBotException, RestartListeningException)
-from swiftbots.admin_utils import shutdown_bot_async
+import aiohttp
+
 from swiftbots.message_handlers import BasicMessageHandler, ChatMessageHandler
+from swiftbots.types import (
+    ExitBotException,
+    IBasicView,
+    IChatView,
+    IContext,
+    ILogger,
+    ITelegramView,
+    IVkontakteView,
+    RestartListeningException,
+)
 
 if TYPE_CHECKING:
     from swiftbots.bots import Bot
@@ -31,7 +39,7 @@ class BasicView(IBasicView, ABC):
     def bot(self) -> 'Bot':
         return self.__bot
 
-    async def soft_close_async(self):
+    async def soft_close_async(self) -> None:
         await self.logger.report_async(f'Bot {self.bot.name} was exited')
 
 
@@ -42,31 +50,31 @@ class ChatView(IChatView, BasicView, ABC):
     async def reply_async(self, message: str, context: 'IContext', data: dict = None) -> dict:
         return await self.send_async(message, context['sender'], data)
 
-    async def error_async(self, context: 'IContext'):
+    async def error_async(self, context: 'IContext') -> dict:
         """
         Inform user there is internal error.
         :param context: context with `sender` field
         """
         await self.logger.info_async(f'Error in view. Context: {context}')
-        await self.reply_async(self.error_message, context)
+        return await self.reply_async(self.error_message, context)
 
-    async def unknown_command_async(self, context: 'IContext'):
+    async def unknown_command_async(self, context: 'IContext') -> dict:
         """
-        If user sends some unknown shit, then needed say him about that
+        if a user sends some unknown shit, then needed say him about that
         :param context: context with `sender` and `messages` fields
         """
         await self.logger.info_async(f'User sent unknown command. Context:\n{context}')
-        await self.reply_async(self.unknown_error_message, context)
+        return await self.reply_async(self.unknown_error_message, context)
 
-    async def refuse_async(self, context: 'IContext'):
+    async def refuse_async(self, context: 'IContext') -> dict:
         """
-        If user can't use it, then he must be aware.
+        if a user can't use it, then it must be aware.
         :param context: context with `sender` and `messages` fields
         """
         await self.logger.info_async(f'Forbidden. Context:\n{context}')
-        await self.reply_async(self.refuse_message, context)
+        return await self.reply_async(self.refuse_message, context)
 
-    async def is_admin_async(self, user) -> bool:
+    async def is_admin_async(self, user: str | int) -> bool:
         if self._admin is None:
             await self.logger.error_async(f"No `_admin` property is set for view {self.bot.name}")
             return False
@@ -112,7 +120,8 @@ class TelegramView(ITelegramView, ChatView, ABC):
             #     msg = 'Unhandled:' + '\nAnswer is:\n' + str(update) + '\n' + format_exc()
             #     self._logger.error(msg, update['message']['from']['id'])
 
-    async def fetch_async(self, method: str, data: dict, headers: dict = None, ignore_errors=False) -> dict | None:
+    async def fetch_async(self, method: str, data: dict, headers: dict = None,
+                          ignore_errors: bool = False) -> dict | None:
         url = f'https://api.telegram.org/bot{self.__token}/{method}'
         response = await self._http_session.post(url=url, json=data, headers=headers)
 
@@ -151,7 +160,7 @@ class TelegramView(ITelegramView, ChatView, ABC):
             result = await self.fetch_async('sendMessage', send_data)
         return result
 
-    async def delete_message_async(self, message_id, context: 'ITelegramView.Context', data: dict = None) -> dict:
+    async def delete_message_async(self, message_id: int, context: 'ITelegramView.Context', data: dict = None) -> dict:
         if data is None:
             data = {}
         data['chat_id'] = context.sender
@@ -168,7 +177,7 @@ class TelegramView(ITelegramView, ChatView, ABC):
     def disable_greeting(self) -> None:
         self.__greeting_disabled = True
 
-    async def soft_close_async(self):
+    async def soft_close_async(self) -> None:
         await self.logger.report_async(f'Bot {self.bot.name} was exited')
         if self._http_session is not None:
             await self._http_session.close()
@@ -249,7 +258,7 @@ class TelegramView(ITelegramView, ChatView, ABC):
             await self.logger.error_async('Unknown error. Add code' + msg)
             return 1
 
-    async def _skip_old_updates_async(self):
+    async def _skip_old_updates_async(self) -> int:
         data = {
             "timeout": 0,
             "limit": 1,
@@ -282,7 +291,7 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
             'Authorization': f'Bearer {token}'
         }
 
-    async def listen_async(self):
+    async def listen_async(self) -> AsyncGenerator['IVkontakteView.PreContext', None]:
         if self._http_session is None or self._http_session.closed:
             self._http_session = aiohttp.ClientSession()
 
@@ -303,7 +312,7 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
 
     async def fetch_async(self, method: str, data: dict = None,
                           headers: dict = None, query_data: dict = None,
-                          ignore_errors=False) -> dict | None:
+                          ignore_errors: bool = False) -> dict:
 
         args = ''.join([f"{name}={value}&" for name, value in query_data.items()]) if query_data else ''
         url = (f'https://api.vk.com/method/'
@@ -331,8 +340,8 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
     async def send_async(self, message: str, user: int | str, data: dict = None) -> dict:
         """
         :returns: {
-                      "response":5
-                  }, where response is message id
+                      "response": 5
+                  }, where response is a message id
         """
         if data is None:
             data = {}
@@ -368,7 +377,7 @@ class VkontakteView(IVkontakteView, ChatView, ABC):
     def disable_greeting(self) -> None:
         self.__greeting_disabled = True
 
-    async def soft_close_async(self):
+    async def soft_close_async(self) -> None:
         await self.logger.report_async(f'Bot {self.bot.name} was exited')
         if self._http_session is not None:
             await self._http_session.close()

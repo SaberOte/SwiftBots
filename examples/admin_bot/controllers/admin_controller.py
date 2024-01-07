@@ -2,10 +2,15 @@
 """
 Example how to use admin bot to manage other bots in the same app
 """
-from swiftbots.types import ITelegramView
+from swiftbots.admin_utils import (
+    admin_only_async,
+    get_bot_names_async,
+    shutdown_app,
+    shutdown_bot_async,
+    start_bot_async,
+)
 from swiftbots.controllers import Controller
-from swiftbots.admin_utils import (admin_only_async, shutdown_bot_async,
-                                   get_bot_names_async, start_bot_async, shutdown_app)
+from swiftbots.types import ITelegramView
 
 
 class AdminApi(Controller):

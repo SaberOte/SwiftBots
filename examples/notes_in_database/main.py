@@ -1,7 +1,6 @@
-from swiftbots import initialize_app
-
-from examples.notes_in_database.views.console_messaging import ConsoleView
 from examples.notes_in_database.controllers.notes import Notes
+from examples.notes_in_database.views.console_messaging import ConsoleView
+from swiftbots import initialize_app
 
 
 def main():

@@ -1,6 +1,7 @@
 from abc import ABC
-from typing import Optional, TYPE_CHECKING, Sequence
+from collections.abc import Sequence
 from traceback import format_exc
+from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio.session import AsyncSession
@@ -13,7 +14,7 @@ if TYPE_CHECKING:
 
 class Controller(IController, ABC):
 
-    __db_session_maker = Optional[async_sessionmaker[AsyncSession]]
+    __db_session_maker = async_sessionmaker[AsyncSession] | None
 
     def init(self, db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:
         self.__db_session_maker = db_session_maker
@@ -38,7 +39,10 @@ class Controller(IController, ABC):
         pass
 
 
-async def close_controllers_in_bots_async(bots: Sequence['Bot']):
+async def soft_close_controllers_in_bots_async(bots: Sequence['Bot']) -> None:
+    """
+    Close softly all controller's connections (like a database or http clients)
+    """
     controllers = set()
     for bot in bots:
         controllers.update(bot.controllers)
@@ -47,4 +51,4 @@ async def close_controllers_in_bots_async(bots: Sequence['Bot']):
             await controller.soft_close_async()
         except Exception as e:
             await bots[0].logger.error_async(
-                f'Raised an exception `{e}` when a view closing method called:\n{format_exc()}')
+                f'Raised an exception `{e}` when a controller closing method called:\n{format_exc()}')

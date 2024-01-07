@@ -1,23 +1,34 @@
 import asyncio
 import random
 import string
+from collections.abc import Callable
 
-from typing import Callable, Optional
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine, AsyncSession
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    create_async_engine,
+)
 from sqlalchemy.ext.asyncio.session import async_sessionmaker
 
-from swiftbots.runners import run_async
-from swiftbots.loggers import SysIOLoggerFactory
 from swiftbots.bots import Bot, _instantiate_in_bots
-from swiftbots.types import IMessageHandler, IController, ILogger, IView, ILoggerFactory, ITask
+from swiftbots.loggers import SysIOLoggerFactory
+from swiftbots.runners import run_async
+from swiftbots.types import (
+    IController,
+    ILogger,
+    ILoggerFactory,
+    IMessageHandler,
+    ITask,
+    IView,
+)
 
 
 class BotsApplication:
 
     __logger: ILogger = None
     __logger_factory: ILoggerFactory = None
-    __db_engine: Optional[AsyncEngine] = None
-    __db_session_maker: Optional[async_sessionmaker[AsyncSession]] = None
+    __db_engine: AsyncEngine | None = None
+    __db_session_maker: async_sessionmaker[AsyncSession] | None = None
     __bots: list[Bot] = None
 
     def __init__(self, logger_factory: ILoggerFactory = None):
@@ -48,7 +59,7 @@ class BotsApplication:
 
     def add_bot(self, view_class: type[IView] | None, controller_classes: list[type[IController]],
                 task_classes: list[type[ITask]] = None, message_handler_class: type[IMessageHandler] = None,
-                name: Optional[str] = None, bot_logger_factory: ILoggerFactory = None) -> None:
+                name: str | None = None, bot_logger_factory: ILoggerFactory = None) -> None:
         """
         Adds a bot. It's required to have at least one controller in a bot.
         And there's required to contain either one view or at least one task (or both).
@@ -63,13 +74,14 @@ class BotsApplication:
         assert len(controller_classes) > 0, 'No controllers'
         assert view_class is None or issubclass(view_class, IView), 'view must be of type IView'
         assert task_classes is None or len(task_classes) > 0, 'Empty task classes list provided'
-        assert task_classes or view_class, f'Required to have at least either tasks or view'
+        assert task_classes or view_class, 'Required to have at least either tasks or view'
         assert (message_handler_class is None or issubclass(message_handler_class, IMessageHandler)), \
             'Message handler must be a TYPE and inherit IMessageHandler'
         for controller_type in controller_classes:
             assert issubclass(controller_type, IController), 'Controllers must be of type IController'
-        for task_class in task_classes:
-            assert issubclass(task_class, ITask), 'Tasks must be of type ITask'
+        if task_classes:
+            for task_class in task_classes:
+                assert issubclass(task_class, ITask), 'Tasks must be of type ITask'
         assert (bot_logger_factory is None
                 or isinstance(bot_logger_factory, ILoggerFactory)), 'Logger must be of type ILogger'
 
@@ -102,7 +114,7 @@ class BotsApplication:
 
         asyncio.run(self.__close_app())
 
-    async def __close_app(self):
+    async def __close_app(self) -> None:
         if self.__db_engine is not None:
             await self.__db_engine.dispose()
 

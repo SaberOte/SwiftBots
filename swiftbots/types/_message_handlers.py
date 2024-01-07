@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from swiftbots.types import IView, IController, ILogger, IContext
+    from swiftbots.types import IContext, IController, ILogger, IView
 
 
 class IMessageHandler(ABC):
@@ -23,8 +23,8 @@ class IMessageHandler(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def handle_message_async(self, view: 'IView', context: 'IContext'):
-        """Accept message and execute it in appropriate controller"""
+    async def handle_message_async(self, view: 'IView', context: 'IContext') -> None:
+        """Accept message and execute it in an appropriate controller"""
         raise NotImplementedError()
 
 

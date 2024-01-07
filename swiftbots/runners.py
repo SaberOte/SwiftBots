@@ -1,13 +1,17 @@
 import asyncio
-
 from traceback import format_exc
 
-from swiftbots.bots import Bot, close_bot_async
-from swiftbots.types import (StartBotException, ExitApplicationException, ExitBotException,
-                             IContext, IChatView, RestartListeningException)
+from swiftbots.bots import Bot, soft_close_bot_async
+from swiftbots.controllers import soft_close_controllers_in_bots_async
+from swiftbots.types import (
+    ExitApplicationException,
+    ExitBotException,
+    IChatView,
+    IContext,
+    RestartListeningException,
+    StartBotException,
+)
 from swiftbots.utils import ErrorRateMonitor
-from swiftbots.controllers import close_controllers_in_bots_async
-
 
 __ALL_TASKS: set[str] = set()
 
@@ -31,7 +35,7 @@ async def delegate_to_handler_async(bot: Bot, context: IContext) -> None:
             await bot.view.error_async(context)
 
 
-async def start_async_listener(bot: Bot):
+async def start_async_listener(bot: Bot) -> None:
     """
     Launches all bot views, and sends all updates to their message handlers.
     Runs asynchronously.
@@ -64,7 +68,15 @@ async def start_async_listener(bot: Bot):
         await delegate_to_handler_async(bot, pre_context)
 
 
-async def run_async(bots: list[Bot]):
+async def start_bot(bot: 'Bot') -> None:
+    # if bot.tasks:
+    #     for task in bot.tasks:
+    # TODO: остановился здесь
+    if bot.view:
+        await start_async_listener(bot)
+
+
+async def run_async(bots: list[Bot]) -> None:
     tasks: set[asyncio.Task] = set()
 
     bots_dict: dict[str, Bot] = {bot.name: bot for bot in bots}
@@ -72,7 +84,7 @@ async def run_async(bots: list[Bot]):
     __ALL_TASKS = bots_dict.keys()
 
     for name, bot in bots_dict.items():
-        task = asyncio.create_task(start_async_listener(bot), name=name)
+        task = asyncio.create_task(start_bot(bot), name=name)
         tasks.add(task)
 
     while 1:
@@ -91,28 +103,28 @@ async def run_async(bots: list[Bot]):
                 elif isinstance(ex, ExitBotException):
                     await bot.logger.critical_async(f"Bot {name} was exited with message: {ex}")
                 tasks.remove(task)
-                await close_bot_async(bot)
+                await soft_close_bot_async(bot)
             except RestartListeningException:
                 tasks.remove(task)
-                new_task = asyncio.create_task(start_async_listener(bot), name=name)
+                new_task = asyncio.create_task(start_bot(bot), name=name)
                 tasks.add(new_task)
             except StartBotException as ex:
                 # Special exception instance for starting bots from admin panel
                 try:
                     bot_name_to_start = str(ex)
                     bot_to_start = bots_dict[str(ex)]
-                    new_task = asyncio.create_task(start_async_listener(bot_to_start), name=bot_name_to_start)
+                    new_task = asyncio.create_task(start_bot(bot_to_start), name=bot_name_to_start)
                     tasks.add(new_task)
                 except Exception as e:
                     await bot.logger.critical_async(f"Couldn't start bot {ex}. Exception: {e}")
             except ExitApplicationException:
                 # close ctrls
-                await close_controllers_in_bots_async(bots_dict.values())
+                await soft_close_controllers_in_bots_async(bots_dict.values())
 
                 # close bots already
                 for a_task in tasks:
                     bot_name_to_exit = a_task.get_name()
                     bot_to_exit = bots_dict[bot_name_to_exit]
-                    await close_bot_async(bot_to_exit)
+                    await soft_close_bot_async(bot_to_exit)
                 await bot.logger.report_async("Bots application was closed")
                 return
