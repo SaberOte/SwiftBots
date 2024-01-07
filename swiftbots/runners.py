@@ -2,11 +2,11 @@ import asyncio
 
 from traceback import format_exc
 
-from swiftbots.bots import Bot, close_bot_async
+from swiftbots.bots import Bot, soft_close_bot_async
 from swiftbots.types import (StartBotException, ExitApplicationException, ExitBotException,
                              IContext, IChatView, RestartListeningException)
 from swiftbots.utils import ErrorRateMonitor
-from swiftbots.controllers import close_controllers_in_bots_async
+from swiftbots.controllers import soft_close_controllers_in_bots_async
 
 
 __ALL_TASKS: set[str] = set()
@@ -65,9 +65,11 @@ async def start_async_listener(bot: Bot):
 
 
 async def start_bot(bot: 'Bot') -> None:
+    # if bot.tasks:
+    #     for task in bot.tasks:
+    # TODO: остановился здесь
     if bot.view:
         await start_async_listener(bot)
-    if bot.tasks:
 
 
 async def run_async(bots: list[Bot]):
@@ -97,7 +99,7 @@ async def run_async(bots: list[Bot]):
                 elif isinstance(ex, ExitBotException):
                     await bot.logger.critical_async(f"Bot {name} was exited with message: {ex}")
                 tasks.remove(task)
-                await close_bot_async(bot)
+                await soft_close_bot_async(bot)
             except RestartListeningException:
                 tasks.remove(task)
                 new_task = asyncio.create_task(start_bot(bot), name=name)
@@ -113,12 +115,12 @@ async def run_async(bots: list[Bot]):
                     await bot.logger.critical_async(f"Couldn't start bot {ex}. Exception: {e}")
             except ExitApplicationException:
                 # close ctrls
-                await close_controllers_in_bots_async(bots_dict.values())
+                await soft_close_controllers_in_bots_async(bots_dict.values())
 
                 # close bots already
                 for a_task in tasks:
                     bot_name_to_exit = a_task.get_name()
                     bot_to_exit = bots_dict[bot_name_to_exit]
-                    await close_bot_async(bot_to_exit)
+                    await soft_close_bot_async(bot_to_exit)
                 await bot.logger.report_async("Bots application was closed")
                 return

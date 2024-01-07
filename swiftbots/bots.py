@@ -19,9 +19,9 @@ class Bot:
     task_classes: list[type[ITask]] | None
     message_handler_class: Optional[type[IMessageHandler]] | None
 
-    view: IView | None
+    view: IView | None = None
     controllers: list[IController]
-    tasks: list[ITask] | None
+    tasks: list[ITask] | None = None
     message_handler: IMessageHandler | None
 
     @property
@@ -94,12 +94,18 @@ def _set_tasks(bots: list[Bot]) -> None:
     """
     Instantiate and set tasks
     """
+    task_names = set()
     for bot in bots:
         if bot.task_classes:
             task_classes = bot.task_classes
             tasks = []
             for task_class in task_classes:
                 task = task_class()
+                if task.name is None:
+                    task.name = task_class.__name__
+                    assert task.name not in task_names, (f"Duplicate task names {task.name}. Use "
+                                                         f"unique `name` property for tasks or unique task class names")
+                    task_names.add(task.name)
                 task.init(bot.logger, bot.db_session_maker)
                 tasks.append(task)
             bot.tasks = tasks
@@ -114,14 +120,19 @@ def _instantiate_in_bots(bots: list[Bot]) -> None:
     _set_message_handlers(bots)
 
 
-async def close_bot_async(bot: Bot):
+async def soft_close_bot_async(bot: Bot):
     """
-    Call `_close` method of bot to softly close all connections
+    Close softly bot's view and tasks in order to close all connections (like database or http clients)
     """
-    try:
-        await bot.view.soft_close_async()
-        if bot.tasks:
-            for task in bot.tasks:
+    if bot.tasks:
+        for task in bot.tasks:
+            try:
                 await task.soft_close_async()
-    except Exception as e:
-        await bot.logger.error_async(f'Raised an exception `{e}` when a bot closing method called:\n{format_exc()}')
+            except Exception as e:
+                await bot.logger.error_async(
+                    f'Raised an exception `{e}` when a task closing method called:\n{format_exc()}')
+    if bot.view:
+        try:
+            await bot.view.soft_close_async()
+        except Exception as e:
+            await bot.logger.error_async(f'Raised an exception `{e}` when a bot closing method called:\n{format_exc()}')

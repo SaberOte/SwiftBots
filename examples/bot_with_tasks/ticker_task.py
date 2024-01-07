@@ -1,18 +1,12 @@
 import datetime as dt
 
-from scheduler.base.timingtype import Weekday
-
 from swiftbots.tasks import Task
 
 
 class MyTicker(Task):
 
-    START_AT: dt.datetime | Weekday | dt.timedelta | dt.time | None
-
-
-    def __init__(self):
-        self.counter = 1
+    interval = dt.timedelta(seconds=10)
+    name = 'ticker'
 
     async def tick(self):
-        print(f'Tick event: {self.counter}')
-        self.counter += 1
+        print(f"Time now: {dt.datetime.now().strftime('%d/%m/%Y, %H:%M:%S')}")

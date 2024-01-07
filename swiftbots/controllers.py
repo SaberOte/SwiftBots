@@ -38,7 +38,10 @@ class Controller(IController, ABC):
         pass
 
 
-async def close_controllers_in_bots_async(bots: Sequence['Bot']):
+async def soft_close_controllers_in_bots_async(bots: Sequence['Bot']):
+    """
+    Close softly all controller's connections (like database or http clients)
+    """
     controllers = set()
     for bot in bots:
         controllers.update(bot.controllers)
@@ -47,4 +50,4 @@ async def close_controllers_in_bots_async(bots: Sequence['Bot']):
             await controller.soft_close_async()
         except Exception as e:
             await bots[0].logger.error_async(
-                f'Raised an exception `{e}` when a view closing method called:\n{format_exc()}')
+                f'Raised an exception `{e}` when a controller closing method called:\n{format_exc()}')

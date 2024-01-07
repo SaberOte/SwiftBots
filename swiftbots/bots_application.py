@@ -68,8 +68,9 @@ class BotsApplication:
             'Message handler must be a TYPE and inherit IMessageHandler'
         for controller_type in controller_classes:
             assert issubclass(controller_type, IController), 'Controllers must be of type IController'
-        for task_class in task_classes:
-            assert issubclass(task_class, ITask), 'Tasks must be of type ITask'
+        if task_classes:
+            for task_class in task_classes:
+                assert issubclass(task_class, ITask), 'Tasks must be of type ITask'
         assert (bot_logger_factory is None
                 or isinstance(bot_logger_factory, ILoggerFactory)), 'Logger must be of type ILogger'
 
