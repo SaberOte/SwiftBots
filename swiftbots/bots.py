@@ -58,7 +58,7 @@ def _set_views(bots: list[Bot]) -> None:
     for bot in bots:
         if bot.view_class:
             bot.view = bot.view_class()
-            bot.view.init(bot, bot.db_session_maker)
+            bot.view.init(bot, bot.logger, bot.db_session_maker)
 
 
 def _set_controllers(bots: list[Bot]) -> None:
@@ -134,12 +134,12 @@ async def soft_close_bot_async(bot: Bot) -> None:
     if bot.tasks:
         for task in bot.tasks:
             try:
-                await task.soft_close_async()
+                await task._soft_close_async()
             except Exception as e:
                 await bot.logger.error_async(
                     f'Raised an exception `{e}` when a task closing method called:\n{format_exc()}')
     if bot.view:
         try:
-            await bot.view.soft_close_async()
+            await bot.view._soft_close_async()
         except Exception as e:
             await bot.logger.error_async(f'Raised an exception `{e}` when a bot closing method called:\n{format_exc()}')

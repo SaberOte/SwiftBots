@@ -75,7 +75,6 @@ async def start_async_listener(bot: Bot) -> None:
 async def start_bot(bot: 'Bot') -> None:
     # if bot.tasks:
     #     for task in bot.tasks:
-    # TODO: остановился здесь
     if bot.view:
         await start_async_listener(bot)
 
@@ -100,12 +99,13 @@ async def run_async(bots: list[Bot]) -> None:
             bot = bots_dict[name]
             try:
                 result = task.result()
-                await bot.logger.critical_async(f"Bot {name} was finished with result {result} and restarted")
+                await bot.logger.critical_async(f"Bot {name} is finished with result {result} and restarted")
             except (asyncio.CancelledError, ExitBotException) as ex:
                 if isinstance(ex, asyncio.CancelledError):
-                    await bot.logger.warn_async(f"Bot {name} was cancelled. Not started again")
+                    await bot.logger.warn_async(f"Bot {name} is cancelled. Not started again")
+                    await bot.logger.report_async(f"Bot {name}'s exited")
                 elif isinstance(ex, ExitBotException):
-                    await bot.logger.critical_async(f"Bot {name} was exited with message: {ex}")
+                    await bot.logger.critical_async(f"Bot {name} is exited with message: {ex}")
                 tasks.remove(task)
             except RestartListeningException:
                 tasks.remove(task)
@@ -121,7 +121,7 @@ async def run_async(bots: list[Bot]) -> None:
                 except Exception as e:
                     await bot.logger.critical_async(f"Couldn't start bot {ex}. Exception: {e}")
             except ExitApplicationException:
-                # close ctrls
+                # close controllers
                 await soft_close_controllers_in_bots_async(list(bots_dict.values()))
 
                 # close bots already
@@ -129,5 +129,6 @@ async def run_async(bots: list[Bot]) -> None:
                     bot_name_to_exit = a_task.get_name()
                     bot_to_exit = bots_dict[bot_name_to_exit]
                     await soft_close_bot_async(bot_to_exit)
-                await bot.logger.report_async("Bots application was closed")
+                    await bot_to_exit.logger.report_async(f"Bot {bot_to_exit.name}'s exited")
+                await bot.logger.report_async("Bots application's closed")
                 return

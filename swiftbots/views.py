@@ -26,23 +26,21 @@ class BasicView(IBasicView, ABC):
 
     default_message_handler_class = BasicMessageHandler
     __bot: 'Bot'
-    __logger: Optional['ILogger']
 
-    def init(self, bot: 'Bot', db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:
+    def init(self, bot: 'Bot', logger: 'ILogger', db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:
         self.__bot = bot
-        self.__logger = bot.logger
+        self._set_logger(logger)
         self._set_db_session_maker(db_session_maker)
-
-    @property
-    def logger(self) -> ILogger:
-        return self.__logger
 
     @property
     def bot(self) -> 'Bot':
         return self.__bot
 
     async def soft_close_async(self) -> None:
-        await self.logger.report_async(f'Bot {self.bot.name} was exited')
+        pass
+
+    async def _soft_close_async(self) -> None:
+        await self.soft_close_async()
 
 
 class ChatView(IChatView, BasicView, ABC):
@@ -108,7 +106,7 @@ class AbstractInternetChatView(IChatView, ABC):
         #     msg = 'Unhandled:' + '\nAnswer is:\n' + str(update) + '\n' + format_exc()
         #     self._logger.error(msg, update['message']['from']['id'])
 
-    async def soft_close_async(self) -> None:
+    async def _soft_close_async(self) -> None:
         await self.logger.report_async(f'Bot {self.bot.name} was exited')
         await self._ensure_http_session_closed()
 

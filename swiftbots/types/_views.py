@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Optional
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from swiftbots.database_connection_providers import AbstractDatabaseConnectionProvider
+from swiftbots.loggers import AbstractLoggerProvider
 
 if TYPE_CHECKING:
     from swiftbots.bots import Bot
@@ -36,7 +37,7 @@ class IContext(dict, ABC):
         setattr(self, key, value)
 
 
-class IView(AbstractDatabaseConnectionProvider, ABC):
+class IView(AbstractDatabaseConnectionProvider, AbstractLoggerProvider, ABC):
     """
     Abstract View class.
     Never inherit this class outside swiftbots module!
@@ -59,16 +60,10 @@ class IView(AbstractDatabaseConnectionProvider, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def init(self, bot: 'Bot', db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:
+    def init(self, bot: 'Bot', logger: 'ILogger', db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:
         """
         Initialize the View
         """
-        raise NotImplementedError()
-
-    @property
-    @abstractmethod
-    def logger(self) -> Optional['ILogger']:
-        """Get this view's logger"""
         raise NotImplementedError()
 
     @property
@@ -78,6 +73,13 @@ class IView(AbstractDatabaseConnectionProvider, ABC):
         raise NotImplementedError()
 
     @abstractmethod
+    async def _soft_close_async(self) -> None:
+        """
+        Before shutting down, a bot calls this method.
+        Close database connections, http clients, etc.
+        """
+        raise NotImplementedError()
+
     async def soft_close_async(self) -> None:
         """
         Before shutting down, a bot calls this method.

@@ -19,7 +19,7 @@ class IController(AbstractDatabaseConnectionProvider, ABC):
         """
         raise NotImplementedError()
 
-    async def soft_close_async(self) -> None:
+    async def _soft_close_async(self) -> None:
         """
         Close all connections softly before shutting down an application
         """
