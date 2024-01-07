@@ -39,7 +39,7 @@ class Task(ITask, ABC):
         pass
 
 
-async def close_tasks_in_bots_async(bots: list['Bot']):
+async def close_tasks_in_bots_async(bots: list['Bot']) -> None:
     tasks = set()
     for bot in bots:
         if bot.tasks:

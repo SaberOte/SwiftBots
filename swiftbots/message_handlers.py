@@ -1,5 +1,5 @@
 import re
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from swiftbots.types import (
     IBasicMessageHandler,
@@ -55,7 +55,7 @@ class ChatMessageHandler(IChatMessageHandler):
 
     __trimmer = re.compile(r'\s+$')
     __controllers: list[IController]
-    __default_controller: Optional[IController] = None
+    __default_controller: IController | None = None
     __logger: ILogger
     __commands: list[ControllerCommand] = None
 
@@ -66,12 +66,14 @@ class ChatMessageHandler(IChatMessageHandler):
         self.__commands = []
 
         self.__build_commands(self.__controllers)
-        commands_represent = '\n'.join([f'"{command.command_name}": ({command.controller.__class__.__name__}){command.method}' for command in self.__commands])
+        commands_represent = (
+            '\n'.join([f'"{command.command_name}": ({command.controller.__class__.__name__}){command.method}'
+                       for command in self.__commands]))
         self.__logger.info(f'Initialized commands:\n{commands_represent}')
 
         self.__register_default_controller()
 
-    def use_as_default(self, controller: Optional[IController]) -> None:
+    def use_as_default(self, controller: IController | None) -> None:
         """
         Define the method that will be called when no one
         commands was fitted to process the message.
@@ -85,10 +87,10 @@ class ChatMessageHandler(IChatMessageHandler):
         else:
             self.__logger.info('Unregistered default handler directly')
 
-    async def handle_message_async(self, view: IChatView, context: IChatView.PreContext):
+    async def handle_message_async(self, view: IChatView, context: IChatView.PreContext) -> None:
         """
-        Receive the command and send it to one of controllers to execute.
-        If no one fitted commands found, then send message to default handler.
+        Receive the command and send it to one of the controllers to execute.
+        If no one fitted commands found, then send a message to a default handler.
         If it's no default handler, reject to execute command.
         :param view: View object
         :param context: pre context. Must have a message field.
@@ -96,7 +98,7 @@ class ChatMessageHandler(IChatMessageHandler):
         message: str = context.message
         arguments: str = ''
         best_match_rank = 0
-        best_matched_command: Optional['ChatMessageHandler.ControllerCommand'] = None
+        best_matched_command: 'ChatMessageHandler.ControllerCommand' | None = None
 
         # check if the command has arguments like `ADD NOTE apple, cigarettes, cheese`,
         # where `ADD NOTE` is a command and the rest is arguments
@@ -137,7 +139,7 @@ class ChatMessageHandler(IChatMessageHandler):
         # await do_method_async(method, controller, view, new_context)
         await method(controller, view=view, context=new_context)
 
-    def __build_commands(self, controllers: list[IController]):
+    def __build_commands(self, controllers: list[IController]) -> None:
         for controller in controllers:
             for command in controller.cmds:
                 controller_command = self.ControllerCommand(command,
@@ -147,22 +149,22 @@ class ChatMessageHandler(IChatMessageHandler):
                 self.__commands.append(controller_command)
 
     @staticmethod
-    def __compile_command_as_regex(name):
+    def __compile_command_as_regex(name: str) -> re.Pattern:
         """
         Compile with regex patterns all command names to faster search.
         Pattern is:
         1. Begins with NAME OF COMMAND (case-insensitive). Marks as group 1.
         2. Then any whitespace characters [ \f\n\r\t\v] (zero or more). Marks as group 3.
-        3. Then rest of text. Marks as group 4.
+        3. Then the rest of the text. Marks as group 4.
         Group 3 and group 4 are optional. If there is empty group 4, then the message is entirely match a command
         """
         escaped_name = re.escape(name)
         return re.compile(rf'^({escaped_name})((\s+)(.*))?$', re.IGNORECASE | re.DOTALL)
 
-    def __register_default_controller(self):
+    def __register_default_controller(self) -> None:
         """
         Choose the default handler from all controllers.
-        If that's only 1 `default` method found, it will be registered as default handler.
+        If that's only one `default` method found, it will be registered as default handler.
         If that's no `default` methods founds, default handler stays None and
         unfitted commands will be rejected to execute (`unknown_command_async` method of the view will be called).
         If that's more than 1 `default` method found, first found will be registered.

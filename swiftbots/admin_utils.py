@@ -1,6 +1,7 @@
 import asyncio
 import urllib.parse
 import urllib.request
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 import aiohttp
@@ -13,12 +14,12 @@ from swiftbots.types import (
 )
 
 if TYPE_CHECKING:
-    from swiftbots.types import IChatView
+    from swiftbots.types import IChatView, IController
 
 
-def admin_only_async(func):
-    """Decorator. Should wrap controller method to prevent non admin execution"""
-    async def wrapper(self, view: 'IChatView', context: 'IChatView.Context'):
+def admin_only_async(func: Callable) -> Callable:
+    """Decorator. Should wrap controller method to prevent non-admin execution"""
+    async def wrapper(self: 'IController', view: 'IChatView', context: 'IChatView.Context') -> None:
         """admin_only_wrapper"""
         if await view.is_admin_async(context.sender):
             return await func(self, view, context)

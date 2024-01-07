@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio.session import AsyncSession
@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio.session import AsyncSession
 class IController(ABC):
 
     cmds: dict[str, Callable] = {}
-    default: Optional[Callable] = None
+    default: None or Callable = None
 
     @abstractmethod
     def init(self, db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:

@@ -35,7 +35,7 @@ async def delegate_to_handler_async(bot: Bot, context: IContext) -> None:
             await bot.view.error_async(context)
 
 
-async def start_async_listener(bot: Bot):
+async def start_async_listener(bot: Bot) -> None:
     """
     Launches all bot views, and sends all updates to their message handlers.
     Runs asynchronously.
@@ -76,7 +76,7 @@ async def start_bot(bot: 'Bot') -> None:
         await start_async_listener(bot)
 
 
-async def run_async(bots: list[Bot]):
+async def run_async(bots: list[Bot]) -> None:
     tasks: set[asyncio.Task] = set()
 
     bots_dict: dict[str, Bot] = {bot.name: bot for bot in bots}

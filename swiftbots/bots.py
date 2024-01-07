@@ -1,5 +1,4 @@
 from traceback import format_exc
-from typing import Optional
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio.session import AsyncSession
@@ -19,12 +18,12 @@ class Bot:
 
     name: str
     __logger: ILogger = None
-    __db_session_maker: Optional[async_sessionmaker[AsyncSession]] = None
+    __db_session_maker: async_sessionmaker[AsyncSession] | None = None
 
     view_class: type[IView] | None
     controller_classes: list[type[IController]]
     task_classes: list[type[ITask]] | None
-    message_handler_class: Optional[type[IMessageHandler]] | None
+    message_handler_class: type[IMessageHandler] | None
 
     view: IView | None = None
     controllers: list[IController]
@@ -33,7 +32,6 @@ class Bot:
 
     @property
     def logger(self) -> ILogger:
-        a = ''
         return self.__logger
 
     @property
@@ -128,9 +126,9 @@ def _instantiate_in_bots(bots: list[Bot]) -> None:
     _set_message_handlers(bots)
 
 
-async def soft_close_bot_async(bot: Bot):
+async def soft_close_bot_async(bot: Bot) -> None:
     """
-    Close softly bot's view and tasks in order to close all connections (like database or http clients)
+    Close softly bot's view and tasks to close all connections (like database or http clients)
     """
     if bot.tasks:
         for task in bot.tasks:

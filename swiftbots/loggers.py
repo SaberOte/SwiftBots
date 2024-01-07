@@ -1,7 +1,7 @@
 import inspect
+from collections.abc import Callable, Coroutine
 from sys import stderr, stdout
 from traceback import format_exc
-from typing import Callable
 
 from swiftbots.types import ILogger, ILoggerFactory
 
@@ -14,19 +14,19 @@ def print_stderr(*args, **kwargs) -> None:
     print(*args, file=stderr, **kwargs)
 
 
-def exc_wrapper(func):
+def exc_wrapper(func: Callable) -> None:
     """
     Using exc_wrapper is reasonable in methods where are used API
-    requests in order to make a logger never throwable exceptions
+    requests to make a logger never throwable exceptions
     """
-    async def async_wrapper(*args, **kwargs):
+    async def async_wrapper(*args, **kwargs) -> Coroutine:
         try:
             return await func(*args, **kwargs)
         except Exception as e:
             print_stderr('[ERROR]', f"Raised {e.__class__.__name__} when using logger: {e}.\n"
                                     f"Full traceback: {format_exc()}")
 
-    def sync_wrapper(*args, **kwargs):
+    def sync_wrapper(*args, **kwargs) -> Callable:
         try:
             return func(*args, **kwargs)
         except Exception as e:
@@ -108,58 +108,58 @@ class AdminLogger(SysIOLogger):
     @exc_wrapper
     async def report_async(self, *args, **kwargs) -> None:
         """
-        Log a message and report to administrator.
+        Log a message and report to an administrator.
         Method with messaging to administrator must be
-        provided in constructor of this logger
+        provided in a constructor of this logger
         """
         await self.__stderr_and_report('REPORT', *args, is_async=True, is_stderr=False, **kwargs)
 
     @exc_wrapper
     def report(self, *args, **kwargs) -> None:
         """
-        Log a message and report to administrator.
+        Log a message and report to an administrator.
         Method with messaging to administrator must be
-        provided in constructor of this logger
+        provided in a constructor of this logger
         """
         self.__stderr_and_report('REPORT', *args, is_async=False, is_stderr=False, **kwargs)
 
     @exc_wrapper
     async def error_async(self, *args, **kwargs) -> None:
         """
-        Log a message and report to administrator.
+        Log a message and report to an administrator.
         Method with messaging to administrator must be
-        provided in constructor of this logger
+        provided in a constructor of this logger
         """
         await self.__stderr_and_report('ERROR', *args, is_async=True, is_stderr=True, **kwargs)
-        
+
     @exc_wrapper
     def error(self, *args, **kwargs) -> None:
         """
-        Log a message and report to administrator.
+        Log a message and report to an administrator.
         Method with messaging to administrator must be
-        provided in constructor of this logger
+        provided in a constructor of this logger
         """
         self.__stderr_and_report('ERROR', *args, is_async=False, is_stderr=True, **kwargs)
-        
+
     @exc_wrapper
     async def critical_async(self, *args, **kwargs) -> None:
         """
-        Log a message and report to administrator.
+        Log a message and report to an administrator.
         Method with messaging to administrator must be
-        provided in constructor of this logger
+        provided in a constructor of this logger
         """
         await self.__stderr_and_report('CRITICAL', *args, is_async=True, is_stderr=True, **kwargs)
-    
+
     @exc_wrapper
     def critical(self, *args, **kwargs) -> None:
         """
-        Log a message and report to administrator.
+        Log a message and report to an administrator.
         Method with messaging to administrator must be
-        provided in constructor of this logger
+        provided in a constructor of this logger
         """
         self.__stderr_and_report('CRITICAL', *args, is_async=False, is_stderr=True, **kwargs)
 
-    def __stderr_and_report(self, reason: str, *args, is_async: bool, is_stderr: bool, **kwargs):
+    def __stderr_and_report(self, reason: str, *args, is_async: bool, is_stderr: bool, **kwargs) -> None:
         prefix = self._build_prefix(reason, **kwargs)
         message = ' '.join([str(arg) for arg in args])
         if is_stderr:

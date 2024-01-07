@@ -1,6 +1,7 @@
 import random
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, AsyncGenerator, Optional
+from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from swiftbots.bots import Bot
@@ -27,7 +28,7 @@ class IContext(dict, ABC):
         for arg_name in kwargs:
             self._add(arg_name, kwargs[arg_name])
 
-    def _add(self, key: str, value: object):
+    def _add(self, key: str, value: object) -> None:
         self[key] = value
         setattr(self, key, value)
 
@@ -73,7 +74,7 @@ class IView(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def soft_close_async(self):
+    async def soft_close_async(self) -> None:
         """
         Before shutting down, a bot calls this method.
         Close database connections, http clients, etc.
@@ -174,7 +175,7 @@ class IChatView(IView, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def error_async(self, context: 'IContext'):
+    async def error_async(self, context: 'IContext') -> dict:
         """
         Inform a user there is internal error.
         :param context: context with `sender` and `messages` fields
@@ -182,7 +183,7 @@ class IChatView(IView, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def unknown_command_async(self, context: 'IContext'):
+    async def unknown_command_async(self, context: 'IContext') -> dict:
         """
         If a user sends some unknown shit, then needed say him about that
         :param context: context with `sender` and `messages` fields
@@ -190,7 +191,7 @@ class IChatView(IView, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def refuse_async(self, context: 'IContext'):
+    async def refuse_async(self, context: 'IContext') -> dict:
         """
         If a user can't use it, then he must be aware.
         :param context: context with `sender` and `messages` fields
@@ -198,7 +199,7 @@ class IChatView(IView, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def is_admin_async(self, user) -> bool:
+    async def is_admin_async(self, user: int | str) -> bool:
         """
         Whether the user is an admin or not
         """
@@ -238,7 +239,7 @@ class IChatView(IView, ABC):
 class ITelegramView(IChatView, ABC):
 
     @abstractmethod
-    async def fetch_async(self, method: str, data: dict, ignore_errors=False) -> dict | None:
+    async def fetch_async(self, method: str, data: dict, ignore_errors: bool = False) -> dict | None:
         """
         Custom send post request to telegram api.
         https://core.telegram.org/bots/api#available-methods
@@ -257,7 +258,7 @@ class ITelegramView(IChatView, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def delete_message_async(self, message_id, context: 'IContext', data: dict = None) -> dict:
+    async def delete_message_async(self, message_id: int, context: 'IContext', data: dict = None) -> dict:
         """
         Delete message `message_id`
         """
@@ -310,7 +311,7 @@ class IVkontakteView(IChatView, ABC):
     @abstractmethod
     async def fetch_async(self, method: str, data: dict = None,
                           headers: dict = None, query_data: dict = None,
-                          ignore_errors=False) -> dict | None:
+                          ignore_errors: bool = False) -> dict:
         """
         Send custom post request.
         https://dev.vk.com/ru/method

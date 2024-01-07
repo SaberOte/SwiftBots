@@ -23,8 +23,8 @@ class IMessageHandler(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def handle_message_async(self, view: 'IView', context: 'IContext'):
-        """Accept message and execute it in appropriate controller"""
+    async def handle_message_async(self, view: 'IView', context: 'IContext') -> None:
+        """Accept message and execute it in an appropriate controller"""
         raise NotImplementedError()
 
 

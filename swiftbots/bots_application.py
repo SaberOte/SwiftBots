@@ -1,7 +1,7 @@
 import asyncio
 import random
 import string
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -27,8 +27,8 @@ class BotsApplication:
 
     __logger: ILogger = None
     __logger_factory: ILoggerFactory = None
-    __db_engine: Optional[AsyncEngine] = None
-    __db_session_maker: Optional[async_sessionmaker[AsyncSession]] = None
+    __db_engine: AsyncEngine | None = None
+    __db_session_maker: async_sessionmaker[AsyncSession] | None = None
     __bots: list[Bot] = None
 
     def __init__(self, logger_factory: ILoggerFactory = None):
@@ -59,7 +59,7 @@ class BotsApplication:
 
     def add_bot(self, view_class: type[IView] | None, controller_classes: list[type[IController]],
                 task_classes: list[type[ITask]] = None, message_handler_class: type[IMessageHandler] = None,
-                name: Optional[str] = None, bot_logger_factory: ILoggerFactory = None) -> None:
+                name: str | None = None, bot_logger_factory: ILoggerFactory = None) -> None:
         """
         Adds a bot. It's required to have at least one controller in a bot.
         And there's required to contain either one view or at least one task (or both).
@@ -114,7 +114,7 @@ class BotsApplication:
 
         asyncio.run(self.__close_app())
 
-    async def __close_app(self):
+    async def __close_app(self) -> None:
         if self.__db_engine is not None:
             await self.__db_engine.dispose()
 
