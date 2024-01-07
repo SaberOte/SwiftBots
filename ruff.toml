@@ -3,15 +3,15 @@ indent-width = 4
 target-version = "py310"
 
 [lint]
-select = [
-#   "ALL",
+extend-select = [
+#    "ALL",
     "F",
     "I",
     "ASYNC",
     "W",
     "E",
     "UP",
-    "ANN"
+    "ANN",
 ]
 
 ignore = [
@@ -23,6 +23,8 @@ ignore = [
     "ANN002",
     # annotate **kwargs ...
     "ANN003",
+    # single quota demand
+    "Q000",
 ]
 
 [format]
