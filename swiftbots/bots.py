@@ -33,6 +33,7 @@ class Bot:
 
     @property
     def logger(self) -> ILogger:
+        a = ''
         return self.__logger
 
     @property
