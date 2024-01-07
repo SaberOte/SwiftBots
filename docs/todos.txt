@@ -10,3 +10,4 @@ TODOS
 - Stop using protected attributes outside classes OR mark as pylint exception.
 - Message from admin sending functions doesn't log if raised.
 - Make license. Scheduler has GPL.
+- Add test for database context (sqlite inmemory)

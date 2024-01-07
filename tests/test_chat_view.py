@@ -1,4 +1,5 @@
 import asyncio
+import pytest
 
 from swiftbots.controllers import Controller
 from swiftbots.views import ChatView
@@ -60,6 +61,7 @@ class MyController(Controller):
 
 class TestBasicView:
 
+    @pytest.mark.timeout(3)
     def test_default_handler(self):
         app = initialize_app()
 
@@ -71,6 +73,7 @@ class TestBasicView:
         assert global_message == 'message from default handler'
         assert global_user == 'some sender'
 
+    @pytest.mark.timeout(3)
     def test_command(self):
         app = initialize_app()
 
