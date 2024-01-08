@@ -7,10 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from swiftbots.abstract_classes import (
     AbstractAsyncHttpClientProvider,
+    AbstractDatabaseConnectionProvider,
     AbstractLoggerProvider,
     AbstractMessengerView,
     AbstractSoftClosable,
-    AbstractDatabaseConnectionProvider
 )
 from swiftbots.all_types import (
     BasicContext,

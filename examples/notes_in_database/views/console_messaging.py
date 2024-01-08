@@ -1,7 +1,7 @@
 """Minimal demonstration of the simple chatbot view in the terminal"""
 import asyncio
 
-from swiftbots.views import ChatView
+from swiftbots.views import ChatPreContext, ChatView
 
 
 def input_async(*args, **kwargs):
@@ -18,7 +18,7 @@ class ConsoleView(ChatView):
         # print("Type expression to solve like `add 2 2` or `- 70 1`")
         while True:
             message = await input_async('-> ')
-            yield self.PreContext(message, 'der Hund')
+            yield ChatPreContext(message, 'der Hund')
 
     async def send_async(self, message, user, data: dict = None):
         print(message)

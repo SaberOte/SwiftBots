@@ -1,7 +1,8 @@
+# noinspection DuplicatedCode
 """The simplest controller ever"""
 import asyncio
 
-from swiftbots.all_types import IBasicView
+from swiftbots.all_types import BasicContext, IBasicView
 from swiftbots.controllers import Controller
 
 
@@ -11,7 +12,7 @@ def print_async(*args, **kwargs):
 
 class CalculatorApi(Controller):
 
-    async def calculate(self, view: IBasicView, context: IBasicView.Context):
+    async def calculate(self, view: IBasicView, context: BasicContext):
         message = str(context.raw_message)
         try:
             num1, operation, num2 = message.split(' ')

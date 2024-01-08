@@ -1,7 +1,7 @@
 import random
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 

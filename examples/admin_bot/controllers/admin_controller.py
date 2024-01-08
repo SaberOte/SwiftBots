@@ -9,14 +9,14 @@ from swiftbots.admin_utils import (
     shutdown_bot_async,
     start_bot_async,
 )
-from swiftbots.all_types import ITelegramView
+from swiftbots.all_types import ITelegramView, TelegramContext
 from swiftbots.controllers import Controller
 
 
 class AdminApi(Controller):
 
     @admin_only_async
-    async def shutdown_bot(self, view: ITelegramView, context: ITelegramView.Context):
+    async def shutdown_bot(self, view: ITelegramView, context: TelegramContext):
         """
         Shutdown some bot in the same app.
         If arguments are empty, called command `exit`. Therefore, exit all bots.
@@ -30,7 +30,7 @@ class AdminApi(Controller):
             await view.reply_async(f"Bot '{bot_to_exit}' was not found", context)
 
     @admin_only_async
-    async def list_bots(self, view: ITelegramView, context: ITelegramView.Context):
+    async def list_bots(self, view: ITelegramView, context: TelegramContext):
         """
         Send list of all bots in this app
         """
@@ -44,7 +44,7 @@ class AdminApi(Controller):
         await view.reply_async(message, context)
 
     @admin_only_async
-    async def start_bot(self, view: ITelegramView, context: ITelegramView.Context):
+    async def start_bot(self, view: ITelegramView, context: TelegramContext):
         """
         Try to start the stopped bot
         """

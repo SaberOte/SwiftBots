@@ -2,7 +2,7 @@ import asyncio
 import urllib.parse
 import urllib.request
 from collections.abc import Callable, Coroutine
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import aiohttp
 

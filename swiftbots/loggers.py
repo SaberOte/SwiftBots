@@ -10,7 +10,7 @@ report_func_type = Callable[[str], None]
 report_async_func_type = Callable[[str], Coroutine[Any, Any, None]]
 
 
-def logger_exc_catcher(func):
+def logger_exc_catcher(func: Callable) -> Callable:
     """
     Using `logger_exc_catcher` is reasonable in methods where are used API
     requests to make a logger never throwable exceptions.

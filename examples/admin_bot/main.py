@@ -1,3 +1,4 @@
+# noinspection DuplicatedCode
 import os
 
 from examples.admin_bot.controllers.admin_controller import AdminApi

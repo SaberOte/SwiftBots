@@ -1,5 +1,6 @@
 from abc import ABC
 from typing import TYPE_CHECKING
+
 from swiftbots.all_types import ILoggerProvider
 
 if TYPE_CHECKING:

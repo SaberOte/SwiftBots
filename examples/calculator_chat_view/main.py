@@ -1,7 +1,7 @@
-from examples.calculator_chat_view.controllers.calculator_api import (
+from examples.calculator_chat_view.calculator_api import (
     CalculatorApi,
 )
-from examples.calculator_chat_view.views.console_messaging import ConsoleView
+from examples.calculator_chat_view.console_messaging import ConsoleView
 from swiftbots import initialize_app
 
 

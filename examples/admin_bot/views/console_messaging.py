@@ -1,6 +1,7 @@
 """Minimal demonstration of the simple chatbot view in the terminal"""
 import asyncio
 
+from swiftbots.all_types import BasicPreContext
 from swiftbots.views import BasicView
 
 
@@ -19,4 +20,4 @@ class ConsoleView(BasicView):
         print("Type expression to solve like `68 + 1`")
         while True:
             message = await input_async('-> ')
-            yield self.PreContext(message)
+            yield BasicPreContext(message)

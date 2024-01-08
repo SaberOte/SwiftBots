@@ -3,13 +3,13 @@
 with commands and a chat view"""
 
 from swiftbots.admin_utils import admin_only_async
-from swiftbots.all_types import ITelegramView
+from swiftbots.all_types import ITelegramView, TelegramContext
 from swiftbots.controllers import Controller
 
 
 class CalculatorApi(Controller):
 
-    async def add(self, view: ITelegramView, context: ITelegramView.Context):
+    async def add(self, view: ITelegramView, context: TelegramContext):
         """Add two numbers"""
         message = context.arguments
         await view.logger.debug_async(f'User is requesting ADD operation: {message}')
@@ -18,10 +18,10 @@ class CalculatorApi(Controller):
         await view.reply_async(str(result), context)
 
     @admin_only_async
-    async def subtract(self, view: ITelegramView, context: ITelegramView.Context):
+    async def subtract(self, view: ITelegramView, context: TelegramContext):
         """
         Subtract two numbers.
-        Here is usage context as a dict. So it's possible provide any
+        Here is usage context as a dict. So it's possible to provide any
         additional information to context and use it in controllers.
         """
         message = context['arguments']

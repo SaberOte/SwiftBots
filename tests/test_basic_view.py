@@ -4,10 +4,9 @@ import pytest
 
 from swiftbots import initialize_app
 from swiftbots.admin_utils import shutdown_app
+from swiftbots.all_types import BasicContext, BasicPreContext
 from swiftbots.controllers import Controller
 from swiftbots.views import BasicView
-from swiftbots.all_types import BasicPreContext, BasicContext
-
 
 global_var = 0
 

@@ -12,7 +12,7 @@ from swiftbots.all_types import (
 )
 
 if TYPE_CHECKING:
-    from swiftbots.all_types import IView, IContext
+    from swiftbots.all_types import IContext, IView
 
 
 controller_method_type = Callable[['IView', 'IContext'], Coroutine[None, None, None]]

@@ -1,7 +1,7 @@
-from examples.calculator_basic_view.controllers.calculator_api import (
+from examples.calculator_basic_view.calculator_api import (
     CalculatorApi,
 )
-from examples.calculator_basic_view.views.console_messaging import ConsoleView
+from examples.calculator_basic_view.console_messaging import ConsoleView
 from swiftbots import initialize_app
 
 

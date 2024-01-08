@@ -4,10 +4,9 @@ import pytest
 
 from swiftbots import initialize_app
 from swiftbots.admin_utils import shutdown_app
+from swiftbots.all_types import ChatContext, ChatPreContext
 from swiftbots.controllers import Controller
 from swiftbots.views import ChatView
-from swiftbots.all_types import ChatContext, ChatPreContext
-
 
 global_dict = {}
 

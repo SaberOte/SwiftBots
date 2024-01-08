@@ -1,7 +1,8 @@
+# noinspection DuplicatedCode
 """Minimal demonstration of the simple chatbot view in the terminal"""
 import asyncio
 
-from swiftbots.views import BasicView
+from swiftbots.views import BasicPreContext, BasicView
 
 
 def input_async(*args, **kwargs):
@@ -11,7 +12,7 @@ def input_async(*args, **kwargs):
 class ConsoleView(BasicView):
     """
     Pretty simple example of Basic View usage.
-    Though Chat View is better option here
+    Though Chat View is a better option here
     """
 
     async def listen_async(self):
@@ -19,4 +20,4 @@ class ConsoleView(BasicView):
         print("Type expression to solve like `68 + 1`")
         while True:
             message = await input_async('-> ')
-            yield self.PreContext(message)
+            yield BasicPreContext(message)
