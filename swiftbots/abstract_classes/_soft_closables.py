@@ -4,7 +4,6 @@ from swiftbots.all_types import ISoftClosable
 
 
 class AbstractSoftClosable(ISoftClosable, ABC):
-
     async def _soft_close_async(self) -> None:
         """
         Close all connections before shutting down an application

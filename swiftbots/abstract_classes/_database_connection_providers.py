@@ -10,9 +10,12 @@ class AbstractDatabaseConnectionProvider(IDatabaseConnectionProvider, ABC):
 
     @property
     def async_db_session_maker(self) -> async_sessionmaker[AsyncSession]:
-        assert self.__db_session_maker, \
-            "Application hasn't database engine. Call use_database for application before running"
+        assert (
+            self.__db_session_maker
+        ), "Application hasn't database engine. Call use_database for application before running"
         return self.__db_session_maker
 
-    def _set_db_session_maker(self, db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:
+    def _set_db_session_maker(
+        self, db_session_maker: async_sessionmaker[AsyncSession] | None
+    ) -> None:
         self.__db_session_maker = db_session_maker

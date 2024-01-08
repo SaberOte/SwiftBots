@@ -4,7 +4,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 
 class IDatabaseConnectionProvider(ABC):
-
     @property
     def async_db_session_maker(self) -> async_sessionmaker[AsyncSession]:
         """
@@ -19,5 +18,7 @@ class IDatabaseConnectionProvider(ABC):
         """
         raise NotImplementedError()
 
-    def _set_db_session_maker(self, db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:
+    def _set_db_session_maker(
+        self, db_session_maker: async_sessionmaker[AsyncSession] | None
+    ) -> None:
         raise NotImplementedError()

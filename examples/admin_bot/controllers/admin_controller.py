@@ -9,8 +9,8 @@ from swiftbots.admin_utils import (
     shutdown_bot_async,
     start_bot_async,
 )
-from swiftbots.controllers import Controller
 from swiftbots.all_types import ITelegramView
+from swiftbots.controllers import Controller
 
 
 class AdminApi(Controller):

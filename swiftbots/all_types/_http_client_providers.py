@@ -6,7 +6,6 @@ from swiftbots.all_types import ISoftClosable
 
 
 class IAsyncHttpClientProvider(ISoftClosable, ABC):
-
     @property
     def _http_session(self) -> ClientSession:
         raise NotImplementedError()

@@ -12,7 +12,13 @@ from swiftbots.all_types import (
 )
 
 
-class ITask(IDatabaseConnectionProvider, ILoggerProvider, IAsyncHttpClientProvider, ISoftClosable, ABC):
+class ITask(
+    IDatabaseConnectionProvider,
+    ILoggerProvider,
+    IAsyncHttpClientProvider,
+    ISoftClosable,
+    ABC,
+):
     name: str
     enabled_at_start: bool = True
 
@@ -23,8 +29,12 @@ class ITask(IDatabaseConnectionProvider, ILoggerProvider, IAsyncHttpClientProvid
         pass
 
     @abstractmethod
-    def init(self, logger: ILogger, db_session_maker: async_sessionmaker[AsyncSession] | None,
-             name: str) -> None:
+    def init(
+        self,
+        logger: ILogger,
+        db_session_maker: async_sessionmaker[AsyncSession] | None,
+        name: str,
+    ) -> None:
         """
         Initialize all task attributes
         """

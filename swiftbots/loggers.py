@@ -15,19 +15,24 @@ def logger_exc_catcher(func):
     Using `logger_exc_catcher` is reasonable in methods where are used API
     requests to make a logger never throwable exceptions.
     """
+
     async def async_wrapper(*args, **kwargs) -> None:
         try:
             return await func(*args, **kwargs)
         except Exception as e:
-            logging.critical(f"[ERROR] Raised '{e.__class__.__name__}' when using logger:\n{e}.\n"
-                             f"Full traceback: {format_exc()}")
+            logging.critical(
+                f"[ERROR] Raised '{e.__class__.__name__}' when using logger:\n{e}.\n"
+                f"Full traceback: {format_exc()}"
+            )
 
     def sync_wrapper(*args, **kwargs) -> None:
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            logging.critical(f"[ERROR] Raised '{e.__class__.__name__}' when using logger:\n{e}.\n"
-                             f"Full traceback: {format_exc()}")
+            logging.critical(
+                f"[ERROR] Raised '{e.__class__.__name__}' when using logger:\n{e}.\n"
+                f"Full traceback: {format_exc()}"
+            )
 
     if inspect.iscoroutinefunction(func):
         return async_wrapper
@@ -35,7 +40,6 @@ def logger_exc_catcher(func):
 
 
 class SysIOLogger(ILogger):
-
     def __init__(self, root_logger: logging.Logger) -> None:
         self._root_logger = root_logger
 
@@ -91,8 +95,12 @@ class AdminLogger(SysIOLogger):
     directly and use level WARNING to log with base logging instance.
     """
 
-    def __init__(self, report_func: report_func_type, async_report_func: report_async_func_type,
-                 root_logger: logging.Logger):
+    def __init__(
+        self,
+        report_func: report_func_type,
+        async_report_func: report_async_func_type,
+        root_logger: logging.Logger,
+    ):
         super().__init__(root_logger)
         self._report_func = report_func
         self._report_func_async = async_report_func
@@ -139,7 +147,6 @@ class AdminLogger(SysIOLogger):
 
 
 class SysIOLoggerFactory(ILoggerFactory):
-
     def __init__(self, logger: logging.Logger | None = None):
         if logger is None:
             logging.basicConfig(level=logging.NOTSET)
@@ -151,9 +158,12 @@ class SysIOLoggerFactory(ILoggerFactory):
 
 
 class AdminLoggerFactory(SysIOLoggerFactory):
-
-    def __init__(self, report_func: report_func_type, async_report_func: report_async_func_type,
-                 logger: logging.Logger | None = None):
+    def __init__(
+        self,
+        report_func: report_func_type,
+        async_report_func: report_async_func_type,
+        logger: logging.Logger | None = None,
+    ):
         super().__init__(logger)
         self.__report_func = report_func
         self.__report_func_async = async_report_func

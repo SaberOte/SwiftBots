@@ -17,14 +17,18 @@ if TYPE_CHECKING:
     from swiftbots.bots import Bot
 
 
-class Controller(IController, AbstractDatabaseConnectionProvider, AbstractAsyncHttpClientProvider,
-                 AbstractSoftClosable, ABC):
-
+class Controller(
+    IController,
+    AbstractDatabaseConnectionProvider,
+    AbstractAsyncHttpClientProvider,
+    AbstractSoftClosable,
+    ABC,
+):
     def init(self, db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:
         self._set_db_session_maker(db_session_maker)
 
 
-async def soft_close_controllers_in_bots_async(bots: Sequence['Bot']) -> None:
+async def soft_close_controllers_in_bots_async(bots: Sequence["Bot"]) -> None:
     """
     Close softly all controller's connections (like a database or http clients)
     """
@@ -36,4 +40,5 @@ async def soft_close_controllers_in_bots_async(bots: Sequence['Bot']) -> None:
             await controller._soft_close_async()
         except Exception as e:
             await bots[0].logger.exception_async(
-                f'Raised an exception `{e}` when a controller closing method called:\n{format_exc()}')
+                f"Raised an exception `{e}` when a controller closing method called:\n{format_exc()}"
+            )

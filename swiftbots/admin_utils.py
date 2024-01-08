@@ -2,7 +2,7 @@ import asyncio
 import urllib.parse
 import urllib.request
 from collections.abc import Callable, Coroutine
-from typing import TYPE_CHECKING, Any
+from typing import Any, TYPE_CHECKING
 
 import aiohttp
 
@@ -14,20 +14,27 @@ from swiftbots.all_types import (
 from swiftbots.runners import get_all_tasks
 
 if TYPE_CHECKING:
-    from swiftbots.all_types import IChatView, IController
+    from swiftbots.all_types import ChatContext, IChatView, IContext, IController, IView
 
 
-controller_method = Callable[['IController', 'IChatView', 'IChatView.Context'], Coroutine[Any, Any, None]]
+controller_method = Callable[
+    ["IController", "IView", "IContext"], Coroutine[Any, Any, None]
+]
 
 
 def admin_only_async(func: controller_method) -> controller_method:
     """Decorator. Should wrap controller method to prevent non-admin execution"""
-    async def wrapper(self: 'IController', view: 'IChatView', context: 'IChatView.Context') -> None:
+
+    async def wrapper(self: "IController", view: "IView", context: "IContext") -> None:
         """admin_only_wrapper"""
+        assert isinstance(view, IChatView) and isinstance(
+            context, ChatContext
+        ), "Admin only decorator can be used only with Chat Views"
         if await view.is_admin_async(context.sender):
             await func(self, view, context)
         else:
             await view.refuse_async(context)
+
     return wrapper
 
 
@@ -48,7 +55,7 @@ async def shutdown_bot_async(bot_name: str) -> bool:
         tasks = asyncio.all_tasks()
         for task in tasks:
             if task.get_name().casefold() == bot_name.casefold():
-                task.cancel(f'Bot {bot_name} was stopped by administrator.')
+                task.cancel(f"Bot {bot_name} was stopped by administrator.")
                 return True
         return False
 
@@ -88,76 +95,93 @@ async def start_bot_async(bot_name: str) -> int:
     return 2
 
 
-async def send_telegram_message_async(message: str, admin: str, token: str, data: dict[str, Any] | None = None) -> None:
+async def send_telegram_message_async(
+    message: str, admin: str, token: str, data: dict[str, Any] | None = None
+) -> None:
     if data is None:
         data = {}
 
-    is_traceback = 'Traceback' in message and 'parse_mode' not in data
+    is_traceback = "Traceback" in message and "parse_mode" not in data
     async with aiohttp.ClientSession() as session:
-        messages = [message[i:i + 4096] for i in range(0, len(message), 4096)]
+        messages = [message[i : i + 4096] for i in range(0, len(message), 4096)]
         for msg in messages:
             send_data = {
                 "chat_id": admin,
-                "text": f'```\n{msg}\n```' if is_traceback else msg
+                "text": f"```\n{msg}\n```" if is_traceback else msg,
             }
             if is_traceback:
                 send_data["parse_mode"] = "markdown"
             send_data.update(data)
-            await session.post(f'https://api.telegram.org/bot{token}/sendMessage', json=send_data)
+            await session.post(
+                f"https://api.telegram.org/bot{token}/sendMessage", json=send_data
+            )
 
 
-def send_telegram_message(message: str, admin: str, token: str, data: dict[str, Any] | None = None) -> None:
+def send_telegram_message(
+    message: str, admin: str, token: str, data: dict[str, Any] | None = None
+) -> None:
     if data is None:
         data = {}
-    is_traceback = 'Traceback' in message and 'parse_mode' not in data
-    messages = [message[i:i + 4096] for i in range(0, len(message), 4096)]
+    is_traceback = "Traceback" in message and "parse_mode" not in data
+    messages = [message[i : i + 4096] for i in range(0, len(message), 4096)]
     for msg in messages:
         send_data = {
             "chat_id": admin,
-            "text": f'```\n{msg}\n```' if is_traceback else msg
+            "text": f"```\n{msg}\n```" if is_traceback else msg,
         }
         if is_traceback:
-            send_data['parse_mode'] = 'markdown'
+            send_data["parse_mode"] = "markdown"
         send_data.update(data)
 
         encoded_data = urllib.parse.urlencode(send_data).encode()
-        req = urllib.request.Request(f'https://api.telegram.org/bot{token}/sendMessage',
-                                     data=encoded_data, method='POST')
+        req = urllib.request.Request(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            data=encoded_data,
+            method="POST",
+        )
         urllib.request.urlopen(req)
 
 
-async def send_vk_message_async(message: str, admin: str, token: str, data: dict[str, Any] | None = None) -> None:
+async def send_vk_message_async(
+    message: str, admin: str, token: str, data: dict[str, Any] | None = None
+) -> None:
     if data is None:
         data = {}
     async with aiohttp.ClientSession() as session:
-        messages = [message[i:i + 4096] for i in range(0, len(message), 4096)]
+        messages = [message[i : i + 4096] for i in range(0, len(message), 4096)]
         for msg in messages:
             send_data = {
-                'user_id': admin,
-                'message': msg,
-                'random_id': IVkontakteView.get_random_id(),
-                'dont_parse_links': 1
+                "user_id": admin,
+                "message": msg,
+                "random_id": IVkontakteView.get_random_id(),
+                "dont_parse_links": 1,
             }
             send_data.update(data)
-            url = f'https://api.vk.com/method/messages.send?v=5.199&access_token={token}'
+            url = (
+                f"https://api.vk.com/method/messages.send?v=5.199&access_token={token}"
+            )
             await session.post(url=url, data=send_data)
 
 
-def send_vk_message(message: str, admin: str, token: str, data: dict[str, Any] | None = None) -> None:
+def send_vk_message(
+    message: str, admin: str, token: str, data: dict[str, Any] | None = None
+) -> None:
     if data is None:
         data = {}
-    messages = [message[i:i + 4096] for i in range(0, len(message), 4096)]
+    messages = [message[i : i + 4096] for i in range(0, len(message), 4096)]
     for msg in messages:
         send_data = {
-            'user_id': admin,
-            'message': msg,
-            'random_id': IVkontakteView.get_random_id(),
-            'dont_parse_links': 1
+            "user_id": admin,
+            "message": msg,
+            "random_id": IVkontakteView.get_random_id(),
+            "dont_parse_links": 1,
         }
         send_data.update(data)
 
         encoded_data = urllib.parse.urlencode(send_data).encode()
-        req = urllib.request.Request(f'https://api.vk.com/method/messages.send?v=5.199&access_token={token}',
-                                     data=encoded_data, method='POST')
+        req = urllib.request.Request(
+            f"https://api.vk.com/method/messages.send?v=5.199&access_token={token}",
+            data=encoded_data,
+            method="POST",
+        )
         urllib.request.urlopen(req)
-

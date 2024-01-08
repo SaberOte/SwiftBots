@@ -38,9 +38,16 @@ class Bot:
     def db_session_maker(self) -> async_sessionmaker[AsyncSession] | None:
         return self.__db_session_maker
 
-    def __init__(self, controller_classes: list[type[IController]], view_class: type[IView] | None,
-                 task_classes: list[type[ITask]] | None, message_handler_class: type[IMessageHandler] | None,
-                 logger_factory: ILoggerFactory, name: str, db_session_maker: async_sessionmaker | None):
+    def __init__(
+        self,
+        controller_classes: list[type[IController]],
+        view_class: type[IView] | None,
+        task_classes: list[type[ITask]] | None,
+        message_handler_class: type[IMessageHandler] | None,
+        logger_factory: ILoggerFactory,
+        name: str,
+        db_session_maker: async_sessionmaker | None,
+    ):
         self.view_class = view_class
         self.controller_classes = controller_classes
         self.task_classes = task_classes
@@ -71,7 +78,9 @@ def _set_controllers(bots: list[Bot]) -> None:
         controller_types = bot.controller_classes
 
         for controller_type in controller_types:
-            found_instances = list(filter(lambda inst: controller_type is inst, controller_memory))
+            found_instances = list(
+                filter(lambda inst: controller_type is inst, controller_memory)
+            )
             if len(found_instances) == 1:
                 controller_instance = found_instances[0]
             elif len(found_instances) == 0:
@@ -79,7 +88,7 @@ def _set_controllers(bots: list[Bot]) -> None:
                 controller_instance.init(bot.db_session_maker)
                 controller_memory.append(controller_instance)
             else:
-                raise Exception('Invalid algorithm')
+                raise Exception("Invalid algorithm")
             controllers_to_add.append(controller_instance)
 
         bot.controllers = controllers_to_add
@@ -90,9 +99,9 @@ def _set_message_handlers(bots: list[Bot]) -> None:
     Instantiate and set handlers
     """
     for bot in bots:
-        if bot.view_class:
+        if bot.view:
             if bot.message_handler_class is None:
-                bot.message_handler_class = bot.view_class.default_message_handler_class
+                bot.message_handler_class = bot.view.default_message_handler_class
             bot.message_handler = bot.message_handler_class(bot.controllers, bot.logger)
 
 
@@ -110,8 +119,10 @@ def _set_tasks(bots: list[Bot]) -> None:
                 name: str | None = task.name
                 if name is None:
                     name = task_class.__name__
-                    assert name not in task_names, (f"Duplicate task names {name}. Use "
-                                                    f"unique `name` property for tasks or unique task class names")
+                    assert name not in task_names, (
+                        f"Duplicate task names {name}. Use "
+                        f"unique `name` property for tasks or unique task class names"
+                    )
                     task_names.add(name)
                 task.init(bot.logger, bot.db_session_maker, name)
                 tasks.append(task)
@@ -137,9 +148,12 @@ async def soft_close_bot_async(bot: Bot) -> None:
                 await task._soft_close_async()
             except Exception as e:
                 await bot.logger.error_async(
-                    f'Raised an exception `{e}` when a task closing method called:\n{format_exc()}')
+                    f"Raised an exception `{e}` when a task closing method called:\n{format_exc()}"
+                )
     if bot.view:
         try:
             await bot.view._soft_close_async()
         except Exception as e:
-            await bot.logger.error_async(f'Raised an exception `{e}` when a bot closing method called:\n{format_exc()}')
+            await bot.logger.error_async(
+                f"Raised an exception `{e}` when a bot closing method called:\n{format_exc()}"
+            )

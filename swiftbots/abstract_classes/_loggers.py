@@ -6,11 +6,11 @@ if TYPE_CHECKING:
 
 
 class AbstractLoggerProvider(ILoggerProvider, ABC):
-    __logger: 'ILogger'
+    __logger: "ILogger"
 
     @property
-    def logger(self) -> 'ILogger':
+    def logger(self) -> "ILogger":
         return self.__logger
 
-    def _set_logger(self, logger: 'ILogger') -> None:
+    def _set_logger(self, logger: "ILogger") -> None:
         self.__logger = logger

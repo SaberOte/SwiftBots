@@ -2,7 +2,6 @@ from abc import ABC
 
 
 class ISoftClosable(ABC):
-
     async def _soft_close_async(self) -> None:
         """
         Close all connections before shutting down an application

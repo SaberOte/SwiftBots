@@ -17,9 +17,9 @@ class AbstractAsyncHttpClientProvider(IAsyncHttpClientProvider, ISoftClosable, A
         await super()._soft_close_async()
 
     async def _ensure_http_session_created(self) -> None:
-        if '_http_session' not in vars(self):
+        if "_http_session" not in vars(self):
             self.__http_session = aiohttp.ClientSession()
 
     async def _ensure_http_session_closed(self) -> None:
-        if '_http_session' in vars(self) and not self._http_session.closed:
+        if "_http_session" in vars(self) and not self._http_session.closed:
             await self._http_session.close()

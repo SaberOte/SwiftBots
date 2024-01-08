@@ -2,12 +2,11 @@ import time
 
 
 class ErrorRateMonitor:
-
     def __init__(self, cooldown: int = 60):
         self.start_time = time.time()
         self.cooldown = cooldown
         self.error_count = 0
-        self.last_error_time = 0
+        self.last_error_time = 0.0
 
     def evoke(self) -> int:
         """

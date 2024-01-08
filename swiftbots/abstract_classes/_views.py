@@ -17,12 +17,12 @@ class AbstractMessengerView(IChatView, ABC):
     def disable_greeting(self) -> None:
         self.__greeting_disabled = True
 
-    async def listen_async(self) -> AsyncGenerator['IContext', None]:
+    async def listen_async(self) -> AsyncGenerator["IContext", None]:
         await self._ensure_http_session_created()
 
         while True:
             if not self.__greeting_disabled and self._admin is not None:
-                await self.send_async(f'{self.bot.name} is started!', self._admin)
+                await self.send_async(f"{self.bot.name} is started!", self._admin)
 
             try:
                 async for update in self._get_updates_async():
@@ -37,7 +37,9 @@ class AbstractMessengerView(IChatView, ABC):
             #     self._logger.error(msg, update['message']['from']['id'])
 
     async def _handle_server_connection_error_async(self) -> None:
-        await self.logger.info_async(f'Connection ERROR in {self.bot.name}. Sleep 5 seconds')
+        await self.logger.info_async(
+            f"Connection ERROR in {self.bot.name}. Sleep 5 seconds"
+        )
         await asyncio.sleep(5)
 
     @abstractmethod
@@ -46,5 +48,5 @@ class AbstractMessengerView(IChatView, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def _deconstruct_message_async(self, update: dict) -> 'IContext':
+    async def _deconstruct_message_async(self, update: dict) -> "IContext" | None:
         raise NotImplementedError()

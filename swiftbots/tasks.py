@@ -16,20 +16,29 @@ if TYPE_CHECKING:
     from swiftbots.bots import Bot
 
 
-class Task(ITask, AbstractDatabaseConnectionProvider, AbstractLoggerProvider, AbstractAsyncHttpClientProvider,
-           AbstractSoftClosable, ABC):
-
+class Task(
+    ITask,
+    AbstractDatabaseConnectionProvider,
+    AbstractLoggerProvider,
+    AbstractAsyncHttpClientProvider,
+    AbstractSoftClosable,
+    ABC,
+):
     __db_session_maker = async_sessionmaker[AsyncSession] | None
 
-    def init(self, logger: ILogger, db_session_maker: async_sessionmaker[AsyncSession] | None,
-             name: str) -> None:
+    def init(
+        self,
+        logger: ILogger,
+        db_session_maker: async_sessionmaker[AsyncSession] | None,
+        name: str,
+    ) -> None:
         self._set_logger(logger)
         self._set_db_session_maker(db_session_maker)
         if name:
             self.name = name
 
 
-async def soft_close_tasks_in_bots_async(bots: list['Bot']) -> None:
+async def soft_close_tasks_in_bots_async(bots: list["Bot"]) -> None:
     tasks = set()
     for bot in bots:
         if bot.tasks:
@@ -39,4 +48,5 @@ async def soft_close_tasks_in_bots_async(bots: list['Bot']) -> None:
             await task._soft_close_async()
         except Exception as e:
             await task.logger.error_async(
-                f'Raised an exception `{e}` when a view closing method called:\n{format_exc()}')
+                f"Raised an exception `{e}` when a view closing method called:\n{format_exc()}"
+            )
