@@ -35,5 +35,5 @@ async def soft_close_controllers_in_bots_async(bots: Sequence['Bot']) -> None:
         try:
             await controller._soft_close_async()
         except Exception as e:
-            await bots[0].logger.error_async(
+            await bots[0].logger.exception_async(
                 f'Raised an exception `{e}` when a controller closing method called:\n{format_exc()}')

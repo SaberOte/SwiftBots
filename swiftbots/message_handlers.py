@@ -21,7 +21,7 @@ class BasicMessageHandler(IBasicMessageHandler):
 
     def __init__(self, controllers: list[IController], logger: ILogger):
         self.__logger = logger
-        self.__logger.info('Initializing BasicMessageHandler')
+        self.__logger.debug('Initializing BasicMessageHandler')
         assert len(controllers) == 1, 'Basic message handler can serve only 1 controller'
         controller = controllers[0]
         assert isinstance(controller, IController)
@@ -61,7 +61,7 @@ class ChatMessageHandler(IChatMessageHandler):
 
     def __init__(self, controllers: list[IController], logger: ILogger):
         self.__logger = logger
-        self.__logger.info('Initializing ChatMessageHandler')
+        self.__logger.debug('Initializing ChatMessageHandler')
         self.__controllers = controllers
         self.__commands = []
 
@@ -69,7 +69,7 @@ class ChatMessageHandler(IChatMessageHandler):
         commands_represent = (
             '\n'.join([f'"{command.command_name}": ({command.controller.__class__.__name__}){command.method}'
                        for command in self.__commands]))
-        self.__logger.info(f'Initialized commands:\n{commands_represent}')
+        self.__logger.debug(f'Initialized commands:\n{commands_represent}')
 
         self.__register_default_controller()
 
@@ -83,9 +83,9 @@ class ChatMessageHandler(IChatMessageHandler):
         """
         self.__default_controller = controller
         if controller is not None:
-            self.__logger.info(f'Registered default handler directly: {self.__default_controller}')
+            self.__logger.debug(f'Registered default handler directly: {self.__default_controller}')
         else:
-            self.__logger.info('Unregistered default handler directly')
+            self.__logger.debug('Unregistered default handler directly')
 
     async def handle_message_async(self, view: IChatView, context: IChatView.PreContext) -> None:
         """
@@ -171,11 +171,11 @@ class ChatMessageHandler(IChatMessageHandler):
         """
         defaults = list(filter(lambda c: c.default is not None, self.__controllers))
         if len(defaults) == 0:
-            self.__logger.info('No default handlers in controllers')
+            self.__logger.debug('No default handlers in controllers')
         elif len(defaults) == 1:
             self.__default_controller = defaults[0]
-            self.__logger.info(f'One default handler found and registered: {self.__default_controller}')
+            self.__logger.debug(f'One default handler found and registered: {self.__default_controller}')
         else:
-            self.__logger.warn(f'Multiple default handlers found in controllers: {defaults}')
+            self.__logger.warning(f'Multiple default handlers found in controllers: {defaults}')
             self.__default_controller = defaults[0]
-            self.__logger.warn(f'Registered handler: {self.__default_controller}')
+            self.__logger.warning(f'Registered handler: {self.__default_controller}')

@@ -11,7 +11,6 @@ from swiftbots.abstract_classes import (
     AbstractMessengerView,
     AbstractSoftClosable,
 )
-from swiftbots.message_handlers import BasicMessageHandler, ChatMessageHandler
 from swiftbots.all_types import (
     ExitBotException,
     IBasicView,
@@ -22,6 +21,7 @@ from swiftbots.all_types import (
     IVkontakteView,
     RestartListeningException,
 )
+from swiftbots.message_handlers import BasicMessageHandler, ChatMessageHandler
 
 if TYPE_CHECKING:
     from swiftbots.bots import Bot
@@ -55,7 +55,7 @@ class ChatView(IChatView, BasicView, ABC):
         Inform user there is internal error.
         :param context: context with `sender` field
         """
-        await self.logger.info_async(f'Error in view. Context: {context}')
+        await self.logger.error_async(f'Error in view. Context: {context}')
         return await self.reply_async(self.error_message, context)
 
     async def unknown_command_async(self, context: 'IContext') -> dict:
@@ -349,7 +349,7 @@ class VkontakteView(IVkontakteView, AbstractMessengerView, ChatView, ABC):
         text: str = message['text']
         sender: int = message['from_id']
         message_id: int = message['id']
-        await self.logger.info_async(f"Came message from '{sender}': '{text}'")
+        await self.logger.debug_async(f"Came message from '{sender}': '{text}'")
         return self.PreContext(message=text, sender=sender, message_id=message_id)
 
     async def _handle_error_async(self, error: dict) -> int:

@@ -6,19 +6,21 @@ from typing import TYPE_CHECKING, Any
 
 import aiohttp
 
-from swiftbots.runners import get_all_tasks
 from swiftbots.all_types import (
     ExitApplicationException,
     IVkontakteView,
     StartBotException,
 )
+from swiftbots.runners import get_all_tasks
 
 if TYPE_CHECKING:
     from swiftbots.all_types import IChatView, IController
 
 
-def admin_only_async(func: Callable[['IController', 'IChatView', 'IChatView.Context'], Coroutine[Any, Any, None]]) \
-        -> Callable[['IController', 'IChatView', 'IChatView.Context'], Coroutine[Any, Any, None]]:
+controller_method = Callable[['IController', 'IChatView', 'IChatView.Context'], Coroutine[Any, Any, None]]
+
+
+def admin_only_async(func: controller_method) -> controller_method:
     """Decorator. Should wrap controller method to prevent non-admin execution"""
     async def wrapper(self: 'IController', view: 'IChatView', context: 'IChatView.Context') -> None:
         """admin_only_wrapper"""
@@ -158,3 +160,4 @@ def send_vk_message(message: str, admin: str, token: str, data: dict[str, Any] |
         req = urllib.request.Request(f'https://api.vk.com/method/messages.send?v=5.199&access_token={token}',
                                      data=encoded_data, method='POST')
         urllib.request.urlopen(req)
+
