@@ -12,19 +12,17 @@ from swiftbots.all_types import (
 )
 
 if TYPE_CHECKING:
-    from swiftbots.all_types import IContext, IView
+    from swiftbots.all_types import IView, IContext
 
 
-controller_method_type = Callable[["IView", "IContext"], Coroutine[None, None, None]]
+controller_method_type = Callable[['IView', 'IContext'], Coroutine[None, None, None]]
 
 
 class IController(
     IDatabaseConnectionProvider, IAsyncHttpClientProvider, ISoftClosable, ABC
 ):
     cmds: dict[str, Callable] = {}
-    default: Callable[
-        ["IController", "IView", "IContext"], Coroutine[None, None, None]
-    ] | None = None
+    default: Callable | None = None
 
     @abstractmethod
     def init(self, db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:

@@ -48,5 +48,5 @@ class AbstractMessengerView(IChatView, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def _deconstruct_message_async(self, update: dict) -> "IContext" | None:
+    async def _deconstruct_message_async(self, update: dict) -> IContext | None:
         raise NotImplementedError()

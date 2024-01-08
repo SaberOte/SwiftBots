@@ -10,6 +10,7 @@ from swiftbots.abstract_classes import (
     AbstractLoggerProvider,
     AbstractMessengerView,
     AbstractSoftClosable,
+    AbstractDatabaseConnectionProvider
 )
 from swiftbots.all_types import (
     BasicContext,
@@ -41,6 +42,7 @@ class BasicView(
     AbstractLoggerProvider,
     AbstractAsyncHttpClientProvider,
     AbstractSoftClosable,
+    AbstractDatabaseConnectionProvider,
     ABC,
 ):
     __bot: "Bot"
@@ -243,7 +245,7 @@ class TelegramView(ITelegramView, AbstractMessengerView, ChatView, ABC):
     def associated_context(self) -> type["IContext"]:
         return TelegramContext
 
-    async def _deconstruct_message_async(self, update: dict) -> "IContext" | None:
+    async def _deconstruct_message_async(self, update: dict) -> IContext | None:
         update = update["result"][0]
         if "message" in update and "text" in update["message"]:
             message = update["message"]

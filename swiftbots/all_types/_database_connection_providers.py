@@ -1,10 +1,11 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 
 class IDatabaseConnectionProvider(ABC):
     @property
+    @abstractmethod
     def async_db_session_maker(self) -> async_sessionmaker[AsyncSession]:
         """
         Receive one async Database session to make transactions.
@@ -18,6 +19,7 @@ class IDatabaseConnectionProvider(ABC):
         """
         raise NotImplementedError()
 
+    @abstractmethod
     def _set_db_session_maker(
         self, db_session_maker: async_sessionmaker[AsyncSession] | None
     ) -> None:

@@ -6,9 +6,10 @@ from swiftbots import initialize_app
 from swiftbots.admin_utils import shutdown_app
 from swiftbots.controllers import Controller
 from swiftbots.views import ChatView
+from swiftbots.all_types import ChatContext, ChatPreContext
 
-global_message = ''
-global_user = ''
+
+global_dict = {}
 
 
 class MyChatView1(ChatView):
@@ -17,13 +18,13 @@ class MyChatView1(ChatView):
         while True:
             await asyncio.sleep(0)
             test_value = 'message from'
-            yield self.PreContext(test_value, 'some sender')
+            yield ChatPreContext(test_value, 'some sender')
 
     async def send_async(self, message, user, data=None):
         await asyncio.sleep(0)
-        global global_message, global_user
-        global_message = message
-        global_user = user
+        global global_dict
+        global_dict['answer1'] = message
+        global_dict['user1'] = user
         shutdown_app()
 
 
@@ -33,23 +34,23 @@ class MyChatView2(ChatView):
         while True:
             await asyncio.sleep(0)
             test_value = 'TEST command message from'
-            yield self.PreContext(test_value, 'some sender')
+            yield ChatPreContext(test_value, 'some sender')
 
     async def send_async(self, message, user, data=None):
         await asyncio.sleep(0)
-        global global_message, global_user
-        global_message = message
-        global_user = user
+        global global_dict
+        global_dict['answer2'] = message
+        global_dict['user2'] = user
         shutdown_app()
 
 
 class MyController(Controller):
 
-    async def default(self, view: ChatView, context: ChatView.Context):
+    async def default(self, view: ChatView, context: ChatContext):
         mes: str = context.raw_message
         await view.send_async(mes + ' default handler', context.sender)
 
-    async def some_command(self, view: ChatView, context: ChatView.Context):
+    async def some_command(self, view: ChatView, context: ChatContext):
         mes: str = context.arguments
         await view.send_async(mes + ' command handler', context.sender)
 
@@ -69,9 +70,9 @@ class TestBasicView:
 
         app.run()
 
-        global global_message, global_user
-        assert global_message == 'message from default handler'
-        assert global_user == 'some sender'
+        global global_dict
+        assert global_dict['answer1'] == 'message from default handler'
+        assert global_dict['user1'] == 'some sender'
 
     @pytest.mark.timeout(3)
     def test_command(self):
@@ -81,5 +82,6 @@ class TestBasicView:
 
         app.run()
 
-        global global_message, global_user
-        assert global_message == 'message from command handler'
+        global global_dict
+        assert global_dict['answer2'] == 'message from command handler'
+        assert global_dict['user2'] == 'some sender'

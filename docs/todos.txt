@@ -13,10 +13,7 @@ REFACTORING
 ===========
 - Finish adequate readme.
 - Make license like GPL
-- Finish mypy refactoring.
 - Try pyright instead of mypy
-- Problem with context. Make normal polymorphism.
-- Mark using protected attributes outside classes as pylint exception.
 
 TODOS TESTS
 ===========
