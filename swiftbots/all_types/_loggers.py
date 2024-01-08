@@ -1,62 +1,93 @@
+"""https://docs.python.org/3/library/logging.html"""
 from abc import ABC, abstractmethod
 
 
 class ILogger(ABC):
     """
     Class can be used for managing logging settings.
-    Logs can be provided by controllers, views or framework classes
+    Logs can be provided by controllers, views, tasks or framework classes
     """
 
     bot_name: str
 
     @abstractmethod
-    async def info_async(self, *args, skip_prefix: bool = False) -> None:
-        """Save an unimportant message"""
+    async def debug_async(self, msg: str, *args, **kwargs) -> None:
+        """Logs a message with level DEBUG on this logger"""
         raise NotImplementedError()
 
     @abstractmethod
-    def info(self, *args, skip_prefix: bool = False) -> None:
-        """Save an unimportant message"""
+    def debug(self, msg: str, *args, **kwargs) -> None:
+        """Logs a message with level DEBUG on this logger"""
         raise NotImplementedError()
 
     @abstractmethod
-    async def warn_async(self, *args, skip_prefix: bool = False) -> None:
-        """Save a message that may be important"""
+    async def info_async(self, msg: str, *args, **kwargs) -> None:
+        """Logs a message with level INFO on this logger"""
         raise NotImplementedError()
 
     @abstractmethod
-    def warn(self, *args, skip_prefix: bool = False) -> None:
-        """Save a message that may be important"""
+    def info(self, msg: str, *args, **kwargs) -> None:
+        """Logs a message with level INFO on this logger"""
         raise NotImplementedError()
 
     @abstractmethod
-    async def error_async(self, *args, skip_prefix: bool = False) -> None:
-        """Save an error message that may be important"""
+    async def warning_async(self, msg: str, *args, **kwargs) -> None:
+        """Logs a message with level WARNING on this logger"""
         raise NotImplementedError()
 
     @abstractmethod
-    def error(self, *args, skip_prefix: bool = False) -> None:
-        """Save an error message that may be important"""
+    def warning(self, msg: str, *args, **kwargs) -> None:
+        """Logs a message with level WARNING on this logger"""
         raise NotImplementedError()
 
     @abstractmethod
-    async def critical_async(self, *args, skip_prefix: bool = False) -> None:
-        """Process a critical error (e.g. notifying administrator)"""
+    async def error_async(self, msg: str, *args, **kwargs) -> None:
+        """Logs a message with level ERROR on this logger"""
         raise NotImplementedError()
 
     @abstractmethod
-    def critical(self, *args, skip_prefix: bool = False) -> None:
-        """Process a critical error (e.g. notifying administrator)"""
+    def error(self, msg: str, *args, **kwargs) -> None:
+        """Logs a message with level ERROR on this logger"""
         raise NotImplementedError()
 
     @abstractmethod
-    async def report_async(self, *args, skip_prefix: bool = False) -> None:
-        """Report to administrator some message"""
+    async def critical_async(self, msg: str, *args, **kwargs) -> None:
+        """Logs a message with level CRITICAL on this logger"""
         raise NotImplementedError()
 
     @abstractmethod
-    def report(self, *args, skip_prefix: bool = False) -> None:
-        """Report to administrator"""
+    def critical(self, msg: str, *args, **kwargs) -> None:
+        """Logs a message with level CRITICAL on this logger"""
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def exception_async(self, msg: str, *args, **kwargs) -> None:
+        """Logs a message with level ERROR on this logger.
+        Exception info is added to the logging message.
+        This method should only be called from an exception handler."""
+        raise NotImplementedError()
+
+    @abstractmethod
+    def exception(self, msg: str, *args, **kwargs) -> None:
+        """Logs a message with level ERROR on this logger.
+        Exception info is added to the logging message.
+        This method should only be called from an exception handler."""
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def report_async(self, msg: str) -> None:
+        """
+        If there's a configured report channel, send a message directly to an administrator.
+        If there's no one, log a message with level WARNING.
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
+    def report(self, msg: str) -> None:
+        """
+        If there's a configured report channel, send a message directly to an administrator.
+        If there's no one, log a message with level WARNING.
+        """
         raise NotImplementedError()
 
 

@@ -2,38 +2,32 @@ import inspect
 import logging
 from collections.abc import Callable, Coroutine
 from traceback import format_exc
+from typing import Any
 
 from swiftbots.all_types import ILogger, ILoggerFactory
 
-
-def print_stdout(*args, **kwargs) -> None:
-    # TODO: recraete all logging system
-    logging.info(' '.join([str(arg) for arg in args]))
+report_func_type = Callable[[str], None]
+report_async_func_type = Callable[[str], Coroutine[Any, Any, None]]
 
 
-def print_stderr(*args, **kwargs) -> None:
-    # TODO: recraete all logging system
-    logging.error(' '.join([str(arg) for arg in args]))
-
-
-def exc_wrapper(func: Callable) -> None:
+def logger_exc_catcher(func):
     """
-    Using exc_wrapper is reasonable in methods where are used API
-    requests to make a logger never throwable exceptions
+    Using `logger_exc_catcher` is reasonable in methods where are used API
+    requests to make a logger never throwable exceptions.
     """
-    async def async_wrapper(*args, **kwargs) -> Coroutine:
+    async def async_wrapper(*args, **kwargs) -> None:
         try:
             return await func(*args, **kwargs)
         except Exception as e:
-            print_stderr('[ERROR]', f"Raised {e.__class__.__name__} when using logger: {e}.\n"
-                                    f"Full traceback: {format_exc()}")
+            logging.critical(f"[ERROR] Raised '{e.__class__.__name__}' when using logger:\n{e}.\n"
+                             f"Full traceback: {format_exc()}")
 
-    def sync_wrapper(*args, **kwargs) -> Callable:
+    def sync_wrapper(*args, **kwargs) -> None:
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            print_stderr('[ERROR]', f"Raised {e.__class__.__name__} when using logger: {e}.\n"
-                                    f"Full traceback: {format_exc()}")
+            logging.critical(f"[ERROR] Raised '{e.__class__.__name__}' when using logger:\n{e}.\n"
+                             f"Full traceback: {format_exc()}")
 
     if inspect.iscoroutinefunction(func):
         return async_wrapper
@@ -42,151 +36,127 @@ def exc_wrapper(func: Callable) -> None:
 
 class SysIOLogger(ILogger):
 
-    def __init__(self, skip_prefix: bool) -> None:
-        self.__skip_prefix = skip_prefix
-        logging.basicConfig(format='%(message)s', level=logging.NOTSET)
+    def __init__(self, root_logger: logging.Logger) -> None:
+        self._root_logger = root_logger
 
-    def info(self, *args, **kwargs) -> None:
-        """Save a message to stdout"""
-        prefix = self._build_prefix('INFO', **kwargs)
-        print_stdout(prefix, *args, **kwargs)
+    async def debug_async(self, msg: str, *args, **kwargs) -> None:
+        self._root_logger.debug(msg, *args, **kwargs)
 
-    def warn(self, *args, **kwargs) -> None:
-        """Save a message to stderr"""
-        prefix = self._build_prefix('WARN', **kwargs)
-        print_stderr(prefix, *args, **kwargs)
+    def debug(self, msg: str, *args, **kwargs) -> None:
+        self._root_logger.debug(msg, *args, **kwargs)
 
-    def error(self, *args, **kwargs) -> None:
-        """Save an error message to stderr"""
-        prefix = self._build_prefix('ERROR', **kwargs)
-        print_stderr(prefix, *args, **kwargs)
+    async def info_async(self, msg: str, *args, **kwargs) -> None:
+        self._root_logger.info(msg, *args, **kwargs)
 
-    def critical(self, *args, **kwargs) -> None:
-        """Save a critical message to stderr"""
-        prefix = self._build_prefix('CRITICAL', **kwargs)
-        print_stderr(prefix, *args, **kwargs)
+    def info(self, msg: str, *args, **kwargs) -> None:
+        self._root_logger.info(msg, *args, **kwargs)
 
-    def report(self, *args, **kwargs) -> None:
-        """Save a report message to stderr"""
-        prefix = self._build_prefix('REPORT', **kwargs)
-        print_stderr(prefix, *args, **kwargs)
+    async def warning_async(self, msg: str, *args, **kwargs) -> None:
+        self._root_logger.warning(msg, *args, **kwargs)
 
-    async def info_async(self, *args, **kwargs) -> None:
-        """Save a message to stdout"""
-        self.info(*args, **kwargs)
+    def warning(self, msg: str, *args, **kwargs) -> None:
+        self._root_logger.warning(msg, *args, **kwargs)
 
-    async def warn_async(self, *args, **kwargs) -> None:
-        """Save a message to stderr"""
-        self.warn(*args, **kwargs)
+    async def error_async(self, msg: str, *args, **kwargs) -> None:
+        self._root_logger.error(msg, *args, **kwargs)
 
-    async def error_async(self, *args, **kwargs) -> None:
-        """Save an error message to stderr"""
-        self.error(*args, **kwargs)
+    def error(self, msg: str, *args, **kwargs) -> None:
+        self._root_logger.error(msg, *args, **kwargs)
 
-    async def critical_async(self, *args, **kwargs) -> None:
-        """Save a critical message to stderr"""
-        self.critical(*args, **kwargs)
+    async def critical_async(self, msg: str, *args, **kwargs) -> None:
+        self._root_logger.critical(msg, *args, **kwargs)
 
-    async def report_async(self, *args, **kwargs) -> None:
-        """Save a report message to stderr"""
-        self.report(*args, **kwargs)
+    def critical(self, msg: str, *args, **kwargs) -> None:
+        self._root_logger.critical(msg, *args, **kwargs)
 
-    def _build_prefix(self, message_type: str, skip_prefix: bool = None, skip_message_type: bool = False) -> str:
-        if skip_prefix or skip_prefix is None and self.__skip_prefix:
-            return ''
-        if skip_message_type:
-            return f'[{self.bot_name}] '
-        return f'[{message_type} {self.bot_name}] '
+    async def exception_async(self, msg: str, *args, **kwargs) -> None:
+        self._root_logger.exception(msg, *args, **kwargs)
+
+    def exception(self, msg: str, *args, **kwargs) -> None:
+        self._root_logger.exception(msg, *args, **kwargs)
+
+    async def report_async(self, msg: str) -> None:
+        # SysIOLogger does not have an administrator channel for reporting by default
+        self._root_logger.warning(msg)
+
+    def report(self, msg: str) -> None:
+        self._root_logger.warning(msg)
 
 
 class AdminLogger(SysIOLogger):
+    """
+    A logger that logs the same as SysIOLogger, but it also reports
+    to the administrator messages with levels ERROR, CRITICAL and EXCEPTION.
+    Methods `report` and `report_async` send a message to an administrator
+    directly and use level WARNING to log with base logging instance.
+    """
 
-    def __init__(self, report_func: Callable, async_report_func: Callable, skip_prefix: bool):
-        super().__init__(skip_prefix)
-        self.__report_func = report_func
-        self.__report_func_async = async_report_func
+    def __init__(self, report_func: report_func_type, async_report_func: report_async_func_type,
+                 root_logger: logging.Logger):
+        super().__init__(root_logger)
+        self._report_func = report_func
+        self._report_func_async = async_report_func
 
-    @exc_wrapper
-    async def report_async(self, *args, **kwargs) -> None:
-        """
-        Log a message and report to an administrator.
-        Method with messaging to administrator must be
-        provided in a constructor of this logger
-        """
-        await self.__stderr_and_report('REPORT', *args, is_async=True, is_stderr=False, **kwargs)
+    async def error_async(self, msg: str, *args, **kwargs) -> None:
+        await super().error_async(msg, *args, **kwargs)
+        await self._call_report_func_async(msg)
 
-    @exc_wrapper
-    def report(self, *args, **kwargs) -> None:
-        """
-        Log a message and report to an administrator.
-        Method with messaging to administrator must be
-        provided in a constructor of this logger
-        """
-        self.__stderr_and_report('REPORT', *args, is_async=False, is_stderr=False, **kwargs)
+    def error(self, msg: str, *args, **kwargs) -> None:
+        super().error(msg, *args, **kwargs)
+        self._call_report_func(msg)
 
-    @exc_wrapper
-    async def error_async(self, *args, **kwargs) -> None:
-        """
-        Log a message and report to an administrator.
-        Method with messaging to administrator must be
-        provided in a constructor of this logger
-        """
-        await self.__stderr_and_report('ERROR', *args, is_async=True, is_stderr=True, **kwargs)
+    async def critical_async(self, msg: str, *args, **kwargs) -> None:
+        await super().critical_async(msg, *args, **kwargs)
+        await self._call_report_func_async(msg)
 
-    @exc_wrapper
-    def error(self, *args, **kwargs) -> None:
-        """
-        Log a message and report to an administrator.
-        Method with messaging to administrator must be
-        provided in a constructor of this logger
-        """
-        self.__stderr_and_report('ERROR', *args, is_async=False, is_stderr=True, **kwargs)
+    def critical(self, msg: str, *args, **kwargs) -> None:
+        super().error(msg, *args, **kwargs)
+        self._call_report_func(msg)
 
-    @exc_wrapper
-    async def critical_async(self, *args, **kwargs) -> None:
-        """
-        Log a message and report to an administrator.
-        Method with messaging to administrator must be
-        provided in a constructor of this logger
-        """
-        await self.__stderr_and_report('CRITICAL', *args, is_async=True, is_stderr=True, **kwargs)
+    async def exception_async(self, msg: str, *args, **kwargs) -> None:
+        await super().exception_async(msg, *args, **kwargs)
+        await self._call_report_func_async(msg)
 
-    @exc_wrapper
-    def critical(self, *args, **kwargs) -> None:
-        """
-        Log a message and report to an administrator.
-        Method with messaging to administrator must be
-        provided in a constructor of this logger
-        """
-        self.__stderr_and_report('CRITICAL', *args, is_async=False, is_stderr=True, **kwargs)
+    def exception(self, msg: str, *args, **kwargs) -> None:
+        super().exception(msg, *args, **kwargs)
+        self._call_report_func(msg)
 
-    def __stderr_and_report(self, reason: str, *args, is_async: bool, is_stderr: bool, **kwargs) -> None:
-        prefix = self._build_prefix(reason, **kwargs)
-        message = ' '.join([str(arg) for arg in args])
-        if is_stderr:
-            print_stderr(prefix+message)
-        else:
-            print_stdout(prefix+message)
-        if is_async:
-            return self.__report_func_async(message)
-        return self.__report_func(message)
+    async def report_async(self, msg: str) -> None:
+        await super().warning_async(msg)
+        await self._call_report_func_async(msg)
+
+    def report(self, msg: str) -> None:
+        super().warning(msg)
+        self._call_report_func(msg)
+
+    @logger_exc_catcher
+    def _call_report_func(self, msg: str) -> None:
+        self._report_func(msg)
+
+    @logger_exc_catcher
+    async def _call_report_func_async(self, msg: str) -> None:
+        await self._report_func_async(msg)
 
 
 class SysIOLoggerFactory(ILoggerFactory):
 
-    def __init__(self, skip_prefix: bool = False):
-        self.skip_prefix = skip_prefix
+    def __init__(self, logger: logging.Logger | None = None):
+        if logger is None:
+            logging.basicConfig(level=logging.NOTSET)
+            logger = logging.getLogger()
+        self.logger = logger
 
     def get_logger(self) -> SysIOLogger:
-        return SysIOLogger(self.skip_prefix)
+        return SysIOLogger(self.logger)
 
 
-class AdminLoggerFactory(ILoggerFactory):
+class AdminLoggerFactory(SysIOLoggerFactory):
 
-    def __init__(self, report_func: Callable, async_report_func: Callable, skip_prefix: bool = False):
+    def __init__(self, report_func: report_func_type, async_report_func: report_async_func_type,
+                 logger: logging.Logger | None = None):
+        super().__init__(logger)
         self.__report_func = report_func
         self.__report_func_async = async_report_func
-        self.__skip_prefix = skip_prefix
 
     def get_logger(self) -> AdminLogger:
-        return AdminLogger(self.__report_func, self.__report_func_async, self.__skip_prefix)
+        return AdminLogger(self.__report_func, self.__report_func_async, self.logger)

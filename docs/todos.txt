@@ -15,9 +15,8 @@ REFACTORING
 - Make license like GPL
 - Finish mypy refactoring.
 - Try pyright instead of mypy
-- Integrate `logging` module
 - Problem with context. Make normal polymorphism.
-- Stop using protected attributes outside classes OR mark as pylint exception.
+- Mark using protected attributes outside classes as pylint exception.
 
 TODOS TESTS
 ===========
