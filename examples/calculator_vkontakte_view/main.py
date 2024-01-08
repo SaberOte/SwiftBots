@@ -1,9 +1,9 @@
 import os
 
-from examples.calculator_vkontakte_view.controllers.calculator_api import (
+from examples.calculator_vkontakte_view.calculator_api import (
     CalculatorApi,
 )
-from examples.calculator_vkontakte_view.views.vkontakte_view import MyVkVIew
+from examples.calculator_vkontakte_view.vkontakte_view import MyVkVIew
 from swiftbots import initialize_app
 from swiftbots.admin_utils import send_vk_message, send_vk_message_async
 from swiftbots.loggers import AdminLoggerFactory

@@ -4,6 +4,7 @@ import pytest
 
 from swiftbots import initialize_app
 from swiftbots.admin_utils import shutdown_app
+from swiftbots.all_types import BasicContext, BasicPreContext
 from swiftbots.controllers import Controller
 from swiftbots.views import BasicView
 
@@ -16,7 +17,7 @@ class MyBasicView(BasicView):
         while True:
             await asyncio.sleep(0)
             test_value = 69
-            yield self.PreContext(test_value)
+            yield BasicPreContext(test_value)
 
     async def change_var_async(self, value):
         await asyncio.sleep(0)
@@ -27,8 +28,8 @@ class MyBasicView(BasicView):
 
 class MyController(Controller):
 
-    async def default(self, view: MyBasicView, context: MyBasicView.Context):
-        mes: int = context.raw_message
+    async def default(self, view: MyBasicView, context: BasicContext):
+        mes: int = context['raw_message']
         await view.change_var_async(mes + 2)
 
 
@@ -41,6 +42,6 @@ class TestBasicView:
         app.add_bot(MyBasicView, [MyController])
 
         app.run()
-        assert False
+
         global global_var
         assert global_var == 71

@@ -1,9 +1,10 @@
+# noinspection DuplicatedCode
 import os
 
-from examples.calculator_telegram_view.controllers.calculator_api import (
+from examples.calculator_telegram_view.calculator_api import (
     CalculatorApi,
 )
-from examples.calculator_telegram_view.views.telegram_view import MyTgView
+from examples.calculator_telegram_view.telegram_view import MyTgView
 from swiftbots import initialize_app
 from swiftbots.admin_utils import (
     send_telegram_message,

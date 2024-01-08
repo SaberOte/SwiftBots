@@ -3,7 +3,7 @@ from traceback import format_exc
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
-from swiftbots.types import (
+from swiftbots.all_types import (
     IController,
     ILogger,
     ILoggerFactory,
@@ -17,7 +17,7 @@ class Bot:
     """A storage of controllers and views"""
 
     name: str
-    __logger: ILogger = None
+    __logger: ILogger
     __db_session_maker: async_sessionmaker[AsyncSession] | None = None
 
     view_class: type[IView] | None
@@ -35,12 +35,19 @@ class Bot:
         return self.__logger
 
     @property
-    def db_session_maker(self) -> async_sessionmaker[AsyncSession]:
+    def db_session_maker(self) -> async_sessionmaker[AsyncSession] | None:
         return self.__db_session_maker
 
-    def __init__(self, controller_classes: list[type[IController]], view_class: type[IView] | None,
-                 task_classes: list[type[ITask]] | None, message_handler_class: type[IMessageHandler] | None,
-                 logger_factory: ILoggerFactory | None, name: str, db_session_maker: async_sessionmaker | None):
+    def __init__(
+        self,
+        controller_classes: list[type[IController]],
+        view_class: type[IView] | None,
+        task_classes: list[type[ITask]] | None,
+        message_handler_class: type[IMessageHandler] | None,
+        logger_factory: ILoggerFactory,
+        name: str,
+        db_session_maker: async_sessionmaker | None,
+    ):
         self.view_class = view_class
         self.controller_classes = controller_classes
         self.task_classes = task_classes
@@ -58,7 +65,7 @@ def _set_views(bots: list[Bot]) -> None:
     for bot in bots:
         if bot.view_class:
             bot.view = bot.view_class()
-            bot.view.init(bot)
+            bot.view.init(bot, bot.logger, bot.db_session_maker)
 
 
 def _set_controllers(bots: list[Bot]) -> None:
@@ -71,7 +78,9 @@ def _set_controllers(bots: list[Bot]) -> None:
         controller_types = bot.controller_classes
 
         for controller_type in controller_types:
-            found_instances = list(filter(lambda inst: controller_type is inst, controller_memory))
+            found_instances = list(
+                filter(lambda inst: controller_type is inst, controller_memory)
+            )
             if len(found_instances) == 1:
                 controller_instance = found_instances[0]
             elif len(found_instances) == 0:
@@ -79,7 +88,7 @@ def _set_controllers(bots: list[Bot]) -> None:
                 controller_instance.init(bot.db_session_maker)
                 controller_memory.append(controller_instance)
             else:
-                raise Exception('Invalid algorithm')
+                raise Exception("Invalid algorithm")
             controllers_to_add.append(controller_instance)
 
         bot.controllers = controllers_to_add
@@ -90,9 +99,9 @@ def _set_message_handlers(bots: list[Bot]) -> None:
     Instantiate and set handlers
     """
     for bot in bots:
-        if bot.view_class:
+        if bot.view:
             if bot.message_handler_class is None:
-                bot.message_handler_class = bot.view_class.default_message_handler_class
+                bot.message_handler_class = bot.view.default_message_handler_class
             bot.message_handler = bot.message_handler_class(bot.controllers, bot.logger)
 
 
@@ -100,19 +109,22 @@ def _set_tasks(bots: list[Bot]) -> None:
     """
     Instantiate and set tasks
     """
-    task_names = set()
+    task_names: set[str] = set()
     for bot in bots:
         if bot.task_classes:
             task_classes = bot.task_classes
             tasks = []
             for task_class in task_classes:
                 task = task_class()
-                if task.name is None:
-                    task.name = task_class.__name__
-                    assert task.name not in task_names, (f"Duplicate task names {task.name}. Use "
-                                                         f"unique `name` property for tasks or unique task class names")
-                    task_names.add(task.name)
-                task.init(bot.logger, bot.db_session_maker)
+                name: str | None = task.name
+                if name is None:
+                    name = task_class.__name__
+                    assert name not in task_names, (
+                        f"Duplicate task names {name}. Use "
+                        f"unique `name` property for tasks or unique task class names"
+                    )
+                    task_names.add(name)
+                task.init(bot.logger, bot.db_session_maker, name)
                 tasks.append(task)
             bot.tasks = tasks
 
@@ -133,12 +145,15 @@ async def soft_close_bot_async(bot: Bot) -> None:
     if bot.tasks:
         for task in bot.tasks:
             try:
-                await task.soft_close_async()
+                await task._soft_close_async()
             except Exception as e:
                 await bot.logger.error_async(
-                    f'Raised an exception `{e}` when a task closing method called:\n{format_exc()}')
+                    f"Raised an exception `{e}` when a task closing method called:\n{format_exc()}"
+                )
     if bot.view:
         try:
-            await bot.view.soft_close_async()
+            await bot.view._soft_close_async()
         except Exception as e:
-            await bot.logger.error_async(f'Raised an exception `{e}` when a bot closing method called:\n{format_exc()}')
+            await bot.logger.error_async(
+                f"Raised an exception `{e}` when a bot closing method called:\n{format_exc()}"
+            )

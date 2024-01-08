@@ -9,21 +9,21 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from swiftbots.types import IContext, IController, ILogger, IView
+    from swiftbots.all_types import IContext, IController, ILogger, IView
 
 
 class IMessageHandler(ABC):
     """
     Abstract class of Message Handler.
-    About what message handlers do read swiftbots.types._message_handlers docstring.
+    About what message handlers do read swiftbots.all_types._message_handlers docstring.
     """
 
     @abstractmethod
-    def __init__(self, controllers: list['IController'], logger: 'ILogger'):
+    def __init__(self, controllers: list["IController"], logger: "ILogger"):
         raise NotImplementedError()
 
     @abstractmethod
-    async def handle_message_async(self, view: 'IView', context: 'IContext') -> None:
+    async def handle_message_async(self, view: "IView", context: "IContext") -> None:
         """Accept message and execute it in an appropriate controller"""
         raise NotImplementedError()
 
@@ -33,6 +33,7 @@ class IBasicMessageHandler(IMessageHandler, ABC):
     Defines exactly one controller. Untouched context just
     will be processed in `default` method of the controller.
     """
+
     pass
 
 
@@ -56,4 +57,5 @@ class IChatMessageHandler(IMessageHandler, ABC):
     If `default` method is not given, it will be called `unknown_command_async` method of the view.
     If there are more than one `default` methods in controllers, any one can be used.
     """
+
     pass

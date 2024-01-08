@@ -3,15 +3,16 @@ indent-width = 4
 target-version = "py310"
 
 [lint]
-select = [
-#   "ALL",
+extend-select = [
+#    "ALL",
     "F",
     "I",
     "ASYNC",
     "W",
     "E",
     "UP",
-    "ANN"
+    "ANN",
+    "T20",
 ]
 
 ignore = [
@@ -23,6 +24,8 @@ ignore = [
     "ANN002",
     # annotate **kwargs ...
     "ANN003",
+    # single quota demand
+    "Q000",
 ]
 
 [format]
@@ -31,5 +34,6 @@ quote-style = "single"
 
 [per-file-ignores]
 "__init__.py" = ["F403"]
-"**/{tests,examples}/*" = ["ANN"]
+"**/{tests,examples}/*" = ["ANN", "T201"]
+
 #"**/{alembic}/*" = ["ALL"]

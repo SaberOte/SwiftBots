@@ -9,15 +9,15 @@ from datetime import datetime as dt
 from sqlalchemy import select
 
 from examples.notes_in_database.models.notes import Note
+from swiftbots.all_types import ChatContext, IChatView
 from swiftbots.controllers import Controller
-from swiftbots.types import IChatView
 
 
 class Notes(Controller):
 
     compiled_note_pattern = re.compile(r'^(\S+)\s+(\S+.*)$', re.IGNORECASE | re.DOTALL)
 
-    async def create(self, view: IChatView, context: IChatView.Context):
+    async def create(self, view: IChatView, context: ChatContext):
         message = context.arguments
 
         match = self.compiled_note_pattern.match(message)
@@ -48,7 +48,7 @@ class Notes(Controller):
             await session.commit()
             await view.reply_async("Notes updated", context)
 
-    async def read(self, view: IChatView, context: IChatView.Context):
+    async def read(self, view: IChatView, context: ChatContext):
         name = context.arguments
         if not name:
             await view.reply_async("No note name given", context)
@@ -62,7 +62,7 @@ class Notes(Controller):
                 return
             await view.reply_async(note.text, context)
 
-    async def update(self, view: IChatView, context: IChatView.Context):
+    async def update(self, view: IChatView, context: ChatContext):
         message = context.arguments
 
         match = self.compiled_note_pattern.match(message)
@@ -90,7 +90,7 @@ class Notes(Controller):
             await session.commit()
             await view.reply_async("Notes updated", context)
 
-    async def delete(self, view: IChatView, context: IChatView.Context):
+    async def delete(self, view: IChatView, context: ChatContext):
         name = context.arguments
 
         async with self.async_db_session_maker() as session:
@@ -107,7 +107,7 @@ class Notes(Controller):
             await session.commit()
             await view.reply_async("Notes updated", context)
 
-    async def list_notes(self, view: IChatView, context: IChatView.Context):
+    async def list_notes(self, view: IChatView, context: ChatContext):
         async with self.async_db_session_maker() as session:
             notes = (await session.scalars(select(Note.name)
                                            .order_by(Note.modified))).all()

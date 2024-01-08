@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "swiftbots"
-version = "0.1.9dev"
+version = "0.2.0dev"
 description = "Python asynchronous web framework for rapid any-level bots development"
 authors = ["Polka <you@example.com>"]
 readme = "docs/README.md"
@@ -14,10 +14,12 @@ sqlalchemy = {extras = ["asyncio"], version = "^2.0.25"}
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.1.11"
+mypy = "^1.8.0"
 aiosqlite = "^0.19.0"
 pytest = "^7"
 pytest-timeout = "^2.2.0"
 pre-commit = "^3.6.0"
+pycycle = "^0.0.8"
 
 [build-system]
 requires = ["poetry-core"]
