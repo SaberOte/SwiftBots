@@ -1,7 +1,7 @@
 """Minimal demonstration of the simple chatbot view in the terminal"""
 import asyncio
 
-from swiftbots.views import BasicView
+from swiftbots.views import BasicPreContext, BasicView
 
 
 def input_async(*args, **kwargs):
@@ -11,11 +11,11 @@ def input_async(*args, **kwargs):
 class SimpleView(BasicView):
     """
     Pretty simple example of Basic View usage.
-    Though Chat View is better option here
+    Though Chat View is a better option here
     """
 
     async def listen_async(self):
         print("Welcome in the command line chat! Good day, Friend!")
         while True:
             message = await input_async('-> ')
-            yield self.PreContext(message)
+            yield BasicPreContext(message)

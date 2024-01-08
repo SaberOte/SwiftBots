@@ -2,7 +2,7 @@
 import asyncio
 
 from swiftbots.admin_utils import shutdown_app
-from swiftbots.all_types import IBasicView
+from swiftbots.all_types import BasicContext, IBasicView
 from swiftbots.controllers import Controller
 
 
@@ -12,7 +12,7 @@ def print_async(*args, **kwargs):
 
 class BasicController(Controller):
 
-    async def default(self, view: IBasicView, context: IBasicView.Context):
+    async def default(self, view: IBasicView, context: BasicContext):
         if context.raw_message == 'exit':
             shutdown_app()
         elif context.raw_message == 'ping':
