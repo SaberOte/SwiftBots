@@ -30,7 +30,7 @@ class AbstractMessengerView(IChatView, ABC):
                     if pre_context:
                         yield pre_context
 
-            except aiohttp.ServerConnectionError:
+            except (aiohttp.ServerConnectionError, aiohttp.ClientConnectorError):
                 await self._handle_server_connection_error_async()
             # except Exception as e:
             #     msg = 'Unhandled:' + '\nAnswer is:\n' + str(update) + '\n' + format_exc()

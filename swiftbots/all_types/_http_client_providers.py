@@ -10,9 +10,6 @@ class IAsyncHttpClientProvider(ISoftClosable, ABC):
     def _http_session(self) -> ClientSession:
         raise NotImplementedError()
 
-    async def _soft_close_async(self) -> None:
-        raise NotImplementedError()
-
     async def _ensure_http_session_created(self) -> None:
         raise NotImplementedError()
 

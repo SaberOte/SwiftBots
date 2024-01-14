@@ -10,11 +10,13 @@ from swiftbots.all_types import (
     ExitApplicationException,
     IVkontakteView,
     StartBotException,
+    IChatView,
+    ChatContext
 )
 from swiftbots.runners import get_all_tasks
 
 if TYPE_CHECKING:
-    from swiftbots.all_types import ChatContext, IChatView, IContext, IController, IView
+    from swiftbots.all_types import IContext, IController, IView
 
 
 controller_method = Callable[

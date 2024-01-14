@@ -12,7 +12,7 @@ def input_async(*args, **kwargs):
 class ConsoleView(BasicView):
     """
     Pretty simple example of Basic View usage.
-    Though Chat View is better option here
+    Though Chat View is a better option here
     """
 
     async def listen_async(self):

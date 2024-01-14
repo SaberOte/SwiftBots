@@ -34,6 +34,8 @@ class BotsApplication:
         self.__bots = []
         if logger_factory:
             self.use_logger(logger_factory)
+        else:
+            self.use_logger(SysIOLoggerFactory())
 
     def use_logger(self, logger_factory: ILoggerFactory) -> None:
         """
@@ -46,9 +48,7 @@ class BotsApplication:
         self.__logger_factory = logger_factory
         self.__logger = logger_factory.get_logger()
 
-    def use_database(
-        self, connection_string: str, pool_size: int = 5, max_overflow: int = 10
-    ) -> None:
+    def use_database(self, connection_string: str) -> None:
         """
         This method must be called before adding bots to an app!
         Examples of connections string:
@@ -72,41 +72,46 @@ class BotsApplication:
         bot_logger_factory: ILoggerFactory | None = None,
     ) -> None:
         """
-        the method adds a bot.
+        The method adds a bot.
         It's required to have at least one controller in a bot.
         And there's required to contain either one view or at least one task (or both).
-        :param view_class: class of view. Must inherit BasicView, ChatView, TelegramView, VkontakteView or another.
-        :param controller_classes: list of controllers. Required to have at least one controller.
+        :param view_class: Class of view. Must inherit BasicView, ChatView, TelegramView, VkontakteView or another.
+        :param controller_classes: List of controllers. Required to have at least one controller.
         Must inherit Controller class.
-        :param task_classes: task classes. Tasks inherit ITask. Do scheduled tasks.
+        :param task_classes: Task classes. Tasks inherit ITask. Do scheduled tasks.
         :param message_handler_class: Optional. Must inherit IMessageHandler.
         :param name: Optional. Set a name of the bot. ViewName if not provided. If no viewName, then random string.
         :param bot_logger_factory: Optional. ILoggerFactory to configure logger.
         """
         assert len(controller_classes) > 0, "No controllers"
+
         assert view_class is None or issubclass(
             view_class, IView
         ), "view must be of type IView"
-        assert (
-            task_classes is None or len(task_classes) > 0
-        ), "Empty task classes list provided"
+
         assert (
             task_classes or view_class
         ), "Required to have at least either tasks or view"
+
+        assert (
+            task_classes is None or len(task_classes) > 0
+        ), "Empty task classes list provided"
+        if task_classes:
+            for task_class in task_classes:
+                assert issubclass(task_class, ITask), "Tasks must be of type ITask"
+
         assert message_handler_class is None or issubclass(
             message_handler_class, IMessageHandler
         ), "Message handler must be a TYPE and inherit IMessageHandler"
+
         for controller_type in controller_classes:
             assert issubclass(
                 controller_type, IController
             ), "Controllers must be of type IController"
-        if task_classes:
-            for task_class in task_classes:
-                assert issubclass(task_class, ITask), "Tasks must be of type ITask"
+
         assert bot_logger_factory is None or isinstance(
             bot_logger_factory, ILoggerFactory
         ), "Logger must be of type ILogger"
-        self.__ensure_logger_set()
 
         if not name:
             if view_class:
@@ -149,10 +154,6 @@ class BotsApplication:
     async def __close_app(self) -> None:
         if self.__db_engine is not None:
             await self.__db_engine.dispose()
-
-    def __ensure_logger_set(self) -> None:
-        if "__logger" not in vars(self):
-            self.use_logger(SysIOLoggerFactory())
 
     def __check_bot_repeats(self) -> None:
         names = set()

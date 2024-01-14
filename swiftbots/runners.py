@@ -71,7 +71,7 @@ async def start_async_listener(bot: Bot) -> None:
             if err_monitor.since_start < 3:
                 raise ExitBotException(
                     f"Bot {bot.name} raises immediately after start listening. "
-                    f"Shutdown this"
+                    f"Shutdowning this."
                 )
             rate = err_monitor.evoke()
             if rate > 5:
@@ -131,6 +131,14 @@ async def run_async(bots: list[Bot]) -> None:
                 tasks.add(new_task)
             except StartBotException as ex:
                 # Special exception instance for starting bots from admin panel
+
+                # At start, dispose the task of caller bot and create new.
+                # The caller task is no longer reusable because an exception was raised.
+                tasks.remove(task)
+                new_task = asyncio.create_task(start_bot(bot), name=name)
+                tasks.add(new_task)
+
+                # Start a new bot with the name from an exception
                 try:
                     bot_name_to_start = str(ex)
                     bot_to_start = bots_dict[str(ex)]

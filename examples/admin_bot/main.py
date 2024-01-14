@@ -14,10 +14,10 @@ from swiftbots.loggers import AdminLoggerFactory
 
 
 def configure_admin_logger_factory():
-    token = os.environ.get('TELEGRAM_TOKEN')
-    admin = os.environ.get('TELEGRAM_ADMIN_ID')
-    assert token, 'Missing environment variable "TELEGRAM_TOKEN"'
-    assert admin, 'Missing environment variable "TELEGRAM_ADMIN_ID"'
+    token = os.environ.get('TEST_TG_TOKEN')
+    admin = os.environ.get('TG_ADMIN')
+    assert token, 'Missing environment variable "TEST_TG_TOKEN"'
+    assert admin, 'Missing environment variable "ADMIN_TG_TOKEN"'
 
     def report_func(msg):
         send_telegram_message(msg, admin, token)

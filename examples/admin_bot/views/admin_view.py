@@ -9,8 +9,8 @@ class AdminView(TelegramView):
     """
 
     def __init__(self):
-        token = os.environ.get('TELEGRAM_TOKEN')
+        token = os.environ.get('TEST_TG_TOKEN')
         assert token, 'Missing environment variable "TELEGRAM_TOKEN"'
-        admin = os.environ.get('TELEGRAM_ADMIN_ID')
+        admin = os.environ.get('TG_ADMIN')
 
         super().__init__(token, admin)
