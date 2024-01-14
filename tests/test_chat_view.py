@@ -59,7 +59,7 @@ class MyController(Controller):
     }
 
 
-class TestBasicView:
+class TestChatView:
 
     @pytest.mark.timeout(3)
     def test_default_handler(self):

@@ -6,13 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 import aiohttp
 
-from swiftbots.all_types import (
-    ExitApplicationException,
-    IVkontakteView,
-    StartBotException,
-    IChatView,
-    ChatContext
-)
+from swiftbots.all_types import ChatContext, ExitApplicationException, IChatView, IVkontakteView, StartBotException
 from swiftbots.runners import get_all_tasks
 
 if TYPE_CHECKING:
