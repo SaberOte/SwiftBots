@@ -32,7 +32,7 @@ ignore = [
 indent-style = "space"
 quote-style = "single"
 
-[per-file-ignores]
+[lint.per-file-ignores]
 "__init__.py" = ["F403", "I001"]
 "**/{tests,examples}/*" = ["ANN", "T201"]
 
