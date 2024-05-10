@@ -16,7 +16,7 @@ check:
 	mypy --no-pretty
 
 blac:
-	black --check -t py310 -diff .
+	black --check -t py310 --diff .
 
 build:
 	poetry build
