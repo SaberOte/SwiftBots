@@ -1,15 +1,14 @@
 import asyncio
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 
 from swiftbots import initialize_app
-from swiftbots.admin_utils import shutdown_app
-from swiftbots.all_types import ChatContext, IContext
-from swiftbots.controllers import Controller
 from swiftbots.abstract_classes import AbstractMessengerView
+from swiftbots.admin_utils import shutdown_app
+from swiftbots.all_types import ChatContext, ChatPreContext, IContext
+from swiftbots.controllers import Controller
 from swiftbots.views import ChatView
-from swiftbots.all_types import ChatPreContext
 
 global_dict = {}
 
