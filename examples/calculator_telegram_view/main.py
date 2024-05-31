@@ -5,7 +5,7 @@ from examples.calculator_telegram_view.calculator_api import (
     CalculatorApi,
 )
 from examples.calculator_telegram_view.telegram_view import MyTgView
-from swiftbots import initialize_app
+from swiftbots import SwiftBots
 from swiftbots.admin_utils import (
     send_telegram_message,
     send_telegram_message_async,
@@ -29,7 +29,7 @@ def configure_admin_logger_factory():
 
 
 def main():
-    app = initialize_app()
+    app = SwiftBots()
 
     logger_factory = configure_admin_logger_factory()
     app.use_logger(logger_factory)

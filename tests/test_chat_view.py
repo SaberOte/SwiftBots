@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from swiftbots import initialize_app
+from swiftbots import SwiftBots
 from swiftbots.admin_utils import shutdown_app
 from swiftbots.all_types import ChatContext, ChatPreContext
 from swiftbots.controllers import Controller
@@ -63,7 +63,7 @@ class TestChatView:
 
     @pytest.mark.timeout(3)
     def test_default_handler(self):
-        app = initialize_app()
+        app = SwiftBots()
 
         app.add_bot(MyChatView1, [MyController])
 
@@ -75,7 +75,7 @@ class TestChatView:
 
     @pytest.mark.timeout(3)
     def test_command(self):
-        app = initialize_app()
+        app = SwiftBots()
 
         app.add_bot(MyChatView2, [MyController])
 

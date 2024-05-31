@@ -4,7 +4,7 @@ from examples.calculator_vkontakte_view.calculator_api import (
     CalculatorApi,
 )
 from examples.calculator_vkontakte_view.vkontakte_view import MyVkVIew
-from swiftbots import initialize_app
+from swiftbots import SwiftBots
 from swiftbots.admin_utils import send_vk_message, send_vk_message_async
 from swiftbots.loggers import AdminLoggerFactory
 
@@ -25,7 +25,7 @@ def configure_admin_logger_factory():
 
 
 def main():
-    app = initialize_app()
+    app = SwiftBots()
 
     logger_factory = configure_admin_logger_factory()
     app.use_logger(logger_factory)

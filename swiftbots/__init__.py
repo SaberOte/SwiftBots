@@ -1,7 +1,5 @@
-from swiftbots.all_types import ILoggerFactory
-from swiftbots.bots_application import BotsApplication
+from swiftbots.bots_application import SwiftBots
 
-
-def initialize_app(logger_factory: ILoggerFactory | None = None) -> BotsApplication:
-    bot_app = BotsApplication(logger_factory)
-    return bot_app
+__all__ = [
+    'SwiftBots'
+]

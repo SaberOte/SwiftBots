@@ -2,11 +2,11 @@ from examples.calculator_chat_view.calculator_api import (
     CalculatorApi,
 )
 from examples.calculator_chat_view.console_messaging import ConsoleView
-from swiftbots import initialize_app
+from swiftbots import SwiftBots
 
 
 def main():
-    app = initialize_app()
+    app = SwiftBots()
 
     app.add_bot(ConsoleView, [CalculatorApi])
 

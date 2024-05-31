@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from swiftbots import initialize_app
+from swiftbots import SwiftBots
 from swiftbots.admin_utils import shutdown_app
 from swiftbots.all_types import BasicContext, BasicPreContext
 from swiftbots.controllers import Controller
@@ -37,7 +37,7 @@ class TestBasicView:
 
     @pytest.mark.timeout(3)
     def test_default_handler(self):
-        app = initialize_app()
+        app = SwiftBots()
 
         app.add_bot(MyBasicView, [MyController])
 

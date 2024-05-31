@@ -2,11 +2,11 @@ from examples.bot_with_tasks.basic_controller import (
     BasicController,
 )
 from examples.bot_with_tasks.basic_view import SimpleView
-from swiftbots import initialize_app
+from swiftbots import SwiftBots
 
 
 def main():
-    app = initialize_app()
+    app = SwiftBots()
 
     app.add_bot(SimpleView, [BasicController])
 

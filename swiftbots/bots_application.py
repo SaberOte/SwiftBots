@@ -23,7 +23,7 @@ from swiftbots.loggers import SysIOLoggerFactory
 from swiftbots.runners import run_async
 
 
-class BotsApplication:
+class SwiftBots:
     __logger: ILogger
     __logger_factory: ILoggerFactory
     __db_engine: AsyncEngine | None = None

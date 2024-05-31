@@ -3,7 +3,7 @@ from collections.abc import AsyncGenerator
 
 import pytest
 
-from swiftbots import initialize_app
+from swiftbots import SwiftBots
 from swiftbots.abstract_classes import AbstractMessengerView
 from swiftbots.admin_utils import shutdown_app
 from swiftbots.all_types import ChatContext, ChatPreContext, IContext
@@ -45,7 +45,7 @@ class TestMessengerView:
 
     @pytest.mark.timeout(3)
     def test_default_handler(self):
-        app = initialize_app()
+        app = SwiftBots()
 
         app.add_bot(MyMessengerView, [MyController])
 
