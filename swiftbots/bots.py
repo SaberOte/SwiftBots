@@ -8,7 +8,6 @@ from swiftbots.all_types import (
     ILogger,
     ILoggerFactory,
     IMessageHandler,
-    ITask,
     IView,
 )
 
@@ -20,14 +19,12 @@ class Bot:
     __logger: ILogger
     __db_session_maker: async_sessionmaker[AsyncSession] | None = None
 
-    view_class: type[IView] | None
+    view_class: type[IView]
     controller_classes: list[type[IController]]
-    task_classes: list[type[ITask]] | None
     message_handler_class: type[IMessageHandler] | None
 
-    view: IView | None = None
+    view: IView
     controllers: list[IController]
-    tasks: list[ITask] | None = None
     message_handler: IMessageHandler | None
 
     @property
@@ -41,8 +38,7 @@ class Bot:
     def __init__(
         self,
         controller_classes: list[type[IController]],
-        view_class: type[IView] | None,
-        task_classes: list[type[ITask]] | None,
+        view_class: type[IView],
         message_handler_class: type[IMessageHandler] | None,
         logger_factory: ILoggerFactory,
         name: str,
@@ -50,7 +46,6 @@ class Bot:
     ):
         self.view_class = view_class
         self.controller_classes = controller_classes
-        self.task_classes = task_classes
         self.message_handler_class = message_handler_class
         self.name = name
         self.__logger = logger_factory.get_logger()
@@ -105,30 +100,6 @@ def _set_message_handlers(bots: list[Bot]) -> None:
             bot.message_handler = bot.message_handler_class(bot.controllers, bot.logger)
 
 
-def _set_tasks(bots: list[Bot]) -> None:
-    """
-    Instantiate and set tasks
-    """
-    task_names: set[str] = set()
-    for bot in bots:
-        if bot.task_classes:
-            task_classes = bot.task_classes
-            tasks = []
-            for task_class in task_classes:
-                task = task_class()
-                name: str | None = task.name
-                if name is None:
-                    name = task_class.__name__
-                    assert name not in task_names, (
-                        f"Duplicate task names {name}. Use "
-                        f"unique `name` property for tasks or unique task class names"
-                    )
-                    task_names.add(name)
-                task.init(bot.logger, bot.db_session_maker, name)
-                tasks.append(task)
-            bot.tasks = tasks
-
-
 def _instantiate_in_bots(bots: list[Bot]) -> None:
     """
     Instantiate and set to the bot instances, each controller must be singleton
@@ -140,20 +111,12 @@ def _instantiate_in_bots(bots: list[Bot]) -> None:
 
 async def soft_close_bot_async(bot: Bot) -> None:
     """
-    Close softly bot's view and tasks to close all connections (like database or http clients)
+    Close bot's view softly to close all connections (like database or http clients)
     """
-    if bot.tasks:
-        for task in bot.tasks:
-            try:
-                await task._soft_close_async()
-            except Exception as e:
-                await bot.logger.error_async(
-                    f"Raised an exception `{e}` when a task closing method called:\n{format_exc()}"
-                )
-    if bot.view:
-        try:
-            await bot.view._soft_close_async()
-        except Exception as e:
-            await bot.logger.error_async(
-                f"Raised an exception `{e}` when a bot closing method called:\n{format_exc()}"
-            )
+    # TODO: add this as a method to Bot and close all connections there
+    try:
+        await bot.view._soft_close_async()
+    except Exception as e:
+        await bot.logger.error_async(
+            f"Raised an exception `{e}` when a bot closing method called:\n{format_exc()}"
+        )

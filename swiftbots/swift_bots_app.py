@@ -1,6 +1,4 @@
 import asyncio
-import random
-import string
 from collections.abc import Callable
 
 from sqlalchemy.ext.asyncio import (
@@ -15,7 +13,6 @@ from swiftbots.all_types import (
     ILogger,
     ILoggerFactory,
     IMessageHandler,
-    ITask,
     IView,
 )
 from swiftbots.bots import Bot, _instantiate_in_bots
@@ -41,6 +38,7 @@ class SwiftBots:
         """
         Set logger factory and create an instance
         """
+        # TODO: remove this method in the future
         assert isinstance(
             logger_factory, ILoggerFactory
         ), "Logger factory must be of type ILoggerFactory"
@@ -57,6 +55,7 @@ class SwiftBots:
         mysql+asyncmy://nick:password123@localhost/database123.
         It's necessary to use async drivers for database connection.
         """
+        # TODO: remove this method in the future
         self.__db_engine = create_async_engine(connection_string, echo=False)
         self.__db_session_maker = async_sessionmaker(
             self.__db_engine, expire_on_commit=False
@@ -64,41 +63,28 @@ class SwiftBots:
 
     def add_bot(
         self,
-        view_class: type[IView] | None,
+        view_class: type[IView],
         controller_classes: list[type[IController]],
-        task_classes: list[type[ITask]] | None = None,
-        message_handler_class: type[IMessageHandler] | None = None,
         name: str | None = None,
+        message_handler_class: type[IMessageHandler] | None = None,
         bot_logger_factory: ILoggerFactory | None = None,
     ) -> None:
         """
         The method adds a bot.
-        It's required to have at least one controller in a bot.
-        And there's required to contain either one view or at least one task (or both).
-        :param view_class: Class of view. Must inherit BasicView, ChatView, TelegramView, VkontakteView or another.
+        It's required to have at least one controller and only one view in a bot.
+        :param view_class: Class of a view.
+        Must inherit BasicView, ChatView, TelegramView, VkontakteView or another.
         :param controller_classes: List of controllers. Required to have at least one controller.
         Must inherit Controller class.
-        :param task_classes: Task classes. Tasks inherit ITask. Do scheduled tasks.
         :param message_handler_class: Optional. Must inherit IMessageHandler.
         :param name: Optional. Set a name of the bot. ViewName if not provided. If no viewName, then random string.
         :param bot_logger_factory: Optional. ILoggerFactory to configure logger.
         """
         assert len(controller_classes) > 0, "No controllers"
 
-        assert view_class is None or issubclass(
+        assert issubclass(
             view_class, IView
         ), "view must be of type IView"
-
-        assert (
-            task_classes or view_class
-        ), "Required to have at least either tasks or view"
-
-        assert (
-            task_classes is None or len(task_classes) > 0
-        ), "Empty task classes list provided"
-        if task_classes:
-            for task_class in task_classes:
-                assert issubclass(task_class, ITask), "Tasks must be of type ITask"
 
         assert message_handler_class is None or issubclass(
             message_handler_class, IMessageHandler
@@ -113,18 +99,13 @@ class SwiftBots:
             bot_logger_factory, ILoggerFactory
         ), "Logger must be of type ILogger"
 
-        if not name:
-            if view_class:
-                name = view_class.__name__
-            else:
-                name = "".join(random.choices(string.ascii_letters, k=8))
-
+        name = name or view_class.__name__
         bot_logger_factory = bot_logger_factory or self.__logger_factory
+
         self.__bots.append(
             Bot(
                 controller_classes,
                 view_class,
-                task_classes,
                 message_handler_class,
                 bot_logger_factory,
                 name,
