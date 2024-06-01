@@ -6,7 +6,7 @@ Message handlers do:
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from swiftbots.all_types import IContext, IController, ILogger, IView
@@ -19,7 +19,7 @@ class IMessageHandler(ABC):
     """
 
     @abstractmethod
-    def __init__(self, controllers: list["IController"], logger: "ILogger"):
+    def __init__(self, controllers: List["IController"], logger: "ILogger"):
         raise NotImplementedError()
 
     @abstractmethod

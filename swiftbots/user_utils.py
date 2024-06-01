@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List
 
 if TYPE_CHECKING:
     from swiftbots.all_types import IView
@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 def get_available_commands_for_user(
     view: "IView", is_admin: bool
-) -> dict[str, list[str]]:
+) -> Dict[str, List[str]]:
     """
     :returns: dictionary of controllers and their commands.
     Key is a name of controller, value is a list of commands which are available for this user.
@@ -18,7 +18,7 @@ def get_available_commands_for_user(
     }
     """
 
-    result: dict[str, list[str]] = {}
+    result: Dict[str, List[str]] = {}
 
     for ctrl in view.bot.controllers:
         if len(ctrl.cmds) > 0:
@@ -49,8 +49,8 @@ def __is_function_admin_only_wrapped(func: Callable) -> bool:
     return func.__doc__ is not None and "admin_only_wrapper" in func.__doc__
 
 
-def __distinct_commands(commands: dict[str, Callable]) -> dict[str, Callable]:
-    filtered: dict[str, Callable] = {}
+def __distinct_commands(commands: Dict[str, Callable]) -> Dict[str, Callable]:
+    filtered: Dict[str, Callable] = {}
     for command, method in commands.items():
         if method not in filtered.values():
             filtered[command] = method

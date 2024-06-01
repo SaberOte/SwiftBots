@@ -3,7 +3,7 @@ __all__ = [
     'TaskInfo'
 ]
 
-from typing import Union
+from typing import List, Union
 
 from swiftbots.all_types import ITrigger
 
@@ -11,7 +11,7 @@ from swiftbots.all_types import ITrigger
 class TaskInfo:
     def __init__(self,
                  name: str,
-                 triggers: list[ITrigger],
+                 triggers: List[ITrigger],
                  run_at_start: bool):
         self.name = name
         self.triggers = triggers
@@ -20,7 +20,7 @@ class TaskInfo:
 
 def task(
     name: str,
-    triggers: Union[ITrigger, list[ITrigger]],
+    triggers: Union[ITrigger, List[ITrigger]],
     run_at_start: bool = False
 ):
     """

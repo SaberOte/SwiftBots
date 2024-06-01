@@ -1,7 +1,7 @@
 import random
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Type, Union
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -32,17 +32,17 @@ class IView(
 
     @property
     @abstractmethod
-    def default_message_handler_class(self) -> type["IMessageHandler"]:
+    def default_message_handler_class(self) -> Type["IMessageHandler"]:
         raise NotImplementedError()
 
     @property
     @abstractmethod
-    def associated_pre_context(self) -> type["IContext"]:
+    def associated_pre_context(self) -> Type["IContext"]:
         raise NotImplementedError()
 
     @property
     @abstractmethod
-    def associated_context(self) -> type["IContext"]:
+    def associated_context(self) -> Type["IContext"]:
         raise NotImplementedError()
 
     @abstractmethod

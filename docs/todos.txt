@@ -13,7 +13,6 @@ REFACTORING
 - Write docs
 - Make license like GPL
 - Try pyright instead of mypy
-- Make python less than 3.10 versions compatible (replace X | Y to Union[X, Y])
 - Set __all__ in some modules
 
 TODOS TESTS

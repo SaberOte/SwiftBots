@@ -1,7 +1,7 @@
 import asyncio
 from abc import ABC
 from collections.abc import AsyncGenerator
-from typing import TYPE_CHECKING, Union, Optional
+from typing import TYPE_CHECKING, Optional, Tuple, Type, Union
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -48,7 +48,7 @@ class BasicView(
     __bot: "Bot"
 
     @property
-    def default_message_handler_class(self) -> type["IMessageHandler"]:
+    def default_message_handler_class(self) -> Type["IMessageHandler"]:
         return BasicMessageHandler
 
     def init(
@@ -66,17 +66,17 @@ class BasicView(
         return self.__bot
 
     @property
-    def associated_pre_context(self) -> type["IContext"]:
+    def associated_pre_context(self) -> Type["IContext"]:
         return BasicPreContext
 
     @property
-    def associated_context(self) -> type["IContext"]:
+    def associated_context(self) -> Type["IContext"]:
         return BasicContext
 
 
 class ChatView(IChatView, BasicView, ABC):
     @property
-    def default_message_handler_class(self) -> type["IMessageHandler"]:
+    def default_message_handler_class(self) -> Type["IMessageHandler"]:
         return ChatMessageHandler
 
     async def reply_async(
@@ -117,11 +117,11 @@ class ChatView(IChatView, BasicView, ABC):
         return str(self._admin) == str(user)
 
     @property
-    def associated_pre_context(self) -> type["IContext"]:
+    def associated_pre_context(self) -> Type["IContext"]:
         return ChatPreContext
 
     @property
-    def associated_context(self) -> type["IContext"]:
+    def associated_context(self) -> Type["IContext"]:
         return ChatContext
 
 
@@ -238,11 +238,11 @@ class TelegramView(ITelegramView, AbstractMessengerView, ChatView, ABC):
         return await self.fetch_async("sendSticker", data)
 
     @property
-    def associated_pre_context(self) -> type["IContext"]:
+    def associated_pre_context(self) -> Type["IContext"]:
         return TelegramPreContext
 
     @property
-    def associated_context(self) -> type["IContext"]:
+    def associated_context(self) -> Type["IContext"]:
         return TelegramContext
 
     async def _deconstruct_message_async(self, update: dict) -> Optional[IContext]:
@@ -439,11 +439,11 @@ class VkontakteView(IVkontakteView, AbstractMessengerView, ChatView, ABC):
         return await self.fetch_async("messages.send", data)
 
     @property
-    def associated_pre_context(self) -> type["IContext"]:
+    def associated_pre_context(self) -> Type["IContext"]:
         return VkontaktePreContext
 
     @property
-    def associated_context(self) -> type["IContext"]:
+    def associated_context(self) -> Type["IContext"]:
         return VkontakteContext  # TODO: попробовать переопределить typing
 
     async def _deconstruct_message_async(self, update: dict) -> "IContext":
@@ -514,7 +514,7 @@ class VkontakteView(IVkontakteView, AbstractMessengerView, ChatView, ABC):
             )
             return 1
 
-    async def _get_long_poll_server_async(self) -> tuple[str, str, str]:
+    async def _get_long_poll_server_async(self) -> Tuple[str, str, str]:
         """
         https://dev.vk.com/ru/api/bots-long-poll/getting-started#Подключение
         """

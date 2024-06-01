@@ -2,7 +2,7 @@ __all__ = [
     'AppContainer'
 ]
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from swiftbots.all_types import ILogger, IScheduler
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 class AppContainer:
-    def __init__(self, bots: list['Bot'], logger: ILogger, scheduler: IScheduler) -> None:
+    def __init__(self, bots: List['Bot'], logger: 'ILogger', scheduler: 'IScheduler') -> None:
         self.bots = bots
         self.logger = logger
         self.scheduler = scheduler

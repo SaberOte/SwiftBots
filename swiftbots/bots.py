@@ -5,7 +5,7 @@ __all__ = [
 ]
 
 from traceback import format_exc
-from typing import Optional
+from typing import List, Optional, Type
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio.session import AsyncSession
@@ -26,12 +26,12 @@ class Bot:
     __logger: ILogger
     __db_session_maker: Optional[async_sessionmaker[AsyncSession]] = None
 
-    view_class: type[IView]
-    controller_classes: list[type[IController]]
-    message_handler_class: Optional[type[IMessageHandler]]
+    view_class: Type[IView]
+    controller_classes: List[Type[IController]]
+    message_handler_class: Optional[Type[IMessageHandler]]
 
     view: IView
-    controllers: list[IController]
+    controllers: List[IController]
     message_handler: Optional[IMessageHandler]
 
     @property
@@ -44,9 +44,9 @@ class Bot:
 
     def __init__(
         self,
-        controller_classes: list[type[IController]],
-        view_class: type[IView],
-        message_handler_class: Optional[type[IMessageHandler]],
+        controller_classes: List[Type[IController]],
+        view_class: Type[IView],
+        message_handler_class: Optional[Type[IMessageHandler]],
         logger_factory: ILoggerFactory,
         name: str,
         db_session_maker: Optional[async_sessionmaker],
@@ -60,7 +60,7 @@ class Bot:
         self.__db_session_maker = db_session_maker
 
 
-def _set_views(bots: list[Bot]) -> None:
+def _set_views(bots: List[Bot]) -> None:
     """
     Instantiate and set views
     """
@@ -70,13 +70,13 @@ def _set_views(bots: list[Bot]) -> None:
             bot.view.init(bot, bot.logger, bot.db_session_maker)
 
 
-def _set_controllers(bots: list[Bot]) -> None:
+def _set_controllers(bots: List[Bot]) -> None:
     """
     Instantiate and set to the bot controllers, each one must be singleton
     """
-    controller_memory: list[IController] = []
+    controller_memory: List[IController] = []
     for bot in bots:
-        controllers_to_add: list[IController] = []
+        controllers_to_add: List[IController] = []
         controller_types = bot.controller_classes
 
         for controller_type in controller_types:
@@ -96,7 +96,7 @@ def _set_controllers(bots: list[Bot]) -> None:
         bot.controllers = controllers_to_add
 
 
-def _set_message_handlers(bots: list[Bot]) -> None:
+def _set_message_handlers(bots: List[Bot]) -> None:
     """
     Instantiate and set handlers
     """
@@ -107,15 +107,15 @@ def _set_message_handlers(bots: list[Bot]) -> None:
             bot.message_handler = bot.message_handler_class(bot.controllers, bot.logger)
 
 
-def _set_tasks(bots: list[Bot]) -> None:
+def _set_tasks(bots: List[Bot]) -> None:
     """
     Configure tasks
     """
+    # TODO: implement
+    raise NotImplementedError()
 
 
-
-
-def build_bots(bots: list[Bot]) -> None:
+def build_bots(bots: List[Bot]) -> None:
     """
     Instantiate and set to the bot instances, each controller must be singleton
     """

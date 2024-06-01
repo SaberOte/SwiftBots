@@ -1,6 +1,6 @@
 import re
-from typing import Optional
 from collections.abc import Callable, Coroutine
+from typing import List, Optional
 
 from swiftbots.all_types import (
     IBasicMessageHandler,
@@ -20,7 +20,7 @@ class BasicMessageHandler(IBasicMessageHandler):
     __controller: IController
     __logger: ILogger
 
-    def __init__(self, controllers: list[IController], logger: ILogger):
+    def __init__(self, controllers: List[IController], logger: ILogger):
         self.__logger = logger
         self.__logger.debug("Initializing BasicMessageHandler")
         assert (
@@ -62,12 +62,12 @@ class ChatMessageHandler(IChatMessageHandler):
             self.controller = controller
 
     __trimmer = re.compile(r"\s+$")
-    __controllers: list[IController]
+    __controllers: List[IController]
     __default_controller: Optional[IController] = None
     __logger: ILogger
-    __commands: list[ControllerCommand]
+    __commands: List[ControllerCommand]
 
-    def __init__(self, controllers: list[IController], logger: ILogger):
+    def __init__(self, controllers: List[IController], logger: ILogger):
         self.__logger = logger
         self.__logger.debug("Initializing ChatMessageHandler")
         self.__controllers = controllers
@@ -115,7 +115,7 @@ class ChatMessageHandler(IChatMessageHandler):
         message: str = context["message"]
         arguments: str = ""
         best_match_rank = 0
-        best_matched_command: Optional["ChatMessageHandler.ControllerCommand"] = None
+        best_matched_command: Optional[ChatMessageHandler.ControllerCommand] = None
 
         # check if the command has arguments like `ADD NOTE apple, cigarettes, cheese`,
         # where `ADD NOTE` is a command and the rest is arguments
@@ -162,7 +162,7 @@ class ChatMessageHandler(IChatMessageHandler):
         # await do_method_async(method, controller, view, new_context)
         await method(controller, view=view, context=new_context)
 
-    def __build_commands(self, controllers: list[IController]) -> None:
+    def __build_commands(self, controllers: List[IController]) -> None:
         for controller in controllers:
             for command in controller.cmds:
                 controller_command = self.ControllerCommand(

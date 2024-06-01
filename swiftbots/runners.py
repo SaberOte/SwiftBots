@@ -1,5 +1,6 @@
 import asyncio
 from traceback import format_exc
+from typing import Dict, Set
 
 from swiftbots.all_types import (
     ExitApplicationException,
@@ -14,10 +15,10 @@ from swiftbots.bots import Bot, soft_close_bot_async
 from swiftbots.controllers import soft_close_controllers_in_bots_async
 from swiftbots.utils import ErrorRateMonitor
 
-__ALL_TASKS: set[str] = set()
+__ALL_TASKS: Set[str] = set()
 
 
-def get_all_tasks() -> set[str]:
+def get_all_tasks() -> Set[str]:
     return __ALL_TASKS
 
 
@@ -85,7 +86,7 @@ async def start_async_listener(bot: Bot) -> None:
         await delegate_to_handler_async(bot, pre_context)
 
 
-async def start_bot(bot: "Bot") -> None:
+async def start_bot(bot: Bot) -> None:
     # if bot.tasks:
     #     for task in bot.tasks:
     if bot.view:
@@ -94,9 +95,9 @@ async def start_bot(bot: "Bot") -> None:
 
 async def start_async_loop(app_container: AppContainer) -> None:
     bots = app_container.bots
-    tasks: set[asyncio.Task] = set()
+    tasks: Set[asyncio.Task] = set()
 
-    bots_dict: dict[str, Bot] = {bot.name: bot for bot in bots}
+    bots_dict: Dict[str, Bot] = {bot.name: bot for bot in bots}
     global __ALL_TASKS
     __ALL_TASKS = set(bots_dict.keys())
 

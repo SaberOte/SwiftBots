@@ -4,7 +4,7 @@ __all__ = [
 
 import asyncio
 from collections.abc import Callable
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional, Type
 
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -22,7 +22,7 @@ from swiftbots.tasks.schedulers import SimpleScheduler
 
 
 class Application:
-    __bots: dict[str, 'Bot']
+    __bots: Dict[str, 'Bot']
     __logger: ILogger
     __logger_factory: ILoggerFactory
     __scheduler: IScheduler
@@ -58,10 +58,10 @@ class Application:
 
     def add_bot(
         self,
-        view_class: type[IView],
-        controller_classes: list[type[IController]],
+        view_class: Type[IView],
+        controller_classes: List[Type[IController]],
         name: Optional[str] = None,
-        message_handler_class: Optional[type[IMessageHandler]] = None,
+        message_handler_class: Optional[Type[IMessageHandler]] = None,
         bot_logger_factory: Optional[ILoggerFactory] = None,
     ) -> None:
         """

@@ -1,7 +1,5 @@
 import asyncio
 
-import pytest
-
 from swiftbots import PeriodTrigger, SwiftBots, task
 from swiftbots.admin_utils import shutdown_app
 from swiftbots.controllers import Controller
