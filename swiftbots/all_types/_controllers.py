@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Coroutine
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio.session import AsyncSession
@@ -22,7 +22,7 @@ class IController(
     IDatabaseConnectionProvider, IAsyncHttpClientProvider, ISoftClosable, ABC
 ):
     cmds: dict[str, Callable] = {}
-    default: Callable | None = None
+    default: Optional[Callable] = None
 
     @abstractmethod
     def init(self, db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:

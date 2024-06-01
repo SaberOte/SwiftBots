@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swiftbots"
-version = "0.2.2"
+version = "0.2.3dev"
 description = "Python asynchronous web framework for rapid any-level bots development"
 authors = ["Polka <you@example.com>"]
 readme = "docs/README.md"
@@ -17,8 +17,8 @@ aiohttp = "^3.9.2"
 sqlalchemy = {extras = ["asyncio"], version = "^2.0.25"}
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.4.4"
+ruff = "^0.4.7"
 aiosqlite = "^0.20.0"
-pytest = "^8.2.0"
-pytest-timeout = "^2.2.0"
+pytest = "^8.2.1"
+pytest-timeout = "^2.3.1"
 mypy = "^1.10.0"

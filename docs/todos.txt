@@ -14,6 +14,7 @@ REFACTORING
 - Finish adequate readme.
 - Make license like GPL
 - Try pyright instead of mypy
+- Make python less than 3.10 versions compatible (replace X | Y to Union[X, Y])
 
 TODOS TESTS
 ===========

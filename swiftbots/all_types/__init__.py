@@ -7,3 +7,5 @@ from swiftbots.all_types._exceptions import *
 from swiftbots.all_types._controllers import *
 from swiftbots.all_types._message_handlers import *
 from swiftbots.all_types._views import *
+from swiftbots.all_types._triggers import *
+from swiftbots.all_types._schedulers import *
