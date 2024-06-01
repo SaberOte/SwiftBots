@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.ext.asyncio.session import async_sessionmaker
 
+from swiftbots.tasks.schedulers import SimpleScheduler
 from swiftbots.all_types import IController, ILogger, ILoggerFactory, IMessageHandler, IScheduler, IView
 from swiftbots.bots import Bot, _instantiate_in_bots
 from swiftbots.loggers import SysIOLoggerFactory
@@ -18,7 +19,7 @@ from swiftbots.runners import run_async
 class SwiftBots:
     __logger: ILogger
     __logger_factory: ILoggerFactory
-    # __scheduler: IScheduler
+    __scheduler: IScheduler
     __db_engine: Optional[AsyncEngine] = None
     __db_session_maker: Optional[async_sessionmaker[AsyncSession]] = None
     __bots: list[Bot]
@@ -26,7 +27,7 @@ class SwiftBots:
     def __init__(self,
                  logger_factory: Optional[ILoggerFactory] = None,
                  db_connection_string: Optional[str] = None,
-                 # scheduler: Optional[IScheduler] = None
+                 scheduler: Optional[IScheduler] = None
                  ):
         assert isinstance(
             logger_factory, ILoggerFactory
@@ -44,22 +45,7 @@ class SwiftBots:
                 self.__db_engine, expire_on_commit=False
             )
 
-        # self.__scheduler = scheduler or
-
-    def use_database(self, connection_string: str) -> None:
-        """
-        This method must be called before adding bots to an app!
-        Examples of connections string:
-        sqlite+aiosqlite://~/tmp/db.sqlite3,
-        postgresql+asyncpg://nick:password123@localhost/database123,
-        mysql+asyncmy://nick:password123@localhost/database123.
-        It's necessary to use async drivers for database connection.
-        """
-        # TODO: remove this method in the future
-        self.__db_engine = create_async_engine(connection_string, echo=False)
-        self.__db_session_maker = async_sessionmaker(
-            self.__db_engine, expire_on_commit=False
-        )
+        self.__scheduler = scheduler or SimpleScheduler()
 
     def add_bot(
         self,
