@@ -1,26 +1,32 @@
-from typing import TYPE_CHECKING
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 
-from swiftbots.all_types import ITrigger
-
-if TYPE_CHECKING:
-    from swiftbots.all_types import IController
+from swiftbots.tasks.tasks import TaskInfo
 
 
 class IScheduler(ABC):
     @abstractmethod
-    def add_task(self, name: str,
-                 triggers: list[ITrigger],
+    def add_task(self,
+                 task_info: TaskInfo,
+                 caller: Callable
                  ) -> None:
-        """Schedule task. To start execution, the method `start` must be called"""
+        """
+        Add the task as a candidate for scheduling.
+        """
         ...
 
     @abstractmethod
     def remove_task(self, name: str) -> None:
-        """Unschedule task by name. This task will no longer be executed"""
+        """Unschedule task by name. This task won't be executed until `add_task` will be called"""
         ...
 
     @abstractmethod
     async def start(self) -> None:
-        """This method must be called to start scheduling tasks"""
+        """
+        The framework will call this method once, just when the app is started.
+        All tasks must be scheduled and then executed here.
+        To execute a task, call `caller` without any arguments.
+        The framework will make confidence that the appropriate controller method will
+        be executed with demanded dependencies.
+        """
         ...

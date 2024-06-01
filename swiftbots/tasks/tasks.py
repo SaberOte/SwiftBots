@@ -1,33 +1,33 @@
 __all__ = [
     'task',
-    'run_every'
+    'TaskInfo'
 ]
+
+from typing import Optional, Union
 
 from swiftbots.all_types import ITrigger
 
-from typing import Optional
-from typing_extensions import Doc, Annotated
 
-
-class Trigger:
-    timer_seconds: Optional[float] = None
-    schedule: Optional
+class TaskInfo:
+    def __init__(self,
+                 name: str,
+                 triggers: list[ITrigger],
+                 run_at_start: bool):
+        self.name = name
+        self.triggers = triggers
+        self.run_at_start = run_at_start
 
 
 def task(
-    name: Annotated[str, Doc("Name of the task. Will manage task by its name")],
-    scheduler: Trigger
+    name: str,
+    triggers: Union[ITrigger, list[ITrigger]],
+    run_at_start: Optional[bool] = False
 ):
-    pass
-
-
-def run_periodically(
-    hours: Optional[float] = None,
-    minutes: Optional[float] = None,
-    seconds: Optional[float] = None,
-    run_at_start: bool = False
-) -> Trigger:
-    assert hours >= 0 and minutes >= 0 and seconds >= 0, 'Time for scheduler must be positive or zero'
-
-
-
+    """
+    Mark a controller method as a task.
+    Depends on trigger(s), will be executed by scheduler.
+    """
+    assert isinstance(triggers, ITrigger) or len(triggers) > 0, 'Empty list of triggers'
+    return TaskInfo(name,
+                    triggers if isinstance(triggers, list) else [triggers],
+                    run_at_start)

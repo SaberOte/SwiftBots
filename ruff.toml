@@ -26,6 +26,8 @@ ignore = [
     "ANN003",
     # single quota demand
     "Q000",
+    # use X | Y, not Optional[X], freaks
+    "UP007"
 ]
 
 [format]

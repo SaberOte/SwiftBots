@@ -2,12 +2,10 @@ import asyncio
 
 import pytest
 
-from swiftbots import SwiftBots, task
+from swiftbots import PeriodTrigger, SwiftBots, task
 from swiftbots.admin_utils import shutdown_app
-from swiftbots.all_types import BasicContext, BasicPreContext
 from swiftbots.controllers import Controller
 from swiftbots.views import BasicView
-
 
 global_var = 0
 
@@ -15,10 +13,7 @@ global_var = 0
 class MyBasicView(BasicView):
 
     async def listen_async(self):
-        while True:
-            await asyncio.sleep(0)
-            test_value = 69
-            yield BasicPreContext(test_value)
+        await asyncio.sleep(100)
 
     async def change_var(self, value):
         await asyncio.sleep(0)
@@ -29,7 +24,7 @@ class MyBasicView(BasicView):
 
 class MyController(Controller):
 
-    @task('my-task', PeriodTrigger())
+    @task('my-task', PeriodTrigger(seconds=5), run_at_start=True)
     async def my_task_method(self, view: MyBasicView):
         await view.change_var(5)
 
