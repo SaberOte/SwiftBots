@@ -9,34 +9,36 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.ext.asyncio.session import async_sessionmaker
 
-from swiftbots.tasks.schedulers import SimpleScheduler
 from swiftbots.all_types import IController, ILogger, ILoggerFactory, IMessageHandler, IScheduler, IView
 from swiftbots.bots import Bot, _instantiate_in_bots
 from swiftbots.loggers import SysIOLoggerFactory
 from swiftbots.runners import run_async
+from swiftbots.tasks.schedulers import SimpleScheduler
 
 
 class SwiftBots:
+    __bots: dict[str, 'Bot']
     __logger: ILogger
     __logger_factory: ILoggerFactory
     __scheduler: IScheduler
+    __runner: Callable[[list['Bot']], any]
     __db_engine: Optional[AsyncEngine] = None
     __db_session_maker: Optional[async_sessionmaker[AsyncSession]] = None
-    __bots: list[Bot]
 
     def __init__(self,
                  logger_factory: Optional[ILoggerFactory] = None,
                  db_connection_string: Optional[str] = None,
-                 scheduler: Optional[IScheduler] = None
+                 scheduler: Optional[IScheduler] = None,
+                 runner: Callable[[list['Bot']], any] | None = None
                  ):
-        assert isinstance(
+        assert logger_factory is None or isinstance(
             logger_factory, ILoggerFactory
         ), "Logger factory must be of type ILoggerFactory"
 
-        self.__bots = []
+        self.__bots = {}
         # logger
         self.__logger_factory = logger_factory or SysIOLoggerFactory()
-        self.__logger = logger_factory.get_logger()
+        self.__logger = self.__logger_factory.get_logger()
 
         # database
         if db_connection_string is not None:
@@ -46,6 +48,8 @@ class SwiftBots:
             )
 
         self.__scheduler = scheduler or SimpleScheduler()
+
+        self.__runner = runner or run_async
 
     def add_bot(
         self,
@@ -66,11 +70,15 @@ class SwiftBots:
         :param name: Optional. Set a name of the bot. ViewName if not provided. If no viewName, then random string.
         :param bot_logger_factory: Optional. ILoggerFactory to configure logger.
         """
-        assert len(controller_classes) > 0, "No controllers"
+        name = name or view_class.__name__
+        assert name not in self.__bots, \
+            f"Bot with the name {name} defined twice. If you want to use the same bots, give them different names"
+
+        assert len(controller_classes) > 0, f"No controllers in {name} bot"
 
         assert issubclass(
             view_class, IView
-        ), "view must be of type IView"
+        ), "The view must be of the type IView"
 
         assert message_handler_class is None or issubclass(
             message_handler_class, IMessageHandler
@@ -85,47 +93,33 @@ class SwiftBots:
             bot_logger_factory, ILoggerFactory
         ), "Logger must be of type ILogger"
 
-        name = name or view_class.__name__
         bot_logger_factory = bot_logger_factory or self.__logger_factory
 
-        self.__bots.append(
-            Bot(
-                controller_classes,
-                view_class,
-                message_handler_class,
-                bot_logger_factory,
-                name,
-                self.__db_session_maker,
-            )
+        self.__bots[name] = Bot(
+            controller_classes,
+            view_class,
+            message_handler_class,
+            bot_logger_factory,
+            name,
+            self.__db_session_maker,
         )
 
-    def run(self, custom_runner: Callable[[list["Bot"]], None] | None = None) -> None:
+    def run(self) -> None:
         """
-        Start application to listen to all the bots in asynchronous event loop
+        Start application to listen to or execute all the bots
         """
         if len(self.__bots) == 0:
             self.__logger.critical("No bots used")
             return
 
-        self.__check_bot_repeats()
+        bots = list(self.__bots.values())
 
-        _instantiate_in_bots(self.__bots)
+        _instantiate_in_bots(bots)
 
-        if custom_runner is None:
-            asyncio.run(run_async(self.__bots))
-        else:
-            custom_runner(self.__bots)
+        self.__runner(bots)
 
         asyncio.run(self.__close_app())
 
     async def __close_app(self) -> None:
         if self.__db_engine is not None:
             await self.__db_engine.dispose()
-
-    def __check_bot_repeats(self) -> None:
-        names = set()
-        for bot in self.__bots:
-            assert (
-                bot.name not in names
-            ), f"Bot {bot.name} is defined twice. If you want to use same bots, give them different names"
-            names.add(bot.name)

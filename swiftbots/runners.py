@@ -91,7 +91,7 @@ async def start_bot(bot: "Bot") -> None:
         await start_async_listener(bot)
 
 
-async def run_async(bots: list[Bot]) -> None:
+async def start_async_loop(bots: list[Bot]) -> None:
     tasks: set[asyncio.Task] = set()
 
     bots_dict: dict[str, Bot] = {bot.name: bot for bot in bots}
@@ -164,3 +164,7 @@ async def run_async(bots: list[Bot]) -> None:
                     )
                 await bot.logger.report_async("Bots application's closed")
                 return
+
+
+def run_async(bots: list[Bot]) -> None:
+    asyncio.run(start_async_loop(bots))
