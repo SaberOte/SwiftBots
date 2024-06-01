@@ -34,6 +34,7 @@ class TaskContainer:
             if isinstance(trigger, IPeriodTrigger):
                 if now - self.__last_called >= trigger.get_period():
                     return True
+        return False
 
 
 class SimpleScheduler(IScheduler):
@@ -65,9 +66,7 @@ class SimpleScheduler(IScheduler):
             await asyncio.sleep(self.__ping_updates_period_seconds)
 
     def __find_tasks_to_run(self) -> list[TaskContainer]:
-        for task in self.tasks.values():
-            if task.should_run():
-                yield task
+        return [task for task in self.tasks.values() if task.should_run()]
 
     async def __run_pending_tasks(self) -> None:
         for task in self.__find_tasks_to_run():

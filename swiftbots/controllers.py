@@ -1,7 +1,7 @@
 from abc import ABC
 from collections.abc import Sequence
 from traceback import format_exc
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio.session import AsyncSession
@@ -24,7 +24,7 @@ class Controller(
     AbstractSoftClosable,
     ABC,
 ):
-    def init(self, db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:
+    def init(self, db_session_maker: Optional[async_sessionmaker[AsyncSession]]) -> None:
         self._set_db_session_maker(db_session_maker)
 
 

@@ -9,6 +9,7 @@ from swiftbots.all_types import (
     RestartListeningException,
     StartBotException,
 )
+from swiftbots.app.container import AppContainer
 from swiftbots.bots import Bot, soft_close_bot_async
 from swiftbots.controllers import soft_close_controllers_in_bots_async
 from swiftbots.utils import ErrorRateMonitor
@@ -91,7 +92,8 @@ async def start_bot(bot: "Bot") -> None:
         await start_async_listener(bot)
 
 
-async def start_async_loop(bots: list[Bot]) -> None:
+async def start_async_loop(app_container: AppContainer) -> None:
+    bots = app_container.bots
     tasks: set[asyncio.Task] = set()
 
     bots_dict: dict[str, Bot] = {bot.name: bot for bot in bots}
@@ -166,5 +168,5 @@ async def start_async_loop(bots: list[Bot]) -> None:
                 return
 
 
-def run_async(bots: list[Bot]) -> None:
-    asyncio.run(start_async_loop(bots))
+def run_async(container: AppContainer) -> None:
+    asyncio.run(start_async_loop(container))

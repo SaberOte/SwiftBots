@@ -1,6 +1,10 @@
+__all__ = [
+    'Application'
+]
+
 import asyncio
 from collections.abc import Callable
-from typing import Optional
+from typing import Any, Optional
 
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -10,18 +14,19 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.ext.asyncio.session import async_sessionmaker
 
 from swiftbots.all_types import IController, ILogger, ILoggerFactory, IMessageHandler, IScheduler, IView
-from swiftbots.bots import Bot, _instantiate_in_bots
+from swiftbots.app.container import AppContainer
+from swiftbots.bots import Bot, build_bots
 from swiftbots.loggers import SysIOLoggerFactory
 from swiftbots.runners import run_async
 from swiftbots.tasks.schedulers import SimpleScheduler
 
 
-class SwiftBots:
+class Application:
     __bots: dict[str, 'Bot']
     __logger: ILogger
     __logger_factory: ILoggerFactory
     __scheduler: IScheduler
-    __runner: Callable[[list['Bot']], any]
+    __runner: Callable[[AppContainer], Any]
     __db_engine: Optional[AsyncEngine] = None
     __db_session_maker: Optional[async_sessionmaker[AsyncSession]] = None
 
@@ -29,7 +34,7 @@ class SwiftBots:
                  logger_factory: Optional[ILoggerFactory] = None,
                  db_connection_string: Optional[str] = None,
                  scheduler: Optional[IScheduler] = None,
-                 runner: Callable[[list['Bot']], any] | None = None
+                 runner: Optional[Callable[[AppContainer], Any]] = None
                  ):
         assert logger_factory is None or isinstance(
             logger_factory, ILoggerFactory
@@ -55,9 +60,9 @@ class SwiftBots:
         self,
         view_class: type[IView],
         controller_classes: list[type[IController]],
-        name: str | None = None,
-        message_handler_class: type[IMessageHandler] | None = None,
-        bot_logger_factory: ILoggerFactory | None = None,
+        name: Optional[str] = None,
+        message_handler_class: Optional[type[IMessageHandler]] = None,
+        bot_logger_factory: Optional[ILoggerFactory] = None,
     ) -> None:
         """
         The method adds a bot.
@@ -68,7 +73,7 @@ class SwiftBots:
         Must inherit Controller class.
         :param message_handler_class: Optional. Must inherit IMessageHandler.
         :param name: Optional. Set a name of the bot. ViewName if not provided. If no viewName, then random string.
-        :param bot_logger_factory: Optional. ILoggerFactory to configure logger.
+        :param bot_logger_factory: Optional. Configure logger especially for this bot.
         """
         name = name or view_class.__name__
         assert name not in self.__bots, \
@@ -114,9 +119,10 @@ class SwiftBots:
 
         bots = list(self.__bots.values())
 
-        _instantiate_in_bots(bots)
+        build_bots(bots)
+        app_container = AppContainer(bots, self.__logger, self.__scheduler)
 
-        self.__runner(bots)
+        self.__runner(app_container)
 
         asyncio.run(self.__close_app())
 

@@ -2,7 +2,7 @@ import asyncio
 import urllib.parse
 import urllib.request
 from collections.abc import Callable, Coroutine
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 import aiohttp
 
@@ -92,7 +92,7 @@ async def start_bot_async(bot_name: str) -> int:
 
 
 async def send_telegram_message_async(
-    message: str, admin: str, token: str, data: dict[str, Any] | None = None
+    message: str, admin: str, token: str, data: Optional[dict[str, Any]] = None
 ) -> None:
     if data is None:
         data = {}
@@ -114,7 +114,7 @@ async def send_telegram_message_async(
 
 
 def send_telegram_message(
-    message: str, admin: str, token: str, data: dict[str, Any] | None = None
+    message: str, admin: str, token: str, data: Optional[dict[str, Any]] = None
 ) -> None:
     if data is None:
         data = {}
@@ -139,7 +139,7 @@ def send_telegram_message(
 
 
 async def send_vk_message_async(
-    message: str, admin: str, token: str, data: dict[str, Any] | None = None
+    message: str, admin: str, token: str, data: Optional[dict[str, Any]] = None
 ) -> None:
     if data is None:
         data = {}
@@ -160,7 +160,7 @@ async def send_vk_message_async(
 
 
 def send_vk_message(
-    message: str, admin: str, token: str, data: dict[str, Any] | None = None
+    message: str, admin: str, token: str, data: Optional[dict[str, Any]] = None
 ) -> None:
     if data is None:
         data = {}

@@ -1,7 +1,7 @@
 import random
 from abc import ABC, abstractmethod
 from collections.abc import AsyncGenerator
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -64,7 +64,7 @@ class IView(
         self,
         bot: "Bot",
         logger: "ILogger",
-        db_session_maker: async_sessionmaker[AsyncSession] | None,
+        db_session_maker: Optional[async_sessionmaker[AsyncSession]],
     ) -> None:
         """
         Initialize the View
@@ -118,7 +118,7 @@ class IChatView(IView, ABC):
 
     @abstractmethod
     async def send_async(
-        self, message: str, user: str | int, data: dict | None = None
+        self, message: str, user: Union[str, int], data: Optional[dict] = None
     ) -> dict:
         """
         Reply to the user from context.
@@ -130,7 +130,7 @@ class IChatView(IView, ABC):
 
     @abstractmethod
     async def reply_async(
-        self, message: str, context: "IContext", data: dict | None = None
+        self, message: str, context: "IContext", data: Optional[dict] = None
     ) -> dict:
         """
         Reply to the user from context.
@@ -165,7 +165,7 @@ class IChatView(IView, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    async def is_admin_async(self, user: int | str) -> bool:
+    async def is_admin_async(self, user: Union[int, str]) -> bool:
         """
         Whether the user is an admin or not
         """
@@ -178,7 +178,7 @@ class ITelegramView(IChatView, ABC):
         self,
         method: str,
         data: dict,
-        headers: dict | None = None,
+        headers: Optional[dict] = None,
         ignore_errors: bool = False,
     ) -> dict:
         """
@@ -189,7 +189,7 @@ class ITelegramView(IChatView, ABC):
 
     @abstractmethod
     async def update_message_async(
-        self, text: str, message_id: int, context: "IContext", data: dict | None = None
+        self, text: str, message_id: int, context: "IContext", data: Optional[dict] = None
     ) -> dict:
         """
         Updating the message
@@ -202,7 +202,7 @@ class ITelegramView(IChatView, ABC):
 
     @abstractmethod
     async def delete_message_async(
-        self, message_id: int, context: "IContext", data: dict | None = None
+        self, message_id: int, context: "IContext", data: Optional[dict] = None
     ) -> dict:
         """
         Delete message `message_id`
@@ -211,7 +211,7 @@ class ITelegramView(IChatView, ABC):
 
     @abstractmethod
     async def send_sticker_async(
-        self, file_id: str, context: "IContext", data: dict | None = None
+        self, file_id: str, context: "IContext", data: Optional[dict] = None
     ) -> dict:
         """
         Send user a sticker with id `file_id`.
@@ -225,9 +225,9 @@ class IVkontakteView(IChatView, ABC):
     async def fetch_async(
         self,
         method: str,
-        data: dict | None = None,
-        headers: dict | None = None,
-        query_data: dict | None = None,
+        data: Optional[dict] = None,
+        headers: Optional[dict] = None,
+        query_data: Optional[dict] = None,
         ignore_errors: bool = False,
     ) -> dict:
         """
@@ -242,7 +242,7 @@ class IVkontakteView(IChatView, ABC):
         message: str,
         message_id: int,
         context: "IContext",
-        data: dict | None = None,
+        data: Optional[dict] = None,
     ) -> dict:
         """
         Updating the message
@@ -255,7 +255,7 @@ class IVkontakteView(IChatView, ABC):
 
     @abstractmethod
     async def send_sticker_async(
-        self, sticker_id: int, context: "IContext", data: dict | None = None
+        self, sticker_id: int, context: "IContext", data: Optional[dict] = None
     ) -> dict:
         """
         Send a sticker to a user with id `sticker_id`.

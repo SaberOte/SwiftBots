@@ -1,4 +1,5 @@
 from abc import ABC
+from typing import Union
 
 
 class IContext(dict, ABC):
@@ -56,9 +57,9 @@ class ChatPreContext(IContext):
     """
 
     message: str
-    sender: str | int
+    sender: Union[str, int]
 
-    def __init__(self, message: str, sender: str | int = "unknown", **kwargs):
+    def __init__(self, message: str, sender: Union[str, int] = "unknown", **kwargs):
         super().__init__(message=message, sender=sender, **kwargs)
 
 
@@ -76,7 +77,7 @@ class ChatContext(IContext):
     raw_message: str
     arguments: str
     command: str
-    sender: str | int
+    sender: Union[str, int]
 
 
 class TelegramPreContext(ChatPreContext):

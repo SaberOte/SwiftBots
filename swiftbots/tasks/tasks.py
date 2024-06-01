@@ -3,7 +3,7 @@ __all__ = [
     'TaskInfo'
 ]
 
-from typing import Optional, Union
+from typing import Union
 
 from swiftbots.all_types import ITrigger
 
@@ -21,7 +21,7 @@ class TaskInfo:
 def task(
     name: str,
     triggers: Union[ITrigger, list[ITrigger]],
-    run_at_start: Optional[bool] = False
+    run_at_start: bool = False
 ):
     """
     Mark a controller method as a task.

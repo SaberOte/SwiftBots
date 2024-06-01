@@ -1,4 +1,5 @@
 import re
+from typing import Optional
 from collections.abc import Callable, Coroutine
 
 from swiftbots.all_types import (
@@ -62,7 +63,7 @@ class ChatMessageHandler(IChatMessageHandler):
 
     __trimmer = re.compile(r"\s+$")
     __controllers: list[IController]
-    __default_controller: IController | None = None
+    __default_controller: Optional[IController] = None
     __logger: ILogger
     __commands: list[ControllerCommand]
 
@@ -83,7 +84,7 @@ class ChatMessageHandler(IChatMessageHandler):
 
         self.__register_default_controller()
 
-    def use_as_default(self, controller: IController | None) -> None:
+    def use_as_default(self, controller: Optional[IController]) -> None:
         """
         Define the method that will be called when no one
         commands was fitted to process the message.
@@ -114,7 +115,7 @@ class ChatMessageHandler(IChatMessageHandler):
         message: str = context["message"]
         arguments: str = ""
         best_match_rank = 0
-        best_matched_command: "ChatMessageHandler.ControllerCommand" | None = None
+        best_matched_command: Optional["ChatMessageHandler.ControllerCommand"] = None
 
         # check if the command has arguments like `ADD NOTE apple, cigarettes, cheese`,
         # where `ADD NOTE` is a command and the rest is arguments

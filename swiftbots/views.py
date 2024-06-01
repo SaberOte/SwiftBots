@@ -1,7 +1,7 @@
 import asyncio
 from abc import ABC
 from collections.abc import AsyncGenerator
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -55,7 +55,7 @@ class BasicView(
         self,
         bot: "Bot",
         logger: "ILogger",
-        db_session_maker: async_sessionmaker[AsyncSession] | None,
+        db_session_maker: Optional[async_sessionmaker[AsyncSession]],
     ) -> None:
         self.__bot = bot
         self._set_logger(logger)
@@ -80,7 +80,7 @@ class ChatView(IChatView, BasicView, ABC):
         return ChatMessageHandler
 
     async def reply_async(
-        self, message: str, context: "IContext", data: dict | None = None
+        self, message: str, context: "IContext", data: Optional[dict] = None
     ) -> dict:
         return await self.send_async(message, context["sender"], data)
 
@@ -108,7 +108,7 @@ class ChatView(IChatView, BasicView, ABC):
         await self.logger.info_async(f"Forbidden. Context:\n{context}")
         return await self.reply_async(self.refuse_message, context)
 
-    async def is_admin_async(self, user: str | int) -> bool:
+    async def is_admin_async(self, user: Union[str, int]) -> bool:
         if self._admin is None:
             await self.logger.error_async(
                 f"No `_admin` property is set for view {self.bot.name}"
@@ -132,7 +132,7 @@ class TelegramView(ITelegramView, AbstractMessengerView, ChatView, ABC):
     ALLOWED_UPDATES = ["messages"]
 
     def __init__(
-        self, token: str, admin: str | None = None, skip_old_updates: bool = True
+        self, token: str, admin: Optional[str] = None, skip_old_updates: bool = True
     ):
         """
         :param token: Auth token of bot
@@ -147,7 +147,7 @@ class TelegramView(ITelegramView, AbstractMessengerView, ChatView, ABC):
         self,
         method: str,
         data: dict,
-        headers: dict | None = None,
+        headers: Optional[dict] = None,
         ignore_errors: bool = False,
     ) -> dict:
         url = f"https://api.telegram.org/bot{self.__token}/{method}"
@@ -196,7 +196,7 @@ class TelegramView(ITelegramView, AbstractMessengerView, ChatView, ABC):
         return answer"""
 
     async def update_message_async(
-        self, text: str, message_id: int, context: "IContext", data: dict | None = None
+        self, text: str, message_id: int, context: "IContext", data: Optional[dict] = None
     ) -> dict:
         if data is None:
             data = {}
@@ -206,7 +206,7 @@ class TelegramView(ITelegramView, AbstractMessengerView, ChatView, ABC):
         return await self.fetch_async("editMessageText", data)
 
     async def send_async(
-        self, message: str, user: str | int, data: dict | None = None
+        self, message: str, user: Union[str, int], data: Optional[dict] = None
     ) -> dict:
         if data is None:
             data = {}
@@ -220,7 +220,7 @@ class TelegramView(ITelegramView, AbstractMessengerView, ChatView, ABC):
         return result
 
     async def delete_message_async(
-        self, message_id: int, context: "IContext", data: dict | None = None
+        self, message_id: int, context: "IContext", data: Optional[dict] = None
     ) -> dict:
         if data is None:
             data = {}
@@ -229,7 +229,7 @@ class TelegramView(ITelegramView, AbstractMessengerView, ChatView, ABC):
         return await self.fetch_async("deleteMessage", data)
 
     async def send_sticker_async(
-        self, file_id: str, context: "IContext", data: dict | None = None
+        self, file_id: str, context: "IContext", data: Optional[dict] = None
     ) -> dict:
         if data is None:
             data = {}
@@ -245,7 +245,7 @@ class TelegramView(ITelegramView, AbstractMessengerView, ChatView, ABC):
     def associated_context(self) -> type["IContext"]:
         return TelegramContext
 
-    async def _deconstruct_message_async(self, update: dict) -> IContext | None:
+    async def _deconstruct_message_async(self, update: dict) -> Optional[IContext]:
         update = update["result"][0]
         if "message" in update and "text" in update["message"]:
             message = update["message"]
@@ -341,7 +341,7 @@ class VkontakteView(IVkontakteView, AbstractMessengerView, ChatView, ABC):
     __API_VERSION = "5.199"
     __default_headers: dict
 
-    def __init__(self, token: str, group_id: int, admin: int | None = None):
+    def __init__(self, token: str, group_id: int, admin: Optional[int] = None):
         """
         :param token: Auth token of bot
         :param admin: admin id to send reports or errors. Optional
@@ -353,9 +353,9 @@ class VkontakteView(IVkontakteView, AbstractMessengerView, ChatView, ABC):
     async def fetch_async(
         self,
         method: str,
-        data: dict | None = None,
-        headers: dict | None = None,
-        query_data: dict | None = None,
+        data: Optional[dict] = None,
+        headers: Optional[dict] = None,
+        query_data: Optional[dict] = None,
         ignore_errors: bool = False,
     ) -> dict:
         args = (
@@ -392,7 +392,7 @@ class VkontakteView(IVkontakteView, AbstractMessengerView, ChatView, ABC):
         return answer
 
     async def send_async(
-        self, message: str, user: int | str, data: dict | None = None
+        self, message: str, user: Union[int, str], data: Optional[dict] = None
     ) -> dict:
         """
         :returns: {
@@ -419,7 +419,7 @@ class VkontakteView(IVkontakteView, AbstractMessengerView, ChatView, ABC):
         message: str,
         message_id: int,
         context: "IContext",
-        data: dict | None = None,
+        data: Optional[dict] = None,
     ) -> dict:
         if data is None:
             data = {}
@@ -429,7 +429,7 @@ class VkontakteView(IVkontakteView, AbstractMessengerView, ChatView, ABC):
         return await self.fetch_async("messages.edit", data)
 
     async def send_sticker_async(
-        self, sticker_id: int, context: "IContext", data: dict | None = None
+        self, sticker_id: int, context: "IContext", data: Optional[dict] = None
     ) -> dict:
         if data is None:
             data = {}

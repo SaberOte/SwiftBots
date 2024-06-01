@@ -1,4 +1,11 @@
+__all__ = [
+    'Bot',
+    'build_bots',
+    'soft_close_bot_async'
+]
+
 from traceback import format_exc
+from typing import Optional
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio.session import AsyncSession
@@ -17,32 +24,32 @@ class Bot:
 
     name: str
     __logger: ILogger
-    __db_session_maker: async_sessionmaker[AsyncSession] | None = None
+    __db_session_maker: Optional[async_sessionmaker[AsyncSession]] = None
 
     view_class: type[IView]
     controller_classes: list[type[IController]]
-    message_handler_class: type[IMessageHandler] | None
+    message_handler_class: Optional[type[IMessageHandler]]
 
     view: IView
     controllers: list[IController]
-    message_handler: IMessageHandler | None
+    message_handler: Optional[IMessageHandler]
 
     @property
     def logger(self) -> ILogger:
         return self.__logger
 
     @property
-    def db_session_maker(self) -> async_sessionmaker[AsyncSession] | None:
+    def db_session_maker(self) -> Optional[async_sessionmaker[AsyncSession]]:
         return self.__db_session_maker
 
     def __init__(
         self,
         controller_classes: list[type[IController]],
         view_class: type[IView],
-        message_handler_class: type[IMessageHandler] | None,
+        message_handler_class: Optional[type[IMessageHandler]],
         logger_factory: ILoggerFactory,
         name: str,
-        db_session_maker: async_sessionmaker | None,
+        db_session_maker: Optional[async_sessionmaker],
     ):
         self.view_class = view_class
         self.controller_classes = controller_classes
@@ -100,7 +107,15 @@ def _set_message_handlers(bots: list[Bot]) -> None:
             bot.message_handler = bot.message_handler_class(bot.controllers, bot.logger)
 
 
-def _instantiate_in_bots(bots: list[Bot]) -> None:
+def _set_tasks(bots: list[Bot]) -> None:
+    """
+    Configure tasks
+    """
+
+
+
+
+def build_bots(bots: list[Bot]) -> None:
     """
     Instantiate and set to the bot instances, each controller must be singleton
     """

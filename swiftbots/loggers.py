@@ -2,7 +2,7 @@ import inspect
 import logging
 from collections.abc import Callable, Coroutine
 from traceback import format_exc
-from typing import Any
+from typing import Any, Optional
 
 from swiftbots.all_types import ILogger, ILoggerFactory
 
@@ -147,7 +147,7 @@ class AdminLogger(SysIOLogger):
 
 
 class SysIOLoggerFactory(ILoggerFactory):
-    def __init__(self, logger: logging.Logger | None = None):
+    def __init__(self, logger: Optional[logging.Logger] = None):
         if logger is None:
             logging.basicConfig(level=logging.NOTSET)
             logger = logging.getLogger()
@@ -162,7 +162,7 @@ class AdminLoggerFactory(SysIOLoggerFactory):
         self,
         report_func: report_func_type,
         async_report_func: report_async_func_type,
-        logger: logging.Logger | None = None,
+        logger: Optional[logging.Logger] = None,
     ):
         super().__init__(logger)
         self.__report_func = report_func

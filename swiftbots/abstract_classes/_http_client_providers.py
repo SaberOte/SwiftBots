@@ -1,4 +1,5 @@
 from abc import ABC
+from typing import Optional
 
 import aiohttp
 
@@ -6,7 +7,7 @@ from swiftbots.all_types import IAsyncHttpClientProvider, ISoftClosable
 
 
 class AbstractAsyncHttpClientProvider(IAsyncHttpClientProvider, ISoftClosable, ABC):
-    __http_session: aiohttp.client.ClientSession | None = None
+    __http_session: Optional[aiohttp.client.ClientSession] = None
 
     @property
     def _http_session(self) -> aiohttp.client.ClientSession:

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -21,6 +22,6 @@ class IDatabaseConnectionProvider(ABC):
 
     @abstractmethod
     def _set_db_session_maker(
-        self, db_session_maker: async_sessionmaker[AsyncSession] | None
+        self, db_session_maker: Optional[async_sessionmaker[AsyncSession]]
     ) -> None:
         raise NotImplementedError()

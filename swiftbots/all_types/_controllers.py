@@ -25,7 +25,7 @@ class IController(
     default: Optional[Callable] = None
 
     @abstractmethod
-    def init(self, db_session_maker: async_sessionmaker[AsyncSession] | None) -> None:
+    def init(self, db_session_maker: Optional[async_sessionmaker[AsyncSession]]) -> None:
         """
         Initialize all controller attributes
         """
