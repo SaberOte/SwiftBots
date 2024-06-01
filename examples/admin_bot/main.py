@@ -29,10 +29,7 @@ def configure_admin_logger_factory():
 
 
 def main():
-    app = SwiftBots()
-
-    logger_factory = configure_admin_logger_factory()
-    app.use_logger(logger_factory)
+    app = SwiftBots(logger_factory=configure_admin_logger_factory())
 
     app.add_bot(AdminView, [AdminApi], name='Adminer')
     app.add_bot(ConsoleView, [CalculatorApi], name='Calculator')

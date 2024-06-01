@@ -4,9 +4,7 @@ from swiftbots import SwiftBots
 
 
 def main():
-    app = SwiftBots()
-
-    app.use_database("sqlite+aiosqlite:///examples/notes_in_database/database/notes.sqlite3")
+    app = SwiftBots(db_connection_string="sqlite+aiosqlite:///examples/notes_in_database/database/notes.sqlite3")
 
     app.add_bot(ConsoleView, [Notes])
 
