@@ -4,8 +4,9 @@ __all__ = [
     'soft_close_bot_async'
 ]
 
+from collections.abc import Callable
 from traceback import format_exc
-from typing import List, Optional, Type
+from typing import Any, List, Optional, Set, Type
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio.session import AsyncSession
@@ -17,6 +18,7 @@ from swiftbots.all_types import (
     IMessageHandler,
     IView,
 )
+from swiftbots.tasks.tasks import TaskInfo
 
 
 class Bot:
@@ -29,10 +31,12 @@ class Bot:
     view_class: Type[IView]
     controller_classes: List[Type[IController]]
     message_handler_class: Optional[Type[IMessageHandler]]
+    task_infos: Optional[List[TaskInfo]]
 
     view: IView
     controllers: List[IController]
     message_handler: Optional[IMessageHandler]
+    tasks: Set[str, Callable[None, Any]]
 
     @property
     def logger(self) -> ILogger:
@@ -46,6 +50,7 @@ class Bot:
         self,
         controller_classes: List[Type[IController]],
         view_class: Type[IView],
+        task_infos: Optional[List[TaskInfo]],
         message_handler_class: Optional[Type[IMessageHandler]],
         logger_factory: ILoggerFactory,
         name: str,
@@ -53,6 +58,7 @@ class Bot:
     ):
         self.view_class = view_class
         self.controller_classes = controller_classes
+        self.task_infos = task_infos
         self.message_handler_class = message_handler_class
         self.name = name
         self.__logger = logger_factory.get_logger()
@@ -60,7 +66,7 @@ class Bot:
         self.__db_session_maker = db_session_maker
 
 
-def _set_views(bots: List[Bot]) -> None:
+def build_views(bots: List[Bot]) -> None:
     """
     Instantiate and set views
     """
@@ -70,7 +76,7 @@ def _set_views(bots: List[Bot]) -> None:
             bot.view.init(bot, bot.logger, bot.db_session_maker)
 
 
-def _set_controllers(bots: List[Bot]) -> None:
+def build_controllers(bots: List[Bot]) -> None:
     """
     Instantiate and set to the bot controllers, each one must be singleton
     """
@@ -96,7 +102,7 @@ def _set_controllers(bots: List[Bot]) -> None:
         bot.controllers = controllers_to_add
 
 
-def _set_message_handlers(bots: List[Bot]) -> None:
+def build_message_handlers(bots: List[Bot]) -> None:
     """
     Instantiate and set handlers
     """
@@ -107,21 +113,24 @@ def _set_message_handlers(bots: List[Bot]) -> None:
             bot.message_handler = bot.message_handler_class(bot.controllers, bot.logger)
 
 
-def _set_tasks(bots: List[Bot]) -> None:
+def build_tasks(bots: List[Bot]) -> None:
     """
     Configure tasks
     """
-    # TODO: implement
-    raise NotImplementedError()
+    for bot in bots:
+        if bot.task_infos:
+
+
 
 
 def build_bots(bots: List[Bot]) -> None:
     """
     Instantiate and set to the bot instances, each controller must be singleton
     """
-    _set_views(bots)
-    _set_controllers(bots)
-    _set_message_handlers(bots)
+    build_views(bots)
+    build_controllers(bots)
+    build_message_handlers(bots)
+    build_tasks(bots)
 
 
 async def soft_close_bot_async(bot: Bot) -> None:

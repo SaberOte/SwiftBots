@@ -21,10 +21,12 @@ class MyBasicView(BasicView):
 
 
 class MyController(Controller):
+    ...
 
-    @task('my-task', PeriodTrigger(seconds=5), run_at_start=True)
-    async def my_task_method(self, view: MyBasicView):
-        await view.change_var(5)
+
+@task('my-task', PeriodTrigger(seconds=5), run_at_start=True)
+async def my_task_method(view: MyBasicView):
+    await view.change_var(5)
 
 
 class _TestBasicView:
@@ -33,7 +35,7 @@ class _TestBasicView:
     def test_default_handler(self):
         app = SwiftBots()
 
-        app.add_bot(MyBasicView, [MyController])
+        app.add_bot(MyBasicView, [MyController], tasks=[my_task_method])
 
         app.run()
 

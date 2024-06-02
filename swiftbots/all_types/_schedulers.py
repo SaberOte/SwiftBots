@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+from typing import Any
 
 from swiftbots.tasks.tasks import TaskInfo
 
@@ -8,7 +9,7 @@ class IScheduler(ABC):
     @abstractmethod
     def add_task(self,
                  task_info: TaskInfo,
-                 caller: Callable
+                 caller: Callable[None, Any]
                  ) -> None:
         """
         Add the task as a candidate for scheduling.

@@ -5,7 +5,7 @@ __all__ = [
 import asyncio
 import datetime
 from collections.abc import Callable
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from swiftbots.all_types import IPeriodTrigger, IScheduler
 from swiftbots.tasks.tasks import TaskInfo
@@ -47,7 +47,7 @@ class SimpleScheduler(IScheduler):
 
     def add_task(self,
                  task_info: TaskInfo,
-                 caller: Callable
+                 caller: Callable[None, Any]
                  ) -> None:
         assert task_info.name not in self.tasks, f'Task {task_info.name} has already been added'
         for trigger in task_info.triggers:

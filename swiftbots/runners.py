@@ -1,3 +1,8 @@
+__all__ = [
+    'get_all_tasks',
+    'run_async'
+]
+
 import asyncio
 from traceback import format_exc
 from typing import Dict, Set
@@ -105,7 +110,7 @@ async def start_async_loop(app_container: AppContainer) -> None:
         task = asyncio.create_task(start_bot(bot), name=name)
         tasks.add(task)
 
-    while 1:
+    while True:
         if len(tasks) == 0:
             return
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
