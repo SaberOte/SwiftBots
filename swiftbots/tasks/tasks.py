@@ -3,8 +3,11 @@ __all__ = [
     'TaskInfo'
 ]
 
+import random
+import string
+
 from collections.abc import Callable
-from typing import List, Union
+from typing import List, Union, Optional
 
 from swiftbots.all_types import ITrigger
 from swiftbots.types import DecoratedCallable
@@ -23,9 +26,9 @@ class TaskInfo:
 
 
 def task(
-    name: str,
     triggers: Union[ITrigger, List[ITrigger]],
-    run_at_start: bool = False
+    run_at_start: bool = False,
+    name: Optional[str] = None
 ) -> Callable[[DecoratedCallable], TaskInfo]:
     """
     Mark a bot method as a task.
@@ -38,6 +41,9 @@ def task(
         for trigger in triggers:
             assert isinstance(trigger, ITrigger), 'Triggers must be the type of ITrigger'
     assert isinstance(triggers, ITrigger) or len(triggers) > 0, 'Empty list of triggers'
+    if name is None:
+        name = str(''.join(random.choices(string.ascii_lowercase + string.digits, k=7)))
+    assert isinstance(name, str), 'Name must be a string'
 
     def wrapper(func: DecoratedCallable) -> TaskInfo:
         task_info = TaskInfo(name=name,

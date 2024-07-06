@@ -1,6 +1,6 @@
 import inspect
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Dict
 
 from swiftbots.types import AnnotatedType
 
@@ -28,9 +28,10 @@ def get_dep_function(param: AnnotatedType) -> Callable[..., Any]:
         return function
 
 
-def resolve_function_args(function: Callable[..., Any], given_data: dict) -> dict:
+def resolve_function_args(function: Callable[..., Any], given_data: Dict) -> Dict:
     spec = inspect.getfullargspec(function)
-    params = spec.annotations
+    arg_names = spec.args
+    params = {prm: spec.annotations[prm] for prm in spec.annotations if prm in arg_names}
 
     # Collect simple params
     not_dependable_params = {key for key in params
@@ -41,7 +42,7 @@ def resolve_function_args(function: Callable[..., Any], given_data: dict) -> dic
     args = {param_name: given_data[param_name] for param_name in not_dependable_params}
 
     # Collect dependable parameters
-    dependable_params: dict[str, AnnotatedType] = {key: params[key]
+    dependable_params: Dict[str, AnnotatedType] = {key: params[key]
                                                    for key in params
                                                    if is_dependable_param(params[key])}
     # Dependency function also can have dependencies

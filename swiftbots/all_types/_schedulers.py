@@ -10,7 +10,7 @@ class IScheduler(ABC):
     @abstractmethod
     def add_task(self,
                  task_info: 'TaskInfo',
-                 caller: Callable[..., Any]
+                 caller: Callable[[], Any]
                  ) -> None:
         """
         Add the task as a candidate for scheduling.
