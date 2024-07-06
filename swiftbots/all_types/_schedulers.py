@@ -1,15 +1,16 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from swiftbots.tasks.tasks import TaskInfo
+if TYPE_CHECKING:
+    from swiftbots.tasks import TaskInfo
 
 
 class IScheduler(ABC):
     @abstractmethod
     def add_task(self,
-                 task_info: TaskInfo,
-                 caller: Callable[None, Any]
+                 task_info: 'TaskInfo',
+                 caller: Callable[..., Any]
                  ) -> None:
         """
         Add the task as a candidate for scheduling.
@@ -25,8 +26,7 @@ class IScheduler(ABC):
     async def start(self) -> None:
         """
         The framework will call this method once, just when the app is started.
-        All tasks must be scheduled and then executed here.
-        To execute a task, call `caller` without any arguments.
+        All tasks will be scheduled and then executed here.
         The framework will make confidence that the appropriate controller method will
         be executed with demanded dependencies.
         """

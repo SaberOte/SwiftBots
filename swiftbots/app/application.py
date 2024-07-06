@@ -1,5 +1,5 @@
 __all__ = [
-    'Application'
+    'SwiftBots'
 ]
 
 import asyncio
@@ -22,7 +22,7 @@ from swiftbots.tasks.schedulers import SimpleScheduler
 from swiftbots.tasks.tasks import TaskInfo
 
 
-class Application:
+class SwiftBots:
     __bots: Dict[str, 'Bot']
     __logger: ILogger
     __logger_factory: ILoggerFactory

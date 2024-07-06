@@ -38,26 +38,27 @@ class TaskContainer:
 
 
 class SimpleScheduler(IScheduler):
-    tasks: Dict[str, TaskContainer]
+    __tasks: Dict[str, TaskContainer]
     __ping_updates_period_seconds: float = 1.0
     __supported_trigger_types = (IPeriodTrigger,)
 
     def __init__(self):
-        self.tasks = {}
+        self.__tasks = {}
 
     def add_task(self,
                  task_info: TaskInfo,
-                 caller: Callable[None, Any]
+                 caller: Callable[..., Any]
                  ) -> None:
-        assert task_info.name not in self.tasks, f'Task {task_info.name} has already been added'
+        assert task_info.name not in self.__tasks, f'Task {task_info.name} has already been added'
         for trigger in task_info.triggers:
-            assert isinstance(trigger, self.__supported_trigger_types)
+            assert isinstance(trigger, self.__supported_trigger_types), \
+                f'Trigger type {trigger.__class__.__name__} is not supported'
 
-        self.tasks[task_info.name] = TaskContainer(task_info, caller)
+        self.__tasks[task_info.name] = TaskContainer(task_info, caller)
 
     def remove_task(self, name: str) -> None:
-        assert name in self.tasks, f'Task {name} has not been added'
-        del self.tasks[name]
+        assert name in self.__tasks, f'Task {name} has not been added'
+        del self.__tasks[name]
 
     async def start(self) -> None:
         await asyncio.sleep(0)
@@ -66,7 +67,7 @@ class SimpleScheduler(IScheduler):
             await asyncio.sleep(self.__ping_updates_period_seconds)
 
     def __find_tasks_to_run(self) -> List[TaskContainer]:
-        return [task for task in self.tasks.values() if task.should_run()]
+        return [task for task in self.__tasks.values() if task.should_run()]
 
     async def __run_pending_tasks(self) -> None:
         for task in self.__find_tasks_to_run():

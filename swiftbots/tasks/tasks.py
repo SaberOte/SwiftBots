@@ -6,7 +6,8 @@ __all__ = [
 from collections.abc import Callable
 from typing import List, Union
 
-from swiftbots.all_types import DecoratedCallable, ITrigger
+from swiftbots.all_types import ITrigger
+from swiftbots.types import DecoratedCallable
 
 
 class TaskInfo:
@@ -27,13 +28,15 @@ def task(
     run_at_start: bool = False
 ) -> Callable[[DecoratedCallable], TaskInfo]:
     """
-    Mark a controller method as a task.
-    Depends on trigger(s), will be executed by scheduler.
+    Mark a bot method as a task.
+    Will be executed by SwiftBots automatically.
     """
     assert isinstance(triggers, ITrigger) or isinstance(triggers, list), \
         'Trigger must be the type of ITrigger or a list of ITriggers'
-    for trigger in triggers:
-        assert isinstance(trigger, ITrigger), 'Triggers must be the type of ITrigger'
+
+    if isinstance(triggers, list):
+        for trigger in triggers:
+            assert isinstance(trigger, ITrigger), 'Triggers must be the type of ITrigger'
     assert isinstance(triggers, ITrigger) or len(triggers) > 0, 'Empty list of triggers'
 
     def wrapper(func: DecoratedCallable) -> TaskInfo:

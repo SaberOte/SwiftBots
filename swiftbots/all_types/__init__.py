@@ -1,4 +1,3 @@
-from swiftbots.all_types.types import *
 from swiftbots.all_types._contexts import *
 from swiftbots.all_types._loggers import *
 from swiftbots.all_types._soft_closables import *

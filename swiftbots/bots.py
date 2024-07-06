@@ -6,7 +6,7 @@ __all__ = [
 
 from collections.abc import Callable
 from traceback import format_exc
-from typing import Any, List, Optional, Set, Type
+from typing import Any, List, Optional, Type, Tuple, Set
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio.session import AsyncSession
@@ -36,7 +36,7 @@ class Bot:
     view: IView
     controllers: List[IController]
     message_handler: Optional[IMessageHandler]
-    tasks: Set[str, Callable[None, Any]]
+    tasks: Set[Tuple[str, Callable[[], Any]]]
 
     @property
     def logger(self) -> ILogger:
@@ -119,7 +119,7 @@ def build_tasks(bots: List[Bot]) -> None:
     """
     for bot in bots:
         if bot.task_infos:
-
+            raise NotImplementedError("ОСТАНОВИЛСЯ ЗДЕСЬ") # TODO: остановился здесь
 
 
 
