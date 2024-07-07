@@ -69,6 +69,9 @@ class SimpleScheduler(IScheduler):
         assert name in self.__tasks, f'Task {name} has not been added'
         del self.__tasks[name]
 
+    def list_tasks(self) -> List[str]:
+        return list(self.__tasks.keys())
+
     async def start(self) -> None:
         await asyncio.sleep(0)
         while True:

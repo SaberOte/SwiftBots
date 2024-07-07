@@ -5,9 +5,8 @@ __all__ = [
 
 import random
 import string
-
 from collections.abc import Callable
-from typing import List, Union, Optional
+from typing import List, Optional, Union
 
 from swiftbots.all_types import ITrigger
 from swiftbots.types import DecoratedCallable

@@ -24,12 +24,12 @@ class MyController(Controller):
     ...
 
 
-@task('my-task', PeriodTrigger(seconds=5), run_at_start=True)
+@task(PeriodTrigger(seconds=5), run_at_start=True, name='my-task')
 async def my_task_method(view: MyBasicView):
     await view.change_var(5)
 
 
-class _TestBasicView:
+class TestBotTasks:
 
     # @pytest.mark.timeout(3)
     def test_default_handler(self):

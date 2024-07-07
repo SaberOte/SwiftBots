@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, List
 
 if TYPE_CHECKING:
     from swiftbots.tasks import TaskInfo
@@ -20,6 +20,11 @@ class IScheduler(ABC):
     @abstractmethod
     def remove_task(self, name: str) -> None:
         """Unschedule task by name. This task won't be executed until `add_task` will be called"""
+        ...
+
+    @abstractmethod
+    def list_tasks(self) -> List[str]:
+        """Return a list of tasks which now are scheduled"""
         ...
 
     @abstractmethod

@@ -1,9 +1,3 @@
-__all__ = [
-    'Bot',
-    'build_bots',
-    'soft_close_bot_async'
-]
-
 from collections.abc import Callable
 from traceback import format_exc
 from typing import Any, List, Optional, Type
@@ -27,6 +21,7 @@ class Bot:
     """A storage of controllers and views"""
 
     name: str
+    __is_enabled: bool
     __logger: ILogger
     __db_session_maker: Optional[async_sessionmaker[AsyncSession]] = None
 
@@ -44,8 +39,18 @@ class Bot:
         return self.__logger
 
     @property
+    def is_enabled(self) -> bool:
+        return self.__is_enabled
+
+    @property
     def db_session_maker(self) -> Optional[async_sessionmaker[AsyncSession]]:
         return self.__db_session_maker
+
+    def disable(self) -> None:
+        self.__is_enabled = False
+
+    def enable(self) -> None:
+        self.__is_enabled = True
 
     def __init__(
         self,
@@ -65,6 +70,7 @@ class Bot:
         self.__logger = logger_factory.get_logger()
         self.__logger.bot_name = self.name
         self.__db_session_maker = db_session_maker
+        self.__is_enabled = True
 
 
 def build_views(bots: List[Bot]) -> None:
@@ -117,12 +123,13 @@ def build_message_handlers(bots: List[Bot]) -> None:
 def build_task_caller(info: TaskInfo, bot: Bot) -> Callable[..., Any]:
     func = info.func
 
-    def caller() -> Any:
-        min_deps = decompose_bot_as_dependencies(bot)
-        args = resolve_function_args(func, min_deps)
-        return func(**args)
+    def caller() -> Any:  # noqa: ANN401
+        if bot.is_enabled:
+            min_deps = decompose_bot_as_dependencies(bot)
+            args = resolve_function_args(func, min_deps)
+            return func(**args)
 
-    def wrapped_caller() -> Any:
+    def wrapped_caller() -> Any:  # noqa: ANN401
         return call_raisable_function_async(caller, bot)
     return wrapped_caller
 
@@ -137,6 +144,15 @@ def build_scheduler(bots: List[Bot], scheduler: IScheduler) -> None:
     task_names.clear()
 
 
+def disable_tasks(bot: Bot, scheduler: IScheduler) -> None:
+    """Method is used to disable tasks when the bot is exiting or disabling."""
+    scheduled_tasks = scheduler.list_tasks()
+    bot_tasks = map(lambda ti: ti.name, bot.task_infos)
+    for bot_task in bot_tasks:
+        if bot_task in scheduled_tasks:
+            scheduler.remove_task(bot_task)
+
+
 def build_bots(bots: List[Bot]) -> None:
     """
     Instantiate and set to the bot instances, each controller must be singleton
@@ -144,6 +160,12 @@ def build_bots(bots: List[Bot]) -> None:
     build_views(bots)
     build_controllers(bots)
     build_message_handlers(bots)
+
+
+async def stop_bot_async(bot: Bot, scheduler: IScheduler) -> None:
+    bot.disable()
+    disable_tasks(bot, scheduler)
+    await soft_close_bot_async(bot)
 
 
 async def soft_close_bot_async(bot: Bot) -> None:

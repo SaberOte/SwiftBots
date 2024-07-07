@@ -9,7 +9,7 @@ from swiftbots.functions import resolve_function_args
 from swiftbots.tasks import SimpleScheduler
 
 
-class Test:
+class TestComponents:
     @pytest.mark.timeout(3)
     def test_dependency_injection(self):
         def dep2(s2: int):
