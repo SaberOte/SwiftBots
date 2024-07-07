@@ -1,11 +1,7 @@
-__all__ = [
-    'get_all_tasks',
-    'run_async'
-]
-
 import asyncio
+from collections.abc import Callable
 from traceback import format_exc
-from typing import Dict, Set
+from typing import Any, Dict, Set
 
 from swiftbots.all_types import (
     ExitApplicationException,
@@ -27,16 +23,16 @@ def get_all_tasks() -> Set[str]:
     return __ALL_TASKS
 
 
-async def delegate_to_handler_async(bot: Bot, context: IContext) -> None:
+async def call_raisable_function_async(func: Callable[..., Any], bot: Bot, context: IContext) -> None:
     assert bot.view and bot.message_handler, (
         "Method delegate_to_handler_async can't be called "
         "without a view or message handler in a bot"
     )
     try:
-        await bot.message_handler.handle_message_async(bot.view, context)
+        return await func()
     except (AttributeError, TypeError, KeyError, AssertionError) as e:
         await bot.logger.critical_async(
-            f"Fix the code! Critical `{e.__class__.__name__}` "
+            f"Fix the code. Critical `{e.__class__.__name__}` "
             f"raised:\n{e}.\nFull traceback:\n{format_exc()}"
         )
         if isinstance(bot.view, IChatView):
@@ -88,7 +84,9 @@ async def start_async_listener(bot: Bot) -> None:
             generator = bot.view.listen_async()
             continue
 
-        await delegate_to_handler_async(bot, pre_context)
+        async def handle() -> any:
+            return bot.message_handler.handle_message_async(bot.view, pre_context)
+        await call_raisable_function_async(handle, bot, pre_context)
 
 
 async def start_bot(bot: Bot) -> None:
@@ -100,12 +98,18 @@ async def start_bot(bot: Bot) -> None:
 
 async def start_async_loop(app_container: AppContainer) -> None:
     bots = app_container.bots
+    sched = app_container.scheduler
     tasks: Set[asyncio.Task] = set()
 
     bots_dict: Dict[str, Bot] = {bot.name: bot for bot in bots}
     global __ALL_TASKS
     __ALL_TASKS = set(bots_dict.keys())
 
+    # Create a task for the scheduler
+    tasks.add(
+        asyncio.create_task(sched.start(), name='__sched__')
+    )
+    # Create tasks for the bots' views
     for name, bot in bots_dict.items():
         task = asyncio.create_task(start_bot(bot), name=name)
         tasks.add(task)
@@ -116,25 +120,26 @@ async def start_async_loop(app_container: AppContainer) -> None:
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for task in done:
             name = task.get_name()
-            bot = bots_dict[name]
+            logger = bots_dict[name].logger if name != "__sched__" else app_container.logger
             try:
                 result = task.result()
-                await bot.logger.critical_async(
+                await logger.critical_async(
                     f"Bot {name} is finished with result {result} and restarted"
                 )
             except (asyncio.CancelledError, ExitBotException) as ex:
                 if isinstance(ex, asyncio.CancelledError):
-                    await bot.logger.warning_async(
+                    await logger.warning_async(
                         f"Bot {name} is cancelled. Not started again"
                     )
-                    await bot.logger.report_async(f"Bot {name}'s exited")
+                    await logger.report_async(f"Bot {name}'s exited")
                 elif isinstance(ex, ExitBotException):
-                    await bot.logger.error_async(
+                    await logger.error_async(
                         f"Bot {name} is exited with message: {ex}"
                     )
                 tasks.remove(task)
             except RestartListeningException:
                 tasks.remove(task)
+                bot = bots_dict[name]
                 new_task = asyncio.create_task(start_bot(bot), name=name)
                 tasks.add(new_task)
             except StartBotException as ex:
@@ -143,6 +148,7 @@ async def start_async_loop(app_container: AppContainer) -> None:
                 # At start, dispose the task of caller bot and create new.
                 # The caller task is no longer reusable because an exception was raised.
                 tasks.remove(task)
+                bot = bots_dict[name]
                 new_task = asyncio.create_task(start_bot(bot), name=name)
                 tasks.add(new_task)
 
@@ -155,7 +161,7 @@ async def start_async_loop(app_container: AppContainer) -> None:
                     )
                     tasks.add(new_task)
                 except Exception as e:
-                    await bot.logger.critical_async(
+                    await logger.critical_async(
                         f"Couldn't start bot {ex}. Exception: {e}"
                     )
             except ExitApplicationException:
@@ -170,7 +176,7 @@ async def start_async_loop(app_container: AppContainer) -> None:
                     await bot_to_exit.logger.report_async(
                         f"Bot {bot_to_exit.name}'s exited"
                     )
-                await bot.logger.report_async("Bots application's closed")
+                await logger.report_async("Bots application's closed")
                 return
 
 

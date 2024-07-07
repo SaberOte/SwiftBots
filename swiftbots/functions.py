@@ -1,8 +1,12 @@
 import inspect
 from collections.abc import Callable
-from typing import Any, Dict
+from typing import TYPE_CHECKING, Any, Dict
 
 from swiftbots.types import AnnotatedType
+from swiftbots.all_types import ILogger
+
+if TYPE_CHECKING:
+    from swiftbots.bots import Bot
 
 
 class DependencyContainer:
@@ -54,3 +58,13 @@ def resolve_function_args(function: Callable[..., Any], given_data: Dict) -> Dic
         args[param_name] = result
 
     return args
+
+
+def decompose_bot_as_dependencies(bot: 'Bot') -> Dict[str, Any]:
+    return {
+        'name': bot.name,
+        'view': bot.view,
+        'logger': bot.logger,
+        'controllers': bot.controllers,
+        'db_session_maker': bot.db_session_maker,
+    }

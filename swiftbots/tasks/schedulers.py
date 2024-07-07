@@ -82,6 +82,6 @@ class SimpleScheduler(IScheduler):
         for task in self.__find_tasks_to_run():
             # TODO: a temporary solution. Had better launch with `create_task`,
             #  but then class must supervise these tasks
-            await task.caller()
             task.set_called()
+            await task.caller()
             await asyncio.sleep(0)

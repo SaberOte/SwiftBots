@@ -6,7 +6,7 @@ ERRORS
 NEW FEATURES
 ============
 - Make REST api view.
-- Develop tasks/scheduler
+- Tasks launch in vulnerable environment. Need to launch that in not raisable function. (like in module runners.py)
 
 REFACTORING
 ===========

@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio.session import async_sessionmaker
 
 from swiftbots.all_types import IController, ILogger, ILoggerFactory, IMessageHandler, IScheduler, IView
 from swiftbots.app.container import AppContainer
-from swiftbots.bots import Bot, build_bots
+from swiftbots.bots import Bot, build_bots, build_scheduler
 from swiftbots.loggers import SysIOLoggerFactory
 from swiftbots.runners import run_async
 from swiftbots.tasks.schedulers import SimpleScheduler
@@ -101,6 +101,7 @@ class SwiftBots:
         ), "Logger must be of type ILogger"
 
         bot_logger_factory = bot_logger_factory or self.__logger_factory
+        tasks = tasks or []
 
         self.__bots[name] = Bot(
             controller_classes=controllers,
@@ -123,6 +124,7 @@ class SwiftBots:
         bots = list(self.__bots.values())
 
         build_bots(bots)
+        build_scheduler(bots, self.__scheduler)
         app_container = AppContainer(bots, self.__logger, self.__scheduler)
 
         self.__runner(app_container)

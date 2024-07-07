@@ -6,7 +6,7 @@ __all__ = [
 
 from collections.abc import Callable
 from traceback import format_exc
-from typing import Any, List, Optional, Type, Tuple, Set
+from typing import Any, List, Optional, Set, Tuple, Type
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio.session import AsyncSession
@@ -16,9 +16,10 @@ from swiftbots.all_types import (
     ILogger,
     ILoggerFactory,
     IMessageHandler,
-    IView,
+    IView, IScheduler,
 )
 from swiftbots.tasks.tasks import TaskInfo
+from swiftbots.functions import decompose_bot_as_dependencies, resolve_function_args
 
 
 class Bot:
@@ -31,12 +32,11 @@ class Bot:
     view_class: Type[IView]
     controller_classes: List[Type[IController]]
     message_handler_class: Optional[Type[IMessageHandler]]
-    task_infos: Optional[List[TaskInfo]]
 
+    task_infos: List[TaskInfo]
     view: IView
     controllers: List[IController]
     message_handler: Optional[IMessageHandler]
-    tasks: Set[Tuple[str, Callable[[], Any]]]
 
     @property
     def logger(self) -> ILogger:
@@ -50,7 +50,7 @@ class Bot:
         self,
         controller_classes: List[Type[IController]],
         view_class: Type[IView],
-        task_infos: Optional[List[TaskInfo]],
+        task_infos: List[TaskInfo],
         message_handler_class: Optional[Type[IMessageHandler]],
         logger_factory: ILoggerFactory,
         name: str,
@@ -113,14 +113,24 @@ def build_message_handlers(bots: List[Bot]) -> None:
             bot.message_handler = bot.message_handler_class(bot.controllers, bot.logger)
 
 
-def build_tasks(bots: List[Bot]) -> None:
-    """
-    Configure tasks
-    """
-    for bot in bots:
-        if bot.task_infos:
-            raise NotImplementedError("ОСТАНОВИЛСЯ ЗДЕСЬ") # TODO: остановился здесь
+def build_task_caller(info: TaskInfo, bot: Bot) -> Callable[..., Any]:
+    func = info.func
 
+    def caller() -> ...:
+        min_deps = decompose_bot_as_dependencies(bot)
+        args = resolve_function_args(func, min_deps)
+        return func(**args)
+    return caller
+
+
+def build_scheduler(bots: List[Bot], scheduler: IScheduler) -> None:
+    task_names = set()
+    for bot in bots:
+        for task_info in bot.task_infos:
+            assert task_info.name not in task_names, f'Task {task_info.name} met twice. Tasks must have different names'
+            task_names.add(task_info.name)
+            scheduler.add_task(task_info, build_task_caller(task_info, bot))
+    task_names.clear()
 
 
 def build_bots(bots: List[Bot]) -> None:
@@ -130,7 +140,6 @@ def build_bots(bots: List[Bot]) -> None:
     build_views(bots)
     build_controllers(bots)
     build_message_handlers(bots)
-    build_tasks(bots)
 
 
 async def soft_close_bot_async(bot: Bot) -> None:
