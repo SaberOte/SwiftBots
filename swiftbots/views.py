@@ -74,6 +74,17 @@ class BasicView(
         return BasicContext
 
 
+class StubView(BasicView):
+    """
+    This class is used as a stub to allow tasks to run without a view.
+    """
+    async def listen_async(self) -> AsyncGenerator["IContext", None]:
+        while True:
+            await asyncio.sleep(1000000.)
+            if False:
+                yield BasicContext()
+
+
 class ChatView(IChatView, BasicView, ABC):
     @property
     def default_message_handler_class(self) -> Type["IMessageHandler"]:
