@@ -31,7 +31,7 @@ async def my_task_method(view: MyBasicView):
 
 class TestBotTasks:
 
-    # @pytest.mark.timeout(5)
+    @pytest.mark.timeout(5)
     def test_default_handler(self):
         app = SwiftBots()
 
