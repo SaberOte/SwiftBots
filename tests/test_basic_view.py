@@ -35,7 +35,7 @@ class MyController(Controller):
 
 class TestBasicView:
 
-    # @pytest.mark.timeout(3)
+    @pytest.mark.timeout(3)
     def test_default_handler(self):
         app = SwiftBots()
 
