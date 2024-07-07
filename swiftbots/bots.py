@@ -37,7 +37,7 @@ class Bot:
     task_infos: List[TaskInfo]
     view: IView
     controllers: List[IController]
-    message_handler: Optional[IMessageHandler]
+    message_handler: IMessageHandler
 
     @property
     def logger(self) -> ILogger:
@@ -117,12 +117,12 @@ def build_message_handlers(bots: List[Bot]) -> None:
 def build_task_caller(info: TaskInfo, bot: Bot) -> Callable[..., Any]:
     func = info.func
 
-    def caller() -> ...:
+    def caller() -> Any:
         min_deps = decompose_bot_as_dependencies(bot)
         args = resolve_function_args(func, min_deps)
         return func(**args)
 
-    def wrapped_caller() -> any:
+    def wrapped_caller() -> Any:
         return call_raisable_function_async(caller, bot)
     return wrapped_caller
 

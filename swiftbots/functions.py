@@ -4,15 +4,10 @@ from traceback import format_exc
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from swiftbots.all_types import IChatView, IContext
-from swiftbots.types import AnnotatedType
+from swiftbots.types import AnnotatedType, DependableParam, DependencyContainer
 
 if TYPE_CHECKING:
     from swiftbots.bots import Bot
-
-
-class DependencyContainer:
-    def __init__(self, dependency: Callable[..., Any]):
-        self.dependency = dependency
 
 
 def depends(dependency: Callable[..., Any]) -> DependencyContainer:
@@ -27,7 +22,7 @@ def is_dependable_param(param: AnnotatedType) -> bool:
             any(filter(lambda x: type(x) is DependencyContainer, param.__metadata__)))
 
 
-def get_dep_function(param: AnnotatedType) -> Callable[..., Any]:
+def get_dep_function(param: DependableParam) -> Callable[..., Any]:
     for dep_container in filter(lambda x: type(x) is DependencyContainer, param.__metadata__):
         function = dep_container.dependency
         return function
@@ -47,9 +42,9 @@ def resolve_function_args(function: Callable[..., Any], given_data: Dict) -> Dic
     args = {param_name: given_data[param_name] for param_name in not_dependable_params}
 
     # Collect dependable parameters
-    dependable_params: Dict[str, AnnotatedType] = {key: params[key]
-                                                   for key in params
-                                                   if is_dependable_param(params[key])}
+    dependable_params: Dict[str, DependableParam] = {key: params[key]
+                                                     for key in params
+                                                     if is_dependable_param(params[key])}
     # Dependency function also can have dependencies
     for param_name in dependable_params:
         dep_function = get_dep_function(dependable_params[param_name])
@@ -71,7 +66,7 @@ def decompose_bot_as_dependencies(bot: 'Bot') -> Dict[str, Any]:
     }
 
 
-async def call_raisable_function_async(func: Callable[..., Any], bot: 'Bot', context: Optional[IContext] = None) -> any:
+async def call_raisable_function_async(func: Callable[[], Any], bot: 'Bot', context: Optional[IContext] = None) -> Any:
     try:
         return await func()
     except (AttributeError, TypeError, KeyError, AssertionError) as e:

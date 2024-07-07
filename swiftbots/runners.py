@@ -1,6 +1,6 @@
 import asyncio
 from traceback import format_exc
-from typing import Dict, Set
+from typing import Any, Dict, Set
 
 from swiftbots.all_types import (
     ExitApplicationException,
@@ -59,7 +59,7 @@ async def start_async_listener(bot: Bot) -> None:
             generator = bot.view.listen_async()
             continue
 
-        async def handle() -> any:
+        async def handle() -> Any:
             return bot.message_handler.handle_message_async(bot.view, pre_context)
         await call_raisable_function_async(handle, bot, pre_context)
 
