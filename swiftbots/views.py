@@ -76,7 +76,7 @@ class BasicView(
 
 class StubView(BasicView):
     """
-    This class is used as a stub to allow tasks to run without a view.
+    This class is used as a stub to allow a bot to run without a view.
     """
     async def listen_async(self) -> AsyncGenerator["IContext", None]:
         while True:
