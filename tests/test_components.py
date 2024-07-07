@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
-from typing import Annotated, List, Tuple
+from typing import List, Tuple
 
 import pytest
 
@@ -15,10 +15,10 @@ class TestComponents:
         def dep2(s2: int):
             return s2 ** 3
 
-        def dep1(s1: int, d2: Annotated[int, depends(dep2)]):
+        def dep1(s1: int, d2: int = depends(dep2)):
             return s1 ** 2, d2
 
-        def caller(c: int, d1: Annotated[int, depends(dep1)]):
+        def caller(c: int, d1: int = depends(dep1)):
             return c, *d1
 
         data = {'s2': 5, 's1': 32, 'c': 12}
@@ -32,16 +32,16 @@ class TestComponents:
         def get_now() -> datetime:
             return datetime.now()
 
-        def compute_delta(now: Annotated[datetime, depends(get_now)], start_time_point: datetime) -> timedelta:
+        def compute_delta(start_time_point: datetime, now: datetime = depends(get_now)) -> timedelta:
             return now - start_time_point
 
         @task(PeriodTrigger(seconds=2), run_at_start=False)
-        async def logger1(logger_num: str, delta: Annotated[timedelta, depends(compute_delta)]):
+        async def logger1(logger_num: str, delta: timedelta = depends(compute_delta)):
             await asyncio.sleep(0)
             logs.append((logger_num, int(delta.total_seconds())))
 
         @task(PeriodTrigger(seconds=3), run_at_start=True)
-        async def logger2(logger_num: str, delta: Annotated[timedelta, depends(compute_delta)]):
+        async def logger2(logger_num: str, delta: timedelta = depends(compute_delta)):
             await asyncio.sleep(0)
             logs.append((logger_num, int(delta.total_seconds())))
 

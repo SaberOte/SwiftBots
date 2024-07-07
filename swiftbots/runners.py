@@ -93,7 +93,7 @@ async def start_async_loop(app_container: AppContainer) -> None:
 
     while True:
         # if no bots launched, then close the app
-        if not any(filter(lambda x: x.get_name() not in [__SCHEDULER_TASK_NAME], tasks)):
+        if not any(filter(lambda t: t.get_name() != __SCHEDULER_TASK_NAME, tasks)):
             await soft_close_controllers_in_bots_async(list(bots_dict.values()))
             await app_container.logger.report_async("Bots application's closed. The reason is no bots launched now.")
             return

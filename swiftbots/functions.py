@@ -4,7 +4,7 @@ from traceback import format_exc
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 from swiftbots.all_types import IChatView, IContext
-from swiftbots.types import AnnotatedType, DependableParam, DependencyContainer
+from swiftbots.types import DependencyContainer
 
 if TYPE_CHECKING:
     from swiftbots.bots import Bot
@@ -17,41 +17,27 @@ def depends(dependency: Callable[..., Any]) -> DependencyContainer:
     return DependencyContainer(dependency)
 
 
-def is_dependable_param(param: AnnotatedType) -> bool:
-    return (type(param) is AnnotatedType and
-            any(filter(lambda x: type(x) is DependencyContainer, param.__metadata__)))
-
-
-def get_dep_function(param: DependableParam) -> Callable[..., Any]:
-    for dep_container in filter(lambda x: type(x) is DependencyContainer, param.__metadata__):
-        function = dep_container.dependency
-        return function
+def is_dependable_param(param: inspect.Parameter) -> bool:
+    return isinstance(param.default, DependencyContainer)
 
 
 def resolve_function_args(function: Callable[..., Any], given_data: Dict) -> Dict:
-    spec = inspect.getfullargspec(function)
-    arg_names = spec.args
-    params = {prm: spec.annotations[prm] for prm in spec.annotations if prm in arg_names}
-
-    # Collect simple params
-    not_dependable_params = {key for key in params
-                             if not is_dependable_param(params[key])}
-    invalid_params = set(not_dependable_params) - set(given_data.keys())
-    assert len(invalid_params) == 0, f"Can't use parameters: {invalid_params}"
-
-    args = {param_name: given_data[param_name] for param_name in not_dependable_params}
-
-    # Collect dependable parameters
-    dependable_params: Dict[str, DependableParam] = {key: params[key]
-                                                     for key in params
-                                                     if is_dependable_param(params[key])}
-    # Dependency function also can have dependencies
-    for param_name in dependable_params:
-        dep_function = get_dep_function(dependable_params[param_name])
-        dep_args = resolve_function_args(dep_function, given_data)
-        # Call dependency function
-        result = dep_function(**dep_args)
-        args[param_name] = result
+    sig = inspect.signature(function)
+    args = {}
+    for param in sig.parameters.values():
+        name = param.name
+        if is_dependable_param(param):  # dependency to resolve
+            # Dependency function also can have dependencies
+            dep: DependencyContainer = param.default
+            dep_func = dep.dependency
+            dep_args = resolve_function_args(dep_func, given_data)
+            # Call dependency function
+            result = dep_func(**dep_args)
+            args[name] = result
+        elif name not in given_data:
+            raise AssertionError(f"Can't use parameter {param}")
+        else:  # simple parameter
+            args[name] = given_data[name]
 
     return args
 

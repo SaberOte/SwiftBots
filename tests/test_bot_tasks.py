@@ -24,7 +24,7 @@ class MyController(Controller):
         ...
 
 
-@task(PeriodTrigger(seconds=5), run_at_start=False, name='my-task')
+@task(PeriodTrigger(seconds=2), run_at_start=False, name='my-task')
 async def my_task_method(view: MyBasicView):
     await view.change_var(5)
 
