@@ -1,9 +1,10 @@
 import inspect
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, Dict
+from traceback import format_exc
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
+from swiftbots.all_types import IChatView, IContext
 from swiftbots.types import AnnotatedType
-from swiftbots.all_types import ILogger
 
 if TYPE_CHECKING:
     from swiftbots.bots import Bot
@@ -68,3 +69,22 @@ def decompose_bot_as_dependencies(bot: 'Bot') -> Dict[str, Any]:
         'controllers': bot.controllers,
         'db_session_maker': bot.db_session_maker,
     }
+
+
+async def call_raisable_function_async(func: Callable[..., Any], bot: 'Bot', context: Optional[IContext] = None) -> any:
+    try:
+        return await func()
+    except (AttributeError, TypeError, KeyError, AssertionError) as e:
+        await bot.logger.critical_async(
+            f"Fix the code. Critical `{e.__class__.__name__}` "
+            f"raised:\n{e}.\nFull traceback:\n{format_exc()}"
+        )
+        if context is not None and isinstance(bot.view, IChatView):
+            await bot.view.error_async(context)
+    except Exception as e:
+        await bot.logger.exception_async(
+            f"Bot {bot.name} was raised with unhandled `{e.__class__.__name__}` "
+            f"and kept on working:\n{e}.\nFull traceback:\n{format_exc()}"
+        )
+        if context is not None and isinstance(bot.view, IChatView):
+            await bot.view.error_async(context)

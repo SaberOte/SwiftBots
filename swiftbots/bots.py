@@ -6,7 +6,7 @@ __all__ = [
 
 from collections.abc import Callable
 from traceback import format_exc
-from typing import Any, List, Optional, Set, Tuple, Type
+from typing import Any, List, Optional, Type
 
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio.session import AsyncSession
@@ -16,10 +16,11 @@ from swiftbots.all_types import (
     ILogger,
     ILoggerFactory,
     IMessageHandler,
-    IView, IScheduler,
+    IScheduler,
+    IView,
 )
+from swiftbots.functions import call_raisable_function_async, decompose_bot_as_dependencies, resolve_function_args
 from swiftbots.tasks.tasks import TaskInfo
-from swiftbots.functions import decompose_bot_as_dependencies, resolve_function_args
 
 
 class Bot:
@@ -120,7 +121,10 @@ def build_task_caller(info: TaskInfo, bot: Bot) -> Callable[..., Any]:
         min_deps = decompose_bot_as_dependencies(bot)
         args = resolve_function_args(func, min_deps)
         return func(**args)
-    return caller
+
+    def wrapped_caller() -> any:
+        return call_raisable_function_async(caller, bot)
+    return wrapped_caller
 
 
 def build_scheduler(bots: List[Bot], scheduler: IScheduler) -> None:

@@ -1,19 +1,17 @@
 import asyncio
-from collections.abc import Callable
 from traceback import format_exc
-from typing import Any, Dict, Set
+from typing import Dict, Set
 
 from swiftbots.all_types import (
     ExitApplicationException,
     ExitBotException,
-    IChatView,
-    IContext,
     RestartListeningException,
     StartBotException,
 )
 from swiftbots.app.container import AppContainer
 from swiftbots.bots import Bot, soft_close_bot_async
 from swiftbots.controllers import soft_close_controllers_in_bots_async
+from swiftbots.functions import call_raisable_function_async
 from swiftbots.utils import ErrorRateMonitor
 
 __ALL_TASKS: Set[str] = set()
@@ -21,29 +19,6 @@ __ALL_TASKS: Set[str] = set()
 
 def get_all_tasks() -> Set[str]:
     return __ALL_TASKS
-
-
-async def call_raisable_function_async(func: Callable[..., Any], bot: Bot, context: IContext) -> None:
-    assert bot.view and bot.message_handler, (
-        "Method delegate_to_handler_async can't be called "
-        "without a view or message handler in a bot"
-    )
-    try:
-        return await func()
-    except (AttributeError, TypeError, KeyError, AssertionError) as e:
-        await bot.logger.critical_async(
-            f"Fix the code. Critical `{e.__class__.__name__}` "
-            f"raised:\n{e}.\nFull traceback:\n{format_exc()}"
-        )
-        if isinstance(bot.view, IChatView):
-            await bot.view.error_async(context)
-    except Exception as e:
-        await bot.logger.exception_async(
-            f"Bot {bot.name} was raised with unhandled `{e.__class__.__name__}` "
-            f"and kept on working:\n{e}.\nFull traceback:\n{format_exc()}"
-        )
-        if isinstance(bot.view, IChatView):
-            await bot.view.error_async(context)
 
 
 async def start_async_listener(bot: Bot) -> None:
