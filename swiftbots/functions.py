@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from swiftbots.bots import Bot
 
 
-def depends(dependency: Callable[..., Any]) -> DependencyContainer:
+def depends(dependency: Callable[[], Any]) -> DependencyContainer:
     """
     :param dependency: A "dependable" argument, must be function.
     """

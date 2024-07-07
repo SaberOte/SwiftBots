@@ -8,7 +8,7 @@ ROADMAP
 - Make utils for managing tasks like: view a list of tasks, stop task, run task.
 - Load in the app settings before it starts. Settings like the map of tasks/views/bots to run.
 - Remove sqlalchemy and alembic from project. They're useless here.
-- Remake an interface of views and controllers (make them similar to tasks' interface)
+- Implement new app design like in file examples/new_ui.py
 
 NEW FEATURES
 ============
