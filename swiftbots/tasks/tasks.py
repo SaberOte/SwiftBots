@@ -10,6 +10,7 @@ from typing import List, Optional, Union
 
 from swiftbots.all_types import ITrigger
 from swiftbots.types import DecoratedCallable
+from swiftbots.functions import generate_name
 
 
 class TaskInfo:
@@ -41,7 +42,7 @@ def task(
             assert isinstance(trigger, ITrigger), 'Triggers must be the type of ITrigger'
     assert isinstance(triggers, ITrigger) or len(triggers) > 0, 'Empty list of triggers'
     if name is None:
-        name = str(''.join(random.choices(string.ascii_lowercase + string.digits, k=7)))
+        name = generate_name()
     assert isinstance(name, str), 'Name must be a string'
 
     def wrapper(func: DecoratedCallable) -> TaskInfo:

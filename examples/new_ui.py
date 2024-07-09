@@ -25,10 +25,10 @@ def get_calculator_service():
 
 app = SwiftBots()
 
-calc_bot = ChatBot()
+calc_bot = ChatBot(name="myBot")
 
 @calc_bot.listener()
-async def listen_async():
+async def listen():
     print("Welcome in the command line chat! Good day, Friend!")
     print("Type expression to solve like `add 2 2` or `- 70 1`")
     while True:

@@ -1,38 +1,20 @@
 from collections.abc import Callable
 from traceback import format_exc
-from typing import Any, List, Optional, Type
+from typing import Any, List, Optional, Union
 
-from sqlalchemy.ext.asyncio import async_sessionmaker
-from sqlalchemy.ext.asyncio.session import AsyncSession
-
-from swiftbots.all_types import (
-    IController,
-    ILogger,
-    ILoggerFactory,
-    IMessageHandler,
-    IScheduler,
-    IView,
+from swiftbots.all_types import IController, ILogger, ILoggerFactory, IScheduler, ITrigger
+from swiftbots.functions import (
+    call_raisable_function_async,
+    decompose_bot_as_dependencies,
+    generate_name,
+    resolve_function_args,
 )
-from swiftbots.functions import call_raisable_function_async, decompose_bot_as_dependencies, resolve_function_args
 from swiftbots.tasks.tasks import TaskInfo
+from swiftbots.types import DecoratedCallable
 
 
 class Bot:
     """A storage of controllers and views"""
-
-    name: str
-    __is_enabled: bool
-    __logger: ILogger
-    __db_session_maker: Optional[async_sessionmaker[AsyncSession]] = None
-
-    view_class: Type[IView]
-    controller_classes: List[Type[IController]]
-    message_handler_class: Optional[Type[IMessageHandler]]
-
-    task_infos: List[TaskInfo]
-    view: IView
-    controllers: List[IController]
-    message_handler: IMessageHandler
 
     @property
     def logger(self) -> ILogger:
@@ -42,10 +24,6 @@ class Bot:
     def is_enabled(self) -> bool:
         return self.__is_enabled
 
-    @property
-    def db_session_maker(self) -> Optional[async_sessionmaker[AsyncSession]]:
-        return self.__db_session_maker
-
     def disable(self) -> None:
         self.__is_enabled = False
 
@@ -54,22 +32,18 @@ class Bot:
 
     def __init__(
         self,
-        controller_classes: List[Type[IController]],
-        view_class: Type[IView],
+        handler_func: DecoratedCallable,
+        listener_func: DecoratedCallable,
         task_infos: List[TaskInfo],
-        message_handler_class: Optional[Type[IMessageHandler]],
         logger_factory: ILoggerFactory,
-        name: str,
-        db_session_maker: Optional[async_sessionmaker],
+        name: str
     ):
-        self.view_class = view_class
-        self.controller_classes = controller_classes
+        self.handler_func = handler_func
+        self.listener_func = listener_func
         self.task_infos = task_infos
-        self.message_handler_class = message_handler_class
         self.name = name
         self.__logger = logger_factory.get_logger()
         self.__logger.bot_name = self.name
-        self.__db_session_maker = db_session_maker
         self.__is_enabled = True
 
 
@@ -179,3 +153,67 @@ async def soft_close_bot_async(bot: Bot) -> None:
         await bot.logger.error_async(
             f"Raised an exception `{e}` when a bot closing method called:\n{format_exc()}"
         )
+
+
+class BasicBot:
+    listener_func: DecoratedCallable
+    handler_func: DecoratedCallable
+    task_infos: List[TaskInfo]
+
+    def __init__(
+            self,
+            name: Optional[str] = None,
+            bot_logger_factory: Optional[ILoggerFactory] = None,
+    ):
+        assert bot_logger_factory is None or isinstance(
+            bot_logger_factory, ILoggerFactory
+        ), "Logger must be of type ILoggerFactory"
+
+        self.name = name
+        self.task_infos = list()
+        self.bot_logger_factory = bot_logger_factory
+
+    def listener(self) -> Callable[[DecoratedCallable], DecoratedCallable]:
+        def wrapper(func: DecoratedCallable) -> DecoratedCallable:
+            self.listen_func = func
+            return func
+
+        return wrapper
+
+    def handler(self) -> Callable[[DecoratedCallable], DecoratedCallable]:
+        def wrapper(func: DecoratedCallable) -> DecoratedCallable:
+            self.default_handler_func = func
+            return func
+
+        return wrapper
+
+    def task(
+            self,
+            triggers: Union[ITrigger, List[ITrigger]],
+            run_at_start: bool = False,
+            name: Optional[str] = None
+    ) -> Callable[[DecoratedCallable], TaskInfo]:
+        """
+        Mark a bot method as a task.
+        Will be executed by SwiftBots automatically.
+        """
+        assert isinstance(triggers, ITrigger) or isinstance(triggers, list), \
+            'Trigger must be the type of ITrigger or a list of ITriggers'
+
+        if isinstance(triggers, list):
+            for trigger in triggers:
+                assert isinstance(trigger, ITrigger), 'Triggers must be the type of ITrigger'
+        assert isinstance(triggers, ITrigger) or len(triggers) > 0, 'Empty list of triggers'
+        if name is None:
+            name = generate_name()
+        assert isinstance(name, str), 'Name must be a string'
+
+        def wrapper(func: DecoratedCallable) -> TaskInfo:
+            task_info = TaskInfo(name=name,
+                                 func=func,
+                                 triggers=triggers if isinstance(triggers, list) else [triggers],
+                                 run_at_start=run_at_start)
+            self.task_infos.append(task_info)
+            return task_info
+
+        return wrapper

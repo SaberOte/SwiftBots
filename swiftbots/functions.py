@@ -1,4 +1,6 @@
 import inspect
+import random
+import string
 from collections.abc import Callable
 from traceback import format_exc
 from typing import TYPE_CHECKING, Any, Dict, Optional
@@ -10,7 +12,7 @@ if TYPE_CHECKING:
     from swiftbots.bots import Bot
 
 
-def depends(dependency: Callable[[], Any]) -> DependencyContainer:
+def depends(dependency: Callable[..., Any]) -> DependencyContainer:
     """
     :param dependency: A "dependable" argument, must be function.
     """
@@ -69,3 +71,8 @@ async def call_raisable_function_async(func: Callable[[], Any], bot: 'Bot', cont
         )
         if context is not None and isinstance(bot.view, IChatView):
             await bot.view.error_async(context)
+
+
+def generate_name(count: int = 7) -> str:
+    assert count >= 1, 'Name cannot be length less than 1'
+    return str(''.join(random.choices(string.ascii_lowercase + string.digits, k=count)))

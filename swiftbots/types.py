@@ -3,7 +3,7 @@ from typing import Any, TypeVar
 
 
 class DependencyContainer:
-    def __init__(self, dependency: Callable[[], Any]):
+    def __init__(self, dependency: Callable[..., Any]):
         self.dependency = dependency
 
 
