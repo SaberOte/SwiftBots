@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import AsyncGenerator, Callable
 from typing import Any, TypeVar
 
 
@@ -8,3 +8,4 @@ class DependencyContainer:
 
 
 DecoratedCallable = TypeVar("DecoratedCallable", bound=Callable[..., Any])
+AsyncListenerFunction = [AsyncGenerator[[], dict]]

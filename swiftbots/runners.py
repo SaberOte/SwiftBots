@@ -12,7 +12,7 @@ from swiftbots.all_types import (
 from swiftbots.app.container import AppContainer
 from swiftbots.bots import Bot, build_scheduler, stop_bot_async
 from swiftbots.controllers import soft_close_controllers_in_bots_async
-from swiftbots.functions import call_raisable_function_async
+from swiftbots.functions import call_raisable_function_async, decompose_bot_as_dependencies, resolve_function_args
 from swiftbots.utils import ErrorRateMonitor
 
 __ALL_TASKS: Set[str] = set()
@@ -25,18 +25,14 @@ def get_all_tasks() -> Set[str]:
 
 async def start_async_listener(bot: Bot) -> None:
     """
-    Launches all bot views, and sends all updates to their message handlers.
+    Launches all bot listeners, and sends all updates to their handlers.
     Runs asynchronously.
     """
-    assert (
-        bot.view
-    ), "Method start async listener can't be called without a view in a bot"
-
     err_monitor = ErrorRateMonitor(cooldown=60)
-    generator = bot.view.listen_async()
+    generator = bot.listener_func()
     while True:
         try:
-            pre_context = await generator.__anext__()
+            output = await generator.__anext__()
         # except (AttributeError, TypeError, KeyError, AssertionError) as e:
         #     await bot.logger.critical_async(f"Fix the code! Critical {e.__class__.__name__} "
         #                                     f"raised: {e}. Full traceback:\n{format_exc()}")
@@ -51,26 +47,28 @@ async def start_async_listener(bot: Bot) -> None:
             if err_monitor.since_start < 3:
                 raise ExitBotException(
                     f"Bot {bot.name} raises immediately after start listening. "
-                    f"Shutdowning this."
+                    f"Stopping bot."
                 )
             rate = err_monitor.evoke()
             if rate > 5:
                 await bot.logger.error_async(f"Bot {bot.name} sleeps for 30 seconds.")
                 await asyncio.sleep(30)
                 err_monitor.error_count = 3
-            generator = bot.view.listen_async()
+            generator = bot.listener_func()
             continue
 
         async def handle() -> Any:  # noqa: ANN401
-            return await bot.message_handler.handle_message_async(bot.view, pre_context)
-        await call_raisable_function_async(handle, bot, pre_context)
+            deps = decompose_bot_as_dependencies(bot)
+            deps.update(output)
+            args = resolve_function_args(bot.handler_func, deps)
+            return await bot.handler_func(**args)
+        await call_raisable_function_async(handle, bot)
 
 
 async def start_bot(bot: Bot, scheduler: IScheduler) -> None:
     bot.enable()
     build_scheduler([bot], scheduler)
-    if bot.view:
-        await start_async_listener(bot)
+    await start_async_listener(bot)
 
 
 async def start_async_loop(app_container: AppContainer) -> None:
@@ -147,10 +145,7 @@ async def start_async_loop(app_container: AppContainer) -> None:
                         f"Couldn't start bot {ex}. Exception: {e}"
                     )
             except ExitApplicationException:
-                # close controllers
-                await soft_close_controllers_in_bots_async(list(bots_dict.values()))
-
-                # close bots already
+                # close all bots
                 for a_task in tasks:
                     bot_name_to_exit = a_task.get_name()
                     if bot_name_to_exit != __SCHEDULER_TASK_NAME:

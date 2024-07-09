@@ -1,8 +1,7 @@
 from collections.abc import Callable
-from traceback import format_exc
 from typing import Any, List, Optional, Union
 
-from swiftbots.all_types import IController, ILogger, ILoggerFactory, IScheduler, ITrigger
+from swiftbots.all_types import ILogger, ILoggerFactory, IScheduler, ITrigger
 from swiftbots.functions import (
     call_raisable_function_async,
     decompose_bot_as_dependencies,
@@ -10,7 +9,7 @@ from swiftbots.functions import (
     resolve_function_args,
 )
 from swiftbots.tasks.tasks import TaskInfo
-from swiftbots.types import DecoratedCallable
+from swiftbots.types import AsyncListenerFunction, DecoratedCallable
 
 
 class Bot:
@@ -33,7 +32,7 @@ class Bot:
     def __init__(
         self,
         handler_func: DecoratedCallable,
-        listener_func: DecoratedCallable,
+        listener_func: AsyncListenerFunction,
         task_infos: List[TaskInfo],
         logger_factory: ILoggerFactory,
         name: str
@@ -45,53 +44,6 @@ class Bot:
         self.__logger = logger_factory.get_logger()
         self.__logger.bot_name = self.name
         self.__is_enabled = True
-
-
-def build_views(bots: List[Bot]) -> None:
-    """
-    Instantiate and set views
-    """
-    for bot in bots:
-        if bot.view_class:
-            bot.view = bot.view_class()
-            bot.view.init(bot, bot.logger, bot.db_session_maker)
-
-
-def build_controllers(bots: List[Bot]) -> None:
-    """
-    Instantiate and set to the bot controllers, each one must be singleton
-    """
-    controller_memory: List[IController] = []
-    for bot in bots:
-        controllers_to_add: List[IController] = []
-        controller_types = bot.controller_classes
-
-        for controller_type in controller_types:
-            found_instances = list(
-                filter(lambda inst: controller_type is inst, controller_memory)
-            )
-            if len(found_instances) == 1:
-                controller_instance = found_instances[0]
-            elif len(found_instances) == 0:
-                controller_instance = controller_type()
-                controller_instance.init(bot.db_session_maker)
-                controller_memory.append(controller_instance)
-            else:
-                raise Exception("Invalid algorithm")
-            controllers_to_add.append(controller_instance)
-
-        bot.controllers = controllers_to_add
-
-
-def build_message_handlers(bots: List[Bot]) -> None:
-    """
-    Instantiate and set handlers
-    """
-    for bot in bots:
-        if bot.view:
-            if bot.message_handler_class is None:
-                bot.message_handler_class = bot.view.default_message_handler_class
-            bot.message_handler = bot.message_handler_class(bot.controllers, bot.logger)
 
 
 def build_task_caller(info: TaskInfo, bot: Bot) -> Callable[..., Any]:
@@ -127,32 +79,9 @@ def disable_tasks(bot: Bot, scheduler: IScheduler) -> None:
             scheduler.remove_task(bot_task)
 
 
-def build_bots(bots: List[Bot]) -> None:
-    """
-    Instantiate and set to the bot instances, each controller must be singleton
-    """
-    build_views(bots)
-    build_controllers(bots)
-    build_message_handlers(bots)
-
-
 async def stop_bot_async(bot: Bot, scheduler: IScheduler) -> None:
     bot.disable()
     disable_tasks(bot, scheduler)
-    await soft_close_bot_async(bot)
-
-
-async def soft_close_bot_async(bot: Bot) -> None:
-    """
-    Close bot's view softly to close all connections (like database or http clients)
-    """
-    # TODO: add this as a method to Bot and close all connections there
-    try:
-        await bot.view._soft_close_async()
-    except Exception as e:
-        await bot.logger.error_async(
-            f"Raised an exception `{e}` when a bot closing method called:\n{format_exc()}"
-        )
 
 
 class BasicBot:
@@ -175,14 +104,14 @@ class BasicBot:
 
     def listener(self) -> Callable[[DecoratedCallable], DecoratedCallable]:
         def wrapper(func: DecoratedCallable) -> DecoratedCallable:
-            self.listen_func = func
+            self.listener_func = func
             return func
 
         return wrapper
 
     def handler(self) -> Callable[[DecoratedCallable], DecoratedCallable]:
         def wrapper(func: DecoratedCallable) -> DecoratedCallable:
-            self.default_handler_func = func
+            self.handler_func = func
             return func
 
         return wrapper

@@ -5,7 +5,7 @@ from collections.abc import Callable
 from traceback import format_exc
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from swiftbots.all_types import IChatView, IContext
+# from swiftbots.all_types import IContext
 from swiftbots.types import DependencyContainer
 
 if TYPE_CHECKING:
@@ -47,14 +47,11 @@ def resolve_function_args(function: Callable[..., Any], given_data: Dict) -> Dic
 def decompose_bot_as_dependencies(bot: 'Bot') -> Dict[str, Any]:
     return {
         'name': bot.name,
-        'view': bot.view,
         'logger': bot.logger,
-        'controllers': bot.controllers,
-        'db_session_maker': bot.db_session_maker,
     }
 
 
-async def call_raisable_function_async(func: Callable[[], Any], bot: 'Bot', context: Optional[IContext] = None) -> Any:
+async def call_raisable_function_async(func: Callable[[], Any], bot: 'Bot') -> Any:
     try:
         return await func()
     except (AttributeError, TypeError, KeyError, AssertionError) as e:
@@ -62,15 +59,15 @@ async def call_raisable_function_async(func: Callable[[], Any], bot: 'Bot', cont
             f"Fix the code. Critical `{e.__class__.__name__}` "
             f"raised:\n{e}.\nFull traceback:\n{format_exc()}"
         )
-        if context is not None and isinstance(bot.view, IChatView):
-            await bot.view.error_async(context)
+        # if context is not None and isinstance(bot.view, IChatView): TODO: сделать
+        #     await bot.view.error_async(context)
     except Exception as e:
         await bot.logger.exception_async(
             f"Bot {bot.name} was raised with unhandled `{e.__class__.__name__}` "
             f"and kept on working:\n{e}.\nFull traceback:\n{format_exc()}"
         )
-        if context is not None and isinstance(bot.view, IChatView):
-            await bot.view.error_async(context)
+        # if context is not None and isinstance(bot.view, IChatView): TODO: сделать
+        #     await bot.view.error_async(context)
 
 
 def generate_name(count: int = 7) -> str:
