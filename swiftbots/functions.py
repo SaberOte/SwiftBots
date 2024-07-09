@@ -3,9 +3,8 @@ import random
 import string
 from collections.abc import Callable
 from traceback import format_exc
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict
 
-# from swiftbots.all_types import IContext
 from swiftbots.types import DependencyContainer
 
 if TYPE_CHECKING:

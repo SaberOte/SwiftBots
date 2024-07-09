@@ -2,31 +2,18 @@ import asyncio
 
 import pytest
 
-from swiftbots import PeriodTrigger, SwiftBots, task
+from swiftbots import PeriodTrigger, StubBot, SwiftBots, depends
 from swiftbots.admin_utils import shutdown_app
-from swiftbots.controllers import Controller
-from swiftbots.views import StubView
 
 global_var = 0
 
 
-class MyBasicView(StubView):
-
+class Changer:
     async def change_var(self, value):
         await asyncio.sleep(0)
         global global_var
         global_var = value
         shutdown_app()
-
-
-class MyController(Controller):
-    async def default(self):
-        ...
-
-
-@task(PeriodTrigger(seconds=2), run_at_start=False, name='my-task')
-async def my_task_method(view: MyBasicView):
-    await view.change_var(5)
 
 
 class TestBotTasks:
@@ -35,7 +22,13 @@ class TestBotTasks:
     def test_default_handler(self):
         app = SwiftBots()
 
-        app.add_bot(MyBasicView, [MyController], tasks=[my_task_method])
+        bot = StubBot()
+
+        @bot.task(PeriodTrigger(seconds=2), run_at_start=False, name='my-task')
+        async def my_task_method(changer: Changer = depends(lambda: Changer())):
+            await changer.change_var(5)
+
+        app.add_bots([bot])
 
         app.run()
 

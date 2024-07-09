@@ -1,8 +1,3 @@
-__all__ = [
-    'PeriodTrigger'
-]
-
-
 from datetime import timedelta
 
 from swiftbots.all_types import IPeriodTrigger

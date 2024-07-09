@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import Callable
 from typing import Any, List, Optional, Union
 
@@ -85,7 +86,7 @@ async def stop_bot_async(bot: Bot, scheduler: IScheduler) -> None:
 
 
 class BasicBot:
-    listener_func: DecoratedCallable
+    listener_func: AsyncListenerFunction
     handler_func: DecoratedCallable
     task_infos: List[TaskInfo]
 
@@ -146,3 +147,24 @@ class BasicBot:
             return task_info
 
         return wrapper
+
+
+class StubBot(BasicBot):
+    """
+    This class is used as a stub to allow a bot to run without a listener or a handler.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.listener_func = self.stub_listener
+        self.handler_func = self.stub_handler
+
+    async def stub_listener(self) -> AsyncListenerFunction:
+        while True:
+            await asyncio.sleep(1000000.)
+            if False:
+                yield {}
+
+    async def stub_handler(self) -> None:
+        await asyncio.sleep(0)
+        return
