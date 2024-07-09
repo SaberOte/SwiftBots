@@ -4,7 +4,7 @@ from typing import List, Tuple
 
 import pytest
 
-from swiftbots import PeriodTrigger, depends, task
+from swiftbots import PeriodTrigger, StubBot, depends
 from swiftbots.functions import resolve_function_args
 from swiftbots.tasks import SimpleScheduler
 
@@ -35,12 +35,14 @@ class TestComponents:
         def compute_delta(start_time_point: datetime, now: datetime = depends(get_now)) -> timedelta:
             return now - start_time_point
 
-        @task(PeriodTrigger(seconds=2), run_at_start=False)
+        bot = StubBot()
+
+        @bot.task(PeriodTrigger(seconds=2), run_at_start=False)
         async def logger1(logger_num: str, delta: timedelta = depends(compute_delta)):
             await asyncio.sleep(0)
             logs.append((logger_num, int(delta.total_seconds())))
 
-        @task(PeriodTrigger(seconds=3), run_at_start=True)
+        @bot.task(PeriodTrigger(seconds=3), run_at_start=True)
         async def logger2(logger_num: str, delta: timedelta = depends(compute_delta)):
             await asyncio.sleep(0)
             logs.append((logger_num, int(delta.total_seconds())))
