@@ -1,7 +1,7 @@
 import asyncio
 import random
 
-from swiftbots import PeriodTrigger, SwiftBots, depends
+from swiftbots import ChatBot, PeriodTrigger, SwiftBots, depends
 from swiftbots.all_types import ILogger
 
 

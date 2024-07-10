@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from swiftbots import SwiftBots
+from swiftbots import SwiftBots, ChatBot
 from swiftbots.admin_utils import shutdown_app
 from swiftbots.all_types import ChatContext, ChatPreContext
 from swiftbots.controllers import Controller
@@ -65,7 +65,37 @@ class TestChatView:
     def test_default_handler(self):
         app = SwiftBots()
 
-        app.add_bot(MyChatView1, [MyController])
+        bot = ChatBot()
+
+        @bot.message_handler(commands=['test commAnd'])
+        async def some_command(message: str, chat: bot.Chat):
+            await chat.reply_async(message + ' command handler')
+
+        @bot.message_handler(commands=['not the same command'])
+        async def should_no_be_called():
+            raise Exception()
+
+        @bot.listener()
+        async def listen_async():
+            while True:
+                await asyncio.sleep(0)
+                test_value = 'message from'
+                sender = 'some sender'
+                yield {
+                    "message": test_value,
+                    "user": sender
+                }
+
+        @bot.sender()
+        async def send_async(message, user):
+            await asyncio.sleep(0)
+            print(f'Message: {message} sent to {user}')
+            global global_dict
+            global_dict['answer1'] = message
+            global_dict['user1'] = user
+            shutdown_app()
+
+        app.add_bots([bot])
 
         app.run()
 
