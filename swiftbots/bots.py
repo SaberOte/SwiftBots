@@ -30,17 +30,13 @@ class Bot:
 
     def __init__(
         self,
-        handler_func: DecoratedCallable,
-        listener_func: AsyncListenerFunction,
+        name: Optional[str] = None,
         bot_logger_factory: Optional[ILoggerFactory] = None,
-        name: Optional[str] = None
     ):
         assert bot_logger_factory is None or isinstance(
             bot_logger_factory, ILoggerFactory
         ), "Logger must be of type ILoggerFactory"
 
-        self.handler_func = handler_func
-        self.listener_func = listener_func
         self.task_infos = list()
         self.name: str = name or generate_name()
         bot_logger_factory = bot_logger_factory or SysIOLoggerFactory()
@@ -144,10 +140,17 @@ class ChatBot(Bot):
             self.sender_func = func
             return func
 
-        return
+        return wrapper
 
-    async def overriden_handler(self, sender: Union[str, int], message: str) -> None:
-        pass
+    async def overriden_handler(self, sender: Union[str, int], message: str, chat: Chat) -> None:
+        handler = choose_text_handler(message, self.compiled_chat_commands)
+        if handler:
+            handler.
+        if not handler:
+            # Not found
+            await chat.unknown_command_async()
+            return
+
 
     def before_start(self) -> None:
         super().before_start()

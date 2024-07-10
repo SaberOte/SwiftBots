@@ -65,7 +65,7 @@ def compile_chat_commands(
 
 def choose_text_handler(
     message: str, commands: List[CompiledChatCommand]
-) -> CompiledChatCommand:
+) -> Optional[CompiledChatCommand]:
     arguments: str = ""
     best_match_rank = 0
     best_matched_command: Optional[CompiledChatCommand] = None
