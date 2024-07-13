@@ -1,6 +1,6 @@
 import asyncio
 from collections.abc import Callable
-from typing import Any, List, Optional, Union
+from typing import Any, Coroutine, List, Optional, TypeVar, Union
 
 from swiftbots.all_types import ILogger, ILoggerFactory, IScheduler, ITrigger
 from swiftbots.chats import Chat
@@ -14,8 +14,8 @@ from swiftbots.loggers import SysIOLoggerFactory
 from swiftbots.message_handlers import (
     ChatMessageHandler1,
     CompiledChatCommand,
-    choose_text_handler,
     compile_chat_commands,
+    handle_message,
 )
 from swiftbots.tasks.tasks import TaskInfo
 from swiftbots.types import AsyncListenerFunction, AsyncSenderFunction, DecoratedCallable
@@ -109,18 +109,25 @@ class Bot:
         Need to override this method.
         Use it like `super().before_start_async()`.
         """
+        # TODO: do assert, check if listener_func is exist in self
         ...
 
 
 class ChatBot(Bot):
-    sender_func: AsyncSenderFunction
-    Chat: Chat
-    compiled_chat_commands: List[CompiledChatCommand]
+    Chat = TypeVar('Chat', bound=Chat)
+    _sender_func: AsyncSenderFunction
+    _compiled_chat_commands: List[CompiledChatCommand]
+    _default_handler_func: Optional[DecoratedCallable] = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.message_handlers: List[ChatMessageHandler1] = list()
-        self.handler_func = self.overriden_handler
+        self._message_handlers: List[ChatMessageHandler1] = list()
+
+        def handler(message: str, sender: Union[str, int], all_deps: dict[str, Any]) -> Coroutine:
+            chat = Chat(sender, message, self._sender_func, self.logger)
+            all_deps['chat'] = chat
+            return self.overridden_handler(message, chat, all_deps)
+        self.handler_func = handler
 
     def message_handler(self, commands: List[str]) -> DecoratedCallable:
         assert isinstance(commands, list), 'Commands must be a list of strings'
@@ -130,30 +137,32 @@ class ChatBot(Bot):
 
         def wrapper(func: DecoratedCallable) -> ChatMessageHandler1:
             handler = ChatMessageHandler1(commands=commands, function=func)
-            self.message_handlers.append(handler)
+            self._message_handlers.append(handler)
             return handler
 
         return wrapper
 
     def sender(self) -> Callable[[AsyncSenderFunction], AsyncSenderFunction]:
         def wrapper(func: AsyncSenderFunction) -> AsyncSenderFunction:
-            self.sender_func = func
+            self._sender_func = func
             return func
 
         return wrapper
 
-    async def overriden_handler(self, sender: Union[str, int], message: str, chat: Chat) -> None:
-        handler: CompiledChatCommand = choose_text_handler(message, self.compiled_chat_commands)
-        if handler:
-            handler.method
-        if not handler:
-            # Not found
-            await chat.unknown_command_async()
-            return
+    def default_handler(self) -> DecoratedCallable:
+        def wrapper(func: DecoratedCallable) -> ChatMessageHandler1:
+            self._default_handler_func = func
+            return func
+
+        return wrapper
+
+    def overridden_handler(self, message: str, chat: Chat, all_deps: dict[str, Any]) -> Coroutine:
+        return handle_message(message, chat, self._compiled_chat_commands, self._default_handler_func, all_deps)
 
     def before_start(self) -> None:
         super().before_start()
-        self.compiled_chat_commands = compile_chat_commands(self.message_handlers)
+        # TODO: do assert, check if listener_func is exist in self
+        self._compiled_chat_commands = compile_chat_commands(self._message_handlers)
 
 
 class StubBot(Bot):

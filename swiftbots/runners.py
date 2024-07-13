@@ -60,6 +60,7 @@ async def start_async_listener(bot: Bot) -> None:
         async def handle() -> Any:  # noqa: ANN401
             deps = decompose_bot_as_dependencies(bot)
             deps.update(output)
+            deps['all_deps'] = deps
             args = resolve_function_args(bot.handler_func, deps)
             return await bot.handler_func(**args)
         await call_raisable_function_async(handle, bot)

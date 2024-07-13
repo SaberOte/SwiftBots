@@ -42,14 +42,14 @@ async def listen():
 async def send_async(message, user):
     await print_async(message)
 
-@calc_bot.command_handler(commands=['+', 'add'])
+@calc_bot.message_handler(commands=['+', 'add'])
 async def add(message: str, logger: ILogger, chat: calc_bot.Chat):
     await logger.debug_async(f'User is requesting ADD operation: {message}')
     num1, num2 = message.split(' ')
     result = float(num1) + float(num2)
     await chat.reply_async(str(result))
 
-@calc_bot.command_handler(commands=['-', 'sub'])
+@calc_bot.message_handler(commands=['-', 'sub'])
 async def subtract(message: str, logger: ILogger, chat: calc_bot.Chat):
     await logger.debug_async(f'User is requesting ADD operation: {message}')
     num1, num2 = message.split(' ')

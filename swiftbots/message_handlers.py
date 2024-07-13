@@ -1,6 +1,6 @@
 import re
 from collections.abc import Callable, Coroutine
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional, Any
 
 from swiftbots.all_types import (
     IBasicMessageHandler,
@@ -11,7 +11,11 @@ from swiftbots.all_types import (
     ILogger,
     IView,
 )
+from swiftbots.functions import decompose_bot_as_dependencies, resolve_function_args
 from swiftbots.types import DecoratedCallable
+
+if TYPE_CHECKING:
+    from swiftbots.chats import Chat
 
 
 __trimmer = re.compile(r"\s+$")
@@ -63,9 +67,13 @@ def compile_chat_commands(
     return compiled_commands
 
 
-def choose_text_handler(
-    message: str, commands: List[CompiledChatCommand]
-) -> Optional[CompiledChatCommand]:
+def handle_message(
+        message: str,
+        chat: 'Chat',
+        commands: List[CompiledChatCommand],
+        default_handler_func: Optional[DecoratedCallable],
+        all_deps: dict[str, Any]
+) -> Coroutine:
     arguments: str = ""
     best_match_rank = 0
     best_matched_command: Optional[CompiledChatCommand] = None
@@ -90,7 +98,31 @@ def choose_text_handler(
                 best_matched_command = command
                 arguments = message_without_command
 
-    return best_matched_command
+    # Found the command. Call the method attached to the command
+    if best_matched_command:
+        arguments = __trimmer.sub("", arguments)
+        method = best_matched_command.method
+        command_name = best_matched_command.command_name
+        all_deps['raw_message'] = message
+        all_deps['arguments'] = arguments
+        all_deps['args'] = arguments
+        all_deps['command'] = command_name
+        all_deps['message'] = arguments
+        # del all_deps['message']  # Maybe, I'll delete 'message' because it can mislead
+        args = resolve_function_args(method, all_deps)
+        return method(**args)
+
+    elif default_handler_func is not None:  # No matches. Use default handler
+        method = default_handler_func
+        all_deps['raw_message'] = message
+        all_deps['arguments'] = message
+        all_deps['args'] = message
+        all_deps['command'] = ''
+        args = resolve_function_args(method, all_deps)
+        return method(**args)
+
+    else:  # No matches and default handler. Send `unknown message`
+        return chat.unknown_command_async()
 
 
 class BasicMessageHandler(IBasicMessageHandler):
