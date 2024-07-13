@@ -143,14 +143,13 @@ class ChatBot(Bot):
         return wrapper
 
     async def overriden_handler(self, sender: Union[str, int], message: str, chat: Chat) -> None:
-        handler = choose_text_handler(message, self.compiled_chat_commands)
+        handler: CompiledChatCommand = choose_text_handler(message, self.compiled_chat_commands)
         if handler:
-            handler.
+            handler.method
         if not handler:
             # Not found
             await chat.unknown_command_async()
             return
-
 
     def before_start(self) -> None:
         super().before_start()
