@@ -11,7 +11,7 @@ from swiftbots.all_types import (
     ILogger,
     IView,
 )
-from swiftbots.functions import decompose_bot_as_dependencies, resolve_function_args
+from swiftbots.functions import resolve_function_args
 from swiftbots.types import DecoratedCallable
 
 if TYPE_CHECKING:

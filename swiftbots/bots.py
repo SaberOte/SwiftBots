@@ -113,6 +113,27 @@ class Bot:
         ...
 
 
+class StubBot(Bot):
+    """
+    This class is used as a stub to allow a bot to run without a listener or a handler.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.listener_func = self.stub_listener
+        self.handler_func = self.stub_handler
+
+    async def stub_listener(self) -> AsyncListenerFunction:
+        while True:
+            await asyncio.sleep(1000000.)
+            if False:
+                yield {}
+
+    async def stub_handler(self) -> None:
+        await asyncio.sleep(0)
+        return
+
+
 class ChatBot(Bot):
     Chat = TypeVar('Chat', bound=Chat)
     _sender_func: AsyncSenderFunction
@@ -165,25 +186,8 @@ class ChatBot(Bot):
         self._compiled_chat_commands = compile_chat_commands(self._message_handlers)
 
 
-class StubBot(Bot):
-    """
-    This class is used as a stub to allow a bot to run without a listener or a handler.
-    """
+class TelegramBot(ChatBot):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.listener_func = self.stub_listener
-        self.handler_func = self.stub_handler
-
-    async def stub_listener(self) -> AsyncListenerFunction:
-        while True:
-            await asyncio.sleep(1000000.)
-            if False:
-                yield {}
-
-    async def stub_handler(self) -> None:
-        await asyncio.sleep(0)
-        return
 
 
 def build_task_caller(info: TaskInfo, bot: Bot) -> Callable[..., Any]:

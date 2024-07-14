@@ -1,0 +1,64 @@
+import asyncio
+import random
+
+from swiftbots import PeriodTrigger, SwiftBots, TelegramBot, depends
+from swiftbots.all_types import ILogger
+
+
+def input_async(*args, **kwargs):
+    return asyncio.to_thread(input, *args, **kwargs)
+
+
+def print_async(*args, **kwargs):
+    return asyncio.to_thread(print, *args, **kwargs)
+
+
+class CalculatorService:
+    def add(self, a, b):
+        return a + b
+    def sub(self, a, b):
+        return a - b
+
+def get_calculator_service():
+    return CalculatorService()
+
+calc_bot = TelegramBot()
+
+
+@calc_bot.sender()
+async def send_async(message, user):
+    await print_async(message)
+
+@calc_bot.message_handler(commands=['+', 'add'])
+async def add(message: str, logger: ILogger, chat: calc_bot.Chat):
+    await logger.debug_async(f'User is requesting ADD operation: {message}')
+    num1, num2 = message.split(' ')
+    result = float(num1) + float(num2)
+    await chat.reply_async(str(result))
+
+@calc_bot.message_handler(commands=['-', 'sub'])
+async def subtract(message: str, logger: ILogger, chat: calc_bot.Chat):
+    await logger.debug_async(f'User is requesting SUBTRACT operation: {message}')
+    num1, num2 = message.split(' ')
+    result = float(num1) - float(num2)
+    await chat.reply_async(str(result))
+
+@calc_bot.default_handler()
+async def default_handler(message: str, logger: ILogger, chat: calc_bot.Chat):
+    await chat.reply_async(f'[default handler] Unknown command: {message}')
+
+@calc_bot.task(PeriodTrigger(seconds=5), run_at_start=True, name='my-task')
+async def period_printer(
+        logger: ILogger,
+        calculator: CalculatorService = depends(get_calculator_service),
+):
+    r = random.Random()
+    result = calculator.add(r.randint(1000, 4999), r.randint(1000, 5000))
+    await logger.report_async(str(result))
+
+
+app = SwiftBots()
+
+app.add_bots([calc_bot])
+
+app.run()

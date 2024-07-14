@@ -22,10 +22,7 @@ class CalculatorService:
 def get_calculator_service():
     return CalculatorService()
 
-
-app = SwiftBots()
-
-calc_bot = ChatBot(name="myBot")
+calc_bot = ChatBot()
 
 @calc_bot.listener()
 async def listen():
@@ -35,7 +32,7 @@ async def listen():
         message = await input_async('-> ')
         yield {
             'message': message,
-            'user': 'Schweine'
+            'sender': 'Schweine'
         }
 
 @calc_bot.sender()
@@ -51,14 +48,14 @@ async def add(message: str, logger: ILogger, chat: calc_bot.Chat):
 
 @calc_bot.message_handler(commands=['-', 'sub'])
 async def subtract(message: str, logger: ILogger, chat: calc_bot.Chat):
-    await logger.debug_async(f'User is requesting ADD operation: {message}')
+    await logger.debug_async(f'User is requesting SUBTRACT operation: {message}')
     num1, num2 = message.split(' ')
     result = float(num1) - float(num2)
     await chat.reply_async(str(result))
 
 @calc_bot.default_handler()
 async def default_handler(message: str, logger: ILogger, chat: calc_bot.Chat):
-    await chat.reply_async(f'Unknown command: {message}')
+    await chat.reply_async(f'[default handler] Unknown command: {message}')
 
 @calc_bot.task(PeriodTrigger(seconds=5), run_at_start=True, name='my-task')
 async def period_printer(
@@ -70,6 +67,8 @@ async def period_printer(
     await logger.report_async(str(result))
 
 
-app = SwiftBots([calc_bot])
+app = SwiftBots()
+
+app.add_bots([calc_bot])
 
 app.run()
