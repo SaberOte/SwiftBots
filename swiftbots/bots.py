@@ -1,8 +1,11 @@
 import asyncio
 from collections.abc import Callable
-from typing import Any, Coroutine, List, Optional, TypeVar, Union
+from typing import Any, Coroutine, List, Optional, TypeVar, Union, Dict, AsyncGenerator
 
-from swiftbots.all_types import ILogger, ILoggerFactory, IScheduler, ITrigger
+import aiohttp
+
+from swiftbots.admin_utils import shutdown_bot_async
+from swiftbots.all_types import ILogger, ILoggerFactory, IScheduler, ITrigger, ExitBotException
 from swiftbots.chats import Chat
 from swiftbots.functions import (
     call_raisable_function_async,
@@ -113,14 +116,20 @@ class Bot:
         # TODO: do assert, check if listener_func is exist in self
         ...
 
+    async def before_close_async(self) -> None:
+        ...
+
 
 class StubBot(Bot):
     """
     This class is used as a stub to allow a bot to run without a listener or a handler.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self,
+                 name: Optional[str] = None,
+                 bot_logger_factory: Optional[ILoggerFactory] = None,
+                 ):
+        super().__init__(name=name, bot_logger_factory=bot_logger_factory)
         self.listener_func = self.stub_listener
         self.handler_func = self.stub_handler
 
@@ -141,8 +150,11 @@ class ChatBot(Bot):
     _compiled_chat_commands: List[CompiledChatCommand]
     _default_handler_func: Optional[DecoratedCallable] = None
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self,
+                 name: Optional[str] = None,
+                 bot_logger_factory: Optional[ILoggerFactory] = None,
+                 ):
+        super().__init__(name=name, bot_logger_factory=bot_logger_factory)
         self._message_handlers: List[ChatMessageHandler1] = list()
 
         def handler(message: str, sender: Union[str, int], all_deps: dict[str, Any]) -> Coroutine:
@@ -188,7 +200,146 @@ class ChatBot(Bot):
 
 
 class TelegramBot(ChatBot):
-    pass
+    __token: str
+    __admin: Union[str, int, None]
+    __http_session: aiohttp.client.ClientSession
+    __first_time_launched = True
+    ALLOWED_UPDATES = ["messages"]
+
+    def __init__(self,
+                 token: str,
+                 admin: Union[str, int, None] = None,
+                 name: Optional[str] = None,
+                 bot_logger_factory: Optional[ILoggerFactory] = None,
+                 greeting_enabled: bool = True,
+                 skip_old_updates: bool = True):
+        super().__init__(name=name, bot_logger_factory=bot_logger_factory)
+        self.__token = token
+        self.__admin = admin
+        self.__greeting_enabled = greeting_enabled
+        self.__http_session = aiohttp.ClientSession()
+        self._sender_func = self._send_async
+        self.__should_skip_old_updates = skip_old_updates
+
+    async def _send_async(self, message: str, user: Union[str, int]) -> Dict:
+        messages = [message[i: i + 4096] for i in range(0, len(message), 4096)]
+        result = {}
+        for msg in messages:
+            send_data = {"chat_id": user, "text": msg}
+            result = await self.fetch_async("sendMessage", send_data)
+        return result
+
+    async def fetch_async(
+        self,
+        method: str,
+        data: Dict,
+        headers: Optional[Dict] = None,
+        ignore_errors: bool = False,
+    ) -> Dict:
+        url = f"https://api.telegram.org/bot{self.__token}/{method}"
+        response = await self.__http_session.post(url=url, json=data, headers=headers)
+
+        answer = await response.json()
+
+        if not answer["ok"] and not ignore_errors:
+            state = await self._handle_error_async(answer)
+            if state == 0:  # repeat request
+                await asyncio.sleep(4)
+                response = await self._http_session.post(
+                    url=url, json=data, headers=headers
+                )
+                answer = await response.json()
+            if not answer["ok"]:
+                raise RestartListeningException()
+        return answer
+
+    async def telegram_listener(self) -> None:
+        while True:
+            if self.__greeting_enabled and self.__admin is not None:
+                await self._sender_func(f"{self.name} is started!", self.__admin)
+
+            try:
+                async for update in self._get_updates_async():
+                    pre_context = await self._deconstruct_message_async(update)
+                    if pre_context:
+                        yield pre_context
+
+            except (aiohttp.ServerConnectionError, aiohttp.ClientConnectorError):
+                await self._handle_server_connection_error_async()
+
+    async def _get_updates_async(self) -> AsyncGenerator[dict, None]:
+        """
+        Long Polling: Telegram BOT API https://core.telegram.org/bots/api
+        """
+        timeout = 1000
+        data = {"timeout": timeout, "limit": 1, "allowed_updates": self.ALLOWED_UPDATES}
+        if self.__first_time_launched or self.__should_skip_old_updates:
+            self.first_time_launched = False
+            data["offset"] = await self._skip_old_updates_async()
+        while True:
+            ans = await self.fetch_async("getUpdates", data, ignore_errors=True)
+            if not ans["ok"]:
+                state = await self._handle_error_async(ans)
+                if state == 0:
+                    await asyncio.sleep(5)
+                    continue
+                else:
+                    raise ExitBotException(
+                        f"Error {ans} while recieving long polling server"
+                    )
+            if len(ans["result"]) != 0:
+                data["offset"] = ans["result"][0]["update_id"] + 1
+                yield ans
+
+    async def _handle_error_async(self, error: dict) -> int:
+        """
+        https://core.telegram.org/api/errors
+        :returns: whether code should continue executing after the error.
+        -1 if bot should be exited. Raises BaseException this case
+        0 if it should just repeat request.
+        1 if it's better to finish this request. The same subsequent requests will fail too.
+        """
+        error_code: int = error["error_code"]
+        error_msg: str = error["description"]
+        msg = f"Error {error_code} from TG API: {error_msg}"
+        # notify administrator and repeat request
+        if error_code in (400, 403, 404, 406, 500, 303):
+            await self.logger.error_async(msg)
+            return 1
+        # too many requests (flood)
+        elif error_code == 420:
+            await self.logger.error_async(
+                f"{self.name} reached Flood error. Fix the code"
+            )
+            await asyncio.sleep(10)
+            return 0
+        # unauthorized
+        elif error_code == 401:
+            await self.logger.critical_async(msg)
+            raise ExitBotException()
+        elif error_code == 409:
+            msg = (
+                "Error code 409. Another telegram instance is working. "
+                "Shutting down this instance"
+            )
+            await self.logger.critical_async(msg)
+            raise ExitBotException(msg)
+        else:
+            await self.logger.error_async("Unknown error. Add code" + msg)
+            return 1
+
+    async def _skip_old_updates_async(self) -> int:
+        data = {"timeout": 0, "limit": 1, "offset": -1}
+        ans = await self.fetch_async("getUpdates", data)
+        result = ans["result"]
+        if len(result) > 0:
+            return result[0]["update_id"] + 1
+        return -1
+
+    async def before_close_async(self) -> None:
+        await super().before_close_async()
+        if not self.__http_session.closed:
+            await self.__http_session.close()
 
 
 def build_task_caller(info: TaskInfo, bot: Bot) -> Callable[..., Any]:

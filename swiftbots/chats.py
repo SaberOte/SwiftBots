@@ -22,25 +22,28 @@ class Chat:
         self.logger = logger
 
     async def reply_async(self, message: str) -> dict:
+        """
+        Send the user the message back.
+        """
         return await self.function_sender(message, self.sender)
 
     async def error_async(self) -> dict:
         """
-        Inform user there is internal error.
+        Inform the user there is an internal error.
         """
         await self.logger.error_async(f"Error in the bot. The sender: {self.sender}, the message: {self.message}")
         return await self.reply_async(self.error_message)
 
     async def unknown_command_async(self) -> dict:
         """
-        if a user sends some unknown shit, then needed say him about that
+        If the user sends some unknown shit, then needed to warn him
         """
         await self.logger.info_async(f"{self.sender} sent unknown command. {self.message}")
         return await self.reply_async(self.unknown_error_message)
 
     async def refuse_async(self) -> dict:
         """
-        if the user can't use it, then they must be aware.
+        If the user can't use it, then he must be aware.
         """
         await self.logger.info_async(f"Forbidden. The sender: {self.sender}, the message: {self.message}")
         return await self.reply_async(self.refuse_message)
