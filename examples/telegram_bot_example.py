@@ -1,4 +1,5 @@
 import asyncio
+import os
 
 from examples.services.calculator_service import CalculatorService, get_calculator_service
 from swiftbots import SwiftBots, TelegramBot, depends
@@ -13,7 +14,10 @@ def print_async(*args, **kwargs):
     return asyncio.to_thread(print, *args, **kwargs)
 
 
-calc_bot = TelegramBot()
+token = os.environ.get('TOKEN')
+assert token, 'Missing environment variable "TELEGRAM_TOKEN"'
+admin = os.environ.get('ADMIN')
+calc_bot = TelegramBot(token, admin)
 
 
 @calc_bot.message_handler(commands=['add', '+'])

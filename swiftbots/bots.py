@@ -1,11 +1,17 @@
 import asyncio
 from collections.abc import Callable
-from typing import Any, Coroutine, List, Optional, TypeVar, Union, Dict, AsyncGenerator
+from typing import Any, AsyncGenerator, Coroutine, Dict, List, Optional, TypeVar, Union
 
 import aiohttp
 
-from swiftbots.admin_utils import shutdown_bot_async
-from swiftbots.all_types import ILogger, ILoggerFactory, IScheduler, ITrigger, ExitBotException
+from swiftbots.all_types import (
+    ExitBotException,
+    ILogger,
+    ILoggerFactory,
+    IScheduler,
+    ITrigger,
+    RestartListeningException,
+)
 from swiftbots.chats import Chat
 from swiftbots.functions import (
     call_raisable_function_async,
@@ -133,7 +139,7 @@ class StubBot(Bot):
         self.listener_func = self.stub_listener
         self.handler_func = self.stub_handler
 
-    async def stub_listener(self) -> AsyncListenerFunction:
+    async def stub_listener(self) -> Dict:
         while True:
             await asyncio.sleep(1000000.)
             if False:
@@ -220,6 +226,7 @@ class TelegramBot(ChatBot):
         self.__http_session = aiohttp.ClientSession()
         self._sender_func = self._send_async
         self.__should_skip_old_updates = skip_old_updates
+        self.listener_func = self.telegram_listener
 
     async def _send_async(self, message: str, user: Union[str, int]) -> Dict:
         messages = [message[i: i + 4096] for i in range(0, len(message), 4096)]
@@ -245,7 +252,7 @@ class TelegramBot(ChatBot):
             state = await self._handle_error_async(answer)
             if state == 0:  # repeat request
                 await asyncio.sleep(4)
-                response = await self._http_session.post(
+                response = await self.__http_session.post(
                     url=url, json=data, headers=headers
                 )
                 answer = await response.json()
@@ -260,12 +267,42 @@ class TelegramBot(ChatBot):
 
             try:
                 async for update in self._get_updates_async():
-                    pre_context = await self._deconstruct_message_async(update)
-                    if pre_context:
-                        yield pre_context
+                    data = await self._deconstruct_message_async(update)
+                    if data:
+                        yield data
 
             except (aiohttp.ServerConnectionError, aiohttp.ClientConnectorError):
                 await self._handle_server_connection_error_async()
+
+    async def _deconstruct_message_async(self, update: Dict) -> Union[Dict, None]:
+        update = update["result"][0]
+        if "message" in update and "text" in update["message"]:
+            message = update["message"]
+            text = message["text"]
+            sender = message["from"]["id"]
+            username = (
+                message["from"]["username"]
+                if "username" in message["from"]
+                else "no username"
+            )
+            await self.logger.info_async(
+                f"Came message from '{sender}' ({username}): '{text}'"
+            )
+            return {
+                "message": text,
+                "sender": sender,
+                "username": username,
+                "raw_update": update
+            }
+        else:
+            await self.logger.error_async("Unknown message type:\n" + str(update))
+        return None
+
+    async def _handle_server_connection_error_async(self) -> None:
+        await self.logger.info_async(
+            f"Connection ERROR in {self.name}. Sleep 5 seconds"
+        )
+        await asyncio.sleep(5)
 
     async def _get_updates_async(self) -> AsyncGenerator[dict, None]:
         """

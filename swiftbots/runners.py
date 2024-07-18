@@ -11,7 +11,6 @@ from swiftbots.all_types import (
 )
 from swiftbots.app.container import AppContainer
 from swiftbots.bots import Bot, build_scheduler, stop_bot_async
-from swiftbots.controllers import soft_close_controllers_in_bots_async
 from swiftbots.functions import call_raisable_function_async, decompose_bot_as_dependencies, resolve_function_args
 from swiftbots.utils import ErrorRateMonitor
 
@@ -93,7 +92,6 @@ async def start_async_loop(app_container: AppContainer) -> None:
     while True:
         # if no bots launched, then close the app
         if not any(filter(lambda t: t.get_name() != __SCHEDULER_TASK_NAME, tasks)):
-            await soft_close_controllers_in_bots_async(list(bots_dict.values()))
             await app_container.logger.report_async("Bots application's closed. The reason is no bots launched now.")
             return
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
@@ -152,6 +150,7 @@ async def start_async_loop(app_container: AppContainer) -> None:
                     if bot_name_to_exit != __SCHEDULER_TASK_NAME:
                         bot_to_exit = bots_dict[bot_name_to_exit]
                         await stop_bot_async(bot_to_exit, sched)
+                        await bot_to_exit.before_close_async()
                         await bot_to_exit.logger.report_async(
                             f"Bot {bot_to_exit.name}'s exited"
                         )
