@@ -60,6 +60,4 @@ class SwiftBots:
         build_scheduler(bots, self.__scheduler)
         app_container = AppContainer(bots, self.__logger, self.__scheduler)
 
-        for bot in bots:
-            bot.before_start()
         self.__runner(app_container)

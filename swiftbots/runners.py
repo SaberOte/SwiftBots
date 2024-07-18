@@ -73,6 +73,9 @@ async def start_bot(bot: Bot, scheduler: IScheduler) -> None:
 
 async def start_async_loop(app_container: AppContainer) -> None:
     bots = app_container.bots
+    for bot in bots:
+        await bot.before_start_async()
+
     sched = app_container.scheduler
     tasks: Set[asyncio.Task] = set()
 

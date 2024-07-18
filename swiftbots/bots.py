@@ -113,7 +113,7 @@ class Bot:
 
         return wrapper
 
-    def before_start(self) -> None:
+    async def before_start_async(self) -> None:
         """
         Do something right before the app starts.
         Need to override this method.
@@ -199,8 +199,8 @@ class ChatBot(Bot):
     def overridden_handler(self, message: str, chat: Chat, all_deps: dict[str, Any]) -> Coroutine:
         return handle_message(message, chat, self._compiled_chat_commands, self._default_handler_func, all_deps)
 
-    def before_start(self) -> None:
-        super().before_start()
+    async def before_start_async(self) -> None:
+        await super().before_start_async()
         # TODO: do assert, check if listener_func is exist in self
         self._compiled_chat_commands = compile_chat_commands(self._message_handlers)
 
@@ -223,7 +223,6 @@ class TelegramBot(ChatBot):
         self.__token = token
         self.__admin = admin
         self.__greeting_enabled = greeting_enabled
-        self.__http_session = aiohttp.ClientSession()
         self._sender_func = self._send_async
         self.__should_skip_old_updates = skip_old_updates
         self.listener_func = self.telegram_listener
@@ -377,6 +376,10 @@ class TelegramBot(ChatBot):
         await super().before_close_async()
         if not self.__http_session.closed:
             await self.__http_session.close()
+
+    async def before_start_async(self) -> None:
+        await super().before_start_async()
+        self.__http_session = aiohttp.ClientSession()
 
 
 def build_task_caller(info: TaskInfo, bot: Bot) -> Callable[..., Any]:
