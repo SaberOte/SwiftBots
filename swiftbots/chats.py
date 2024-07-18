@@ -1,6 +1,6 @@
 import random
 from collections.abc import Callable
-from typing import Dict, Optional, Union, Coroutine
+from typing import Dict, Optional, Union
 
 from swiftbots.all_types import ILogger
 from swiftbots.types import AsyncSenderFunction

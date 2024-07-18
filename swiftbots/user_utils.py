@@ -1,8 +1,5 @@
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Dict, List
-
-if TYPE_CHECKING:
-    from swiftbots.all_types import IView
+from typing import Dict, List
 
 
 def get_available_commands_for_user(
