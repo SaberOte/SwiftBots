@@ -1,7 +1,7 @@
 import asyncio
 import random
 from collections.abc import Callable
-from typing import Any, AsyncGenerator, Coroutine, Dict, List, Optional, TypeVar, Union, Tuple
+from typing import Any, AsyncGenerator, Coroutine, Dict, List, Optional, Tuple, TypeVar, Union
 
 import aiohttp
 
@@ -13,7 +13,7 @@ from swiftbots.all_types import (
     ITrigger,
     RestartListeningException,
 )
-from swiftbots.chats import Chat
+from swiftbots.chats import Chat, TelegramChat, VkChat
 from swiftbots.functions import (
     call_raisable_function_async,
     decompose_bot_as_dependencies,
@@ -165,9 +165,13 @@ class ChatBot(Bot):
         self._message_handlers: List[ChatMessageHandler1] = list()
 
         def handler(message: str, sender: Union[str, int], all_deps: dict[str, Any]) -> Coroutine:
-            chat = Chat(sender, message, self._sender_func, self.logger)
+            chat = Chat(
+                sender=sender,
+                message=message,
+                function_sender=self._sender_func,
+                logger=self.logger)
             all_deps['chat'] = chat
-            return self.overridden_handler(message, chat, all_deps)
+            return self.overridden_handler(message=message, chat=chat, all_deps=all_deps)
         self.handler_func = handler
 
     def message_handler(self, commands: List[str]) -> DecoratedCallable:
@@ -207,6 +211,7 @@ class ChatBot(Bot):
 
 
 class TelegramBot(ChatBot):
+    Chat = TypeVar('Chat', bound=TelegramChat)
     __token: str
     __admin: Union[str, int, None]
     __http_session: aiohttp.client.ClientSession
@@ -227,6 +232,24 @@ class TelegramBot(ChatBot):
         self._sender_func = self._send_async
         self.__should_skip_old_updates = skip_old_updates
         self.listener_func = self.telegram_listener
+
+        def handler(message: str,
+                    sender: Union[str, int],
+                    all_deps: dict[str, Any],
+                    message_id: int,
+                    username: Union[str, None]) -> Coroutine:
+            chat = TelegramChat(
+                sender=sender,
+                message=message,
+                function_sender=self._sender_func,
+                logger=self.logger,
+                message_id=message_id,
+                username=username,
+                fetch_async=self.fetch_async
+            )
+            all_deps['chat'] = chat
+            return self.overridden_handler(message, chat, all_deps)
+        self.handler_func = handler
 
     async def _send_async(self, message: str, user: Union[str, int]) -> Dict:
         messages = [message[i: i + 4096] for i in range(0, len(message), 4096)]
@@ -275,6 +298,9 @@ class TelegramBot(ChatBot):
                 await self._handle_server_connection_error_async()
 
     async def _deconstruct_message_async(self, update: Dict) -> Union[Dict, None]:
+        """
+        https://core.telegram.org/bots/api#message
+        """
         update = update["result"][0]
         if "message" in update and "text" in update["message"]:
             message = update["message"]
@@ -283,7 +309,7 @@ class TelegramBot(ChatBot):
             username = (
                 message["from"]["username"]
                 if "username" in message["from"]
-                else "no username"
+                else None
             )
             await self.logger.info_async(
                 f"Came message from '{sender}' ({username}): '{text}'"
@@ -291,6 +317,7 @@ class TelegramBot(ChatBot):
             return {
                 "message": text,
                 "sender": sender,
+                "message_id": message["message_id"],
                 "username": username,
                 "raw_update": update
             }
@@ -384,8 +411,9 @@ class TelegramBot(ChatBot):
 
 
 class VkontakteBot(ChatBot):
+    Chat = TypeVar('Chat', bound=VkChat)
     _group_id: int
-    __default_headers: dict
+    __default_headers: Dict
     __admin: Union[int, None]
     __http_session: aiohttp.client.ClientSession
     __first_time_launched = True
@@ -410,6 +438,22 @@ class VkontakteBot(ChatBot):
         self.listener_func = self.vk_listener
         self.__API_VERSION = api_version
         self.__default_headers = {"Authorization": f"Bearer {token}"}
+
+        def handler(message: str,
+                    sender: Union[str, int],
+                    all_deps: dict[str, Any],
+                    message_id: int) -> Coroutine:
+            chat = VkChat(
+                sender=sender,
+                message=message,
+                function_sender=self._sender_func,
+                logger=self.logger,
+                message_id=message_id,
+                fetch_async=self.fetch_async
+            )
+            all_deps['chat'] = chat
+            return self.overridden_handler(message, chat, all_deps)
+        self.handler_func = handler
 
     async def _send_async(self, message: str, user: Union[int, str]) -> dict:
         """

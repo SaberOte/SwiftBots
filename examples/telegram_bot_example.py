@@ -17,6 +17,7 @@ async def add(message: str, logger: ILogger, chat: calc_bot.Chat,
     await logger.debug_async(f'User is requesting ADD operation: {message}')
     num1, num2 = message.split(' ')
     result = calculator.add(int(num1), int(num2))
+    await chat.reply_async(f'Hello, {chat.username}!')
     await chat.reply_async(str(result))
 
 
@@ -26,6 +27,7 @@ async def subtract(message: str, logger: ILogger, chat: calc_bot.Chat,
     await logger.debug_async(f'User is requesting SUBTRACT operation: {message}')
     num1, num2 = message.split(' ')
     result = calculator.sub(int(num1), int(num2))
+    await chat.reply_async(f'Hello, {chat.username}!')
     await chat.reply_async(str(result))
 
 
