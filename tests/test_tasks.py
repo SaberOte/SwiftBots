@@ -16,10 +16,10 @@ class Changer:
         shutdown_app()
 
 
-class TestBotTasks:
+class TestTasks:
 
     @pytest.mark.timeout(5)
-    def test_default_handler(self):
+    def test_task(self):
         app = SwiftBots()
 
         bot = StubBot()

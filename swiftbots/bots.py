@@ -22,7 +22,8 @@ from swiftbots.types import AsyncListenerFunction, AsyncSenderFunction, Decorate
 
 
 class Bot:
-    """A storage of components"""
+    """Base class for all other types of bots.
+    This bot can only have a listener, a handler or tasks"""
     listener_func: AsyncListenerFunction
     handler_func: DecoratedCallable
     task_infos: List[TaskInfo]
@@ -187,7 +188,7 @@ class ChatBot(Bot):
 
 
 class TelegramBot(ChatBot):
-
+    pass
 
 
 def build_task_caller(info: TaskInfo, bot: Bot) -> Callable[..., Any]:

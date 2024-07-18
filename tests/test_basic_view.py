@@ -2,46 +2,42 @@ import asyncio
 
 import pytest
 
-from swiftbots import SwiftBots
+from swiftbots import Bot, SwiftBots
 from swiftbots.admin_utils import shutdown_app
-from swiftbots.all_types import BasicContext, BasicPreContext
-from swiftbots.controllers import Controller
-from swiftbots.views import BasicView
 
-global_var = 0
+global_dict = {}
 
 
-class MyBasicView(BasicView):
+bot = Bot()
 
-    async def listen_async(self):
-        while True:
-            await asyncio.sleep(0)
-            test_value = 69
-            yield BasicPreContext(test_value)
 
-    async def change_var_async(self, value):
+@bot.handler()
+async def the_one_handler(value: str):
+    await asyncio.sleep(0)
+    global global_dict
+    global_dict['value'] = value
+    shutdown_app()
+
+
+@bot.listener()
+async def listen_async():
+    while True:
         await asyncio.sleep(0)
-        global global_var
-        global_var = value
-        shutdown_app()
+        test_value = 'Some value'
+        yield {
+            "value": test_value
+        }
 
 
-class MyController(Controller):
-
-    async def default(self, view: MyBasicView, context: BasicContext):
-        mes: int = context['raw_message']
-        await view.change_var_async(mes + 2)
-
-
-class TestBasicView:
+class TestBasicBot:
 
     @pytest.mark.timeout(3)
-    def test_default_handler(self):
+    def test_base_handler(self):
         app = SwiftBots()
 
-        app.add_bot(MyBasicView, [MyController])
+        app.add_bots([bot])
 
         app.run()
 
-        global global_var
-        assert global_var == 71
+        global global_dict
+        assert global_dict['value'] == 'Some value'

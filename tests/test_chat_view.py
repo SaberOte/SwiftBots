@@ -2,115 +2,84 @@ import asyncio
 
 import pytest
 
-from swiftbots import SwiftBots, ChatBot
+from swiftbots import ChatBot, SwiftBots
 from swiftbots.admin_utils import shutdown_app
-from swiftbots.all_types import ChatContext, ChatPreContext
-from swiftbots.controllers import Controller
-from swiftbots.views import ChatView
 
 global_dict = {}
 
 
-class MyChatView1(ChatView):
-
-    async def listen_async(self):
-        while True:
-            await asyncio.sleep(0)
-            test_value = 'message from'
-            yield ChatPreContext(test_value, 'some sender')
-
-    async def send_async(self, message, user, data=None):
-        await asyncio.sleep(0)
-        global global_dict
-        global_dict['answer1'] = message
-        global_dict['user1'] = user
-        shutdown_app()
+bot = ChatBot()
 
 
-class MyChatView2(ChatView):
-
-    async def listen_async(self):
-        while True:
-            await asyncio.sleep(0)
-            test_value = 'TEST command message from'
-            yield ChatPreContext(test_value, 'some sender')
-
-    async def send_async(self, message, user, data=None):
-        await asyncio.sleep(0)
-        global global_dict
-        global_dict['answer2'] = message
-        global_dict['user2'] = user
-        shutdown_app()
+@bot.message_handler(commands=['command 1'])
+async def command_handler_1(message: str, chat: bot.Chat):
+    await chat.reply_async(message + ' from command handler 1')
 
 
-class MyController(Controller):
-
-    async def default(self, view: ChatView, context: ChatContext):
-        mes: str = context.raw_message
-        await view.send_async(mes + ' default handler', context.sender)
-
-    async def some_command(self, view: ChatView, context: ChatContext):
-        mes: str = context.arguments
-        await view.send_async(mes + ' command handler', context.sender)
-
-    cmds = {
-        'test commAnd': some_command,
-        'not the same command': print
-    }
+@bot.message_handler(commands=['command 2'])
+async def never_should_be_called():
+    raise Exception()
 
 
-class TestChatView:
+@bot.default_handler()
+async def default_handler(message: str, chat: bot.Chat):
+    await chat.reply_async(message + ' from default handler')
+
+
+@bot.sender()
+async def send_async(message, user):
+    await asyncio.sleep(0)
+    print(f'Message: {message} sent to {user}')
+    global global_dict
+    global_dict['answer1'] = message
+    global_dict['user1'] = user
+    shutdown_app()
+
+
+class TestChatBot:
 
     @pytest.mark.timeout(3)
-    def test_default_handler(self):
+    def test_message_handler(self):
         app = SwiftBots()
-
-        bot = ChatBot()
-
-        @bot.message_handler(commands=['test commAnd'])
-        async def some_command(message: str, chat: bot.Chat):
-            await chat.reply_async(message + ' command handler')
-
-        @bot.message_handler(commands=['not the same command'])
-        async def should_no_be_called():
-            raise Exception()
 
         @bot.listener()
         async def listen_async():
             while True:
                 await asyncio.sleep(0)
-                test_value = 'message from'
-                sender = 'some sender'
+                test_value = 'Command 1  unique message'
+                sender = 'Hund'
                 yield {
                     "message": test_value,
-                    "user": sender
+                    "sender": sender
                 }
-
-        @bot.sender()
-        async def send_async(message, user):
-            await asyncio.sleep(0)
-            print(f'Message: {message} sent to {user}')
-            global global_dict
-            global_dict['answer1'] = message
-            global_dict['user1'] = user
-            shutdown_app()
 
         app.add_bots([bot])
 
         app.run()
 
         global global_dict
-        assert global_dict['answer1'] == 'message from default handler'
-        assert global_dict['user1'] == 'some sender'
+        assert global_dict['answer1'] == 'unique message from command handler 1'
+        assert global_dict['user1'] == 'Hund'
 
     @pytest.mark.timeout(3)
-    def test_command(self):
+    def test_default_handler(self):
         app = SwiftBots()
 
-        app.add_bot(MyChatView2, [MyController])
+        @bot.listener()
+        async def listen_async():
+            while True:
+                await asyncio.sleep(0)
+                test_value = 'Unknown command'
+                sender = 'Pferd'
+                yield {
+                    "message": test_value,
+                    "sender": sender
+                }
+
+        app.add_bots([bot])
 
         app.run()
 
         global global_dict
-        assert global_dict['answer2'] == 'message from command handler'
-        assert global_dict['user2'] == 'some sender'
+        assert global_dict['answer1'] == 'Unknown command from default handler'
+        assert global_dict['user1'] == 'Pferd'

@@ -64,7 +64,7 @@ async def period_printer(
 ):
     r = random.Random()
     result = calculator.add(r.randint(1000, 4999), r.randint(1000, 5000))
-    await logger.report_async(str(result))
+    await logger.report_async("Period task calc: " + str(result))
 
 
 app = SwiftBots()
