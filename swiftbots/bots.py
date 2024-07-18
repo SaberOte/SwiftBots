@@ -1,6 +1,7 @@
 import asyncio
+import random
 from collections.abc import Callable
-from typing import Any, AsyncGenerator, Coroutine, Dict, List, Optional, TypeVar, Union
+from typing import Any, AsyncGenerator, Coroutine, Dict, List, Optional, TypeVar, Union, Tuple
 
 import aiohttp
 
@@ -371,6 +372,244 @@ class TelegramBot(ChatBot):
         if len(result) > 0:
             return result[0]["update_id"] + 1
         return -1
+
+    async def before_close_async(self) -> None:
+        await super().before_close_async()
+        if not self.__http_session.closed:
+            await self.__http_session.close()
+
+    async def before_start_async(self) -> None:
+        await super().before_start_async()
+        self.__http_session = aiohttp.ClientSession()
+
+
+class VkontakteBot(ChatBot):
+    _group_id: int
+    __default_headers: dict
+    __admin: Union[int, None]
+    __http_session: aiohttp.client.ClientSession
+    __first_time_launched = True
+    ALLOWED_UPDATES = ["messages"]
+
+    def __init__(self,
+                 token: str,
+                 group_id: Union[int, str],
+                 admin: Union[str, int, None] = None,
+                 name: Optional[str] = None,
+                 bot_logger_factory: Optional[ILoggerFactory] = None,
+                 greeting_enabled: bool = True,
+                 skip_old_updates: bool = True,
+                 api_version: str = "5.199"):
+        super().__init__(name=name, bot_logger_factory=bot_logger_factory)
+        self.__token = token
+        self._group_id = int(group_id)
+        self.__admin = int(admin) if admin is not None else None
+        self.__greeting_enabled = greeting_enabled
+        self._sender_func = self._send_async
+        self.__should_skip_old_updates = skip_old_updates
+        self.listener_func = self.vk_listener
+        self.__API_VERSION = api_version
+        self.__default_headers = {"Authorization": f"Bearer {token}"}
+
+    async def _send_async(self, message: str, user: Union[int, str]) -> dict:
+        """
+        :returns: {
+                      "response": 5
+                  }, where response is a message id
+        """
+        # if the message out of 4096 letters, split it on chunks
+        messages = [message[i: i + 4096] for i in range(0, len(message), 4096)]
+        result = {}
+        for msg in messages:
+            send_data = {
+                "user_id": int(user),
+                "message": msg,
+                "random_id": self.get_random_id(),
+            }
+            result = await self.fetch_async("messages.send", send_data)
+        return result
+
+    async def fetch_async(
+            self,
+            method: str,
+            data: Optional[Dict] = None,
+            headers: Optional[Dict] = None,
+            query_data: Optional[Dict] = None,
+            ignore_errors: bool = False,
+    ) -> Dict:
+        args = (
+            "".join([f"{name}={value}&" for name, value in query_data.items()])
+            if query_data
+            else ""
+        )
+        url = (
+            f"https://api.vk.com/method/"
+            f"{method}?"
+            f"{args}"
+            f"v={self.__API_VERSION}"
+        )
+
+        request_headers = self.__default_headers.copy()
+        if headers is not None:
+            request_headers.update(headers)
+
+        response = await self.__http_session.post(
+            url=url, data=data, headers=request_headers
+        )
+
+        answer = await response.json()
+        if "error" in answer and not ignore_errors:
+            state = await self._handle_error_async(answer)
+            if state == 0:  # repeat request
+                await asyncio.sleep(5)
+                response = await self.__http_session.post(
+                    url=url, data=data, headers=request_headers
+                )
+                answer = await response.json()
+            if "error" in answer:
+                await self.logger.info_async("Error and Restart Listener invoked: " + str(answer))
+                raise RestartListeningException()
+        return answer
+
+    async def vk_listener(self) -> None:
+        while True:
+            if self.__greeting_enabled and self.__admin is not None:
+                await self._sender_func(f"{self.name} is started!", self.__admin)
+
+            try:
+                async for update in self._get_updates_async():
+                    data = await self._deconstruct_message_async(update)
+                    if data:
+                        yield data
+
+            except (aiohttp.ServerConnectionError, aiohttp.ClientConnectorError):
+                await self._handle_server_connection_error_async()
+
+    async def _deconstruct_message_async(self, update: dict) -> Dict:
+        message = update["object"]["message"]
+        text: str = message["text"]
+        sender: int = message["from_id"]
+        message_id: int = message["id"]
+        await self.logger.debug_async(f"Came message from '{sender}': '{text}'")
+        return {
+            "message": text,
+            "sender": sender,
+            "message_id": message_id
+        }
+
+    async def _handle_server_connection_error_async(self) -> None:
+        await self.logger.info_async(
+            f"Connection ERROR in {self.name}. Sleep 5 seconds"
+        )
+        await asyncio.sleep(5)
+
+    async def _get_long_poll_server_async(self) -> Tuple[str, str, str]:
+        """
+        https://dev.vk.com/ru/api/bots-long-poll/getting-started#Подключение
+        """
+        data = {"group_id": self._group_id}
+        result = await self.fetch_async("groups.getLongPollServer", query_data=data)
+        if "error" in result:
+            state = await self._handle_error_async(result)
+            if state == 0:
+                await asyncio.sleep(5)
+                return await self._get_long_poll_server_async()
+            else:
+                raise ExitBotException(
+                    f"An error {result} occured while receiving a long polling server"
+                )
+        key = result["response"]["key"]
+        server = result["response"]["server"]
+        ts = result["response"]["ts"]
+        return key, server, ts
+
+    async def _get_updates_async(self) -> AsyncGenerator[dict, None]:
+        """
+        https://dev.vk.com/ru/api/bots-long-poll/getting-started#Подключение
+        """
+        key, server, ts = await self._get_long_poll_server_async()
+
+        timeout = "25"
+        while True:
+            url = f"{server}?act=a_check&key={key}&ts={ts}&wait={timeout}"
+            ans = await self.__http_session.post(url=url)
+            result = await ans.json()
+            if "updates" in result:
+                updates = result["updates"]
+                if len(updates) != 0:
+                    ts = result["ts"]
+                    for update in updates:
+                        yield update
+            else:
+                failed = result["failed"]
+                if failed == 1:
+                    ts = result["ts"]
+                elif failed in [2, 3]:
+                    key, server, ts = await self._get_long_poll_server_async()
+                else:
+                    raise Exception("Unknown failed")
+
+    async def _handle_error_async(self, error: dict) -> int:
+        """
+        https://dev.vk.com/ru/reference/errors
+        :returns: whether code should continue executing after the error.
+        -1 if bot should be exited. Never returns, raises BaseException
+        0 if it should just repeat request.
+        1 if it's better to finish this request. The same subsequent requests will fail too.
+        """
+        error_code: int = error["error"]["error_code"]
+        error_msg: str = error["error"]["error_msg"]
+        msg = f"Error {error_code} from VK API: {error_msg}"
+        # just need to wait and repeat request
+        if error_code in (1, 10):
+            await self.logger.error_async(msg)
+            return 0
+        # notify administrator
+        elif error_code in (
+            3,
+            8,
+            9,
+            14,
+            15,
+            16,
+            17,
+            18,
+            23,
+            24,
+            29,
+            30,
+            113,
+            150,
+            200,
+            201,
+            203,
+            300,
+            500,
+            600,
+            603,
+        ):
+            await self.logger.error_async(msg)
+            return 1
+        # too many requests
+        elif error_code == 6:
+            await self.logger.error_async(
+                f"{self.name} reached too many requests error. Fix the code"
+            )
+            await asyncio.sleep(10)
+            return 0
+        # unforgivable errors
+        elif error_code in (2, 4, 5, 7, 11, 20, 21, 27, 28, 100, 101):
+            await self.logger.critical_async(msg)
+            raise ExitBotException(msg)
+        else:
+            await self.logger.critical_async(
+                "Unknown error codes in code for VK! Error:" + msg
+            )
+            return 1
+
+    @staticmethod
+    def get_random_id() -> int:
+        return random.randint(-(2 ** 31), 2 ** 31)
 
     async def before_close_async(self) -> None:
         await super().before_close_async()

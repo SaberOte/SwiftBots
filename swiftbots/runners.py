@@ -96,6 +96,8 @@ async def start_async_loop(app_container: AppContainer) -> None:
         # if no bots launched, then close the app
         if not any(filter(lambda t: t.get_name() != __SCHEDULER_TASK_NAME, tasks)):
             await app_container.logger.report_async("Bots application's closed. The reason is no bots launched now.")
+            for bot_to_close in bots:
+                await bot_to_close.before_close_async()
             return
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for task in done:
@@ -153,10 +155,11 @@ async def start_async_loop(app_container: AppContainer) -> None:
                     if bot_name_to_exit != __SCHEDULER_TASK_NAME:
                         bot_to_exit = bots_dict[bot_name_to_exit]
                         await stop_bot_async(bot_to_exit, sched)
-                        await bot_to_exit.before_close_async()
                         await bot_to_exit.logger.report_async(
                             f"Bot {bot_to_exit.name}'s exited"
                         )
+                for bot_to_close in bots:
+                        await bot_to_close.before_close_async()
                 await logger.report_async("Bots application's closed")
                 return
 
