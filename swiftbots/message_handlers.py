@@ -21,7 +21,7 @@ class ChatMessageHandler:
         self.commands = commands
         self.function = function
         self.whitelist_users = None if whitelist_users is None else [str(x).casefold() for x in whitelist_users]
-        self.blacklist_users = None if whitelist_users is None else [str(x).casefold() for x in blacklist_users]
+        self.blacklist_users = None if blacklist_users is None else [str(x).casefold() for x in blacklist_users]
 
 
 class CompiledChatCommand:
