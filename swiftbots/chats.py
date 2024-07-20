@@ -43,7 +43,7 @@ class Chat:
         If the user sends some unknown shit, then needed to warn him
         """
         await self.logger.info_async(f"{self.sender} sent unknown command. {self.message}")
-        return await self.reply_async(self.unknown_error_message)
+        return await self.reply_async(self.unknown_message)
 
     async def refuse_async(self) -> dict:
         """
