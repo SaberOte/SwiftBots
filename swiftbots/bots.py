@@ -165,7 +165,7 @@ class ChatBot(Bot):
                  chat_error_message: str = "Error occurred",
                  chat_unknown_error_message: str = "Unknown command",
                  chat_refuse_message: str = "Access forbidden",
-                 admin: Optional[int, str] = None,
+                 admin: Optional[Union[int, str]] = None,
                  ):
         super().__init__(name=name, bot_logger_factory=bot_logger_factory)
         self._message_handlers = list()
@@ -245,7 +245,7 @@ class TelegramBot(ChatBot):
 
     def __init__(self,
                  token: str,
-                 admin: Optional[int, str] = None,
+                 admin: Optional[Union[int, str]] = None,
                  name: Optional[str] = None,
                  bot_logger_factory: Optional[ILoggerFactory] = None,
                  greeting_enabled: bool = True,
@@ -456,7 +456,7 @@ class VkontakteBot(ChatBot):
     def __init__(self,
                  token: str,
                  group_id: Union[int, str],
-                 admin: Optional[int, str] = None,
+                 admin: Optional[Union[int, str]] = None,
                  name: Optional[str] = None,
                  bot_logger_factory: Optional[ILoggerFactory] = None,
                  greeting_enabled: bool = True,
