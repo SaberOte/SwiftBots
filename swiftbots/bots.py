@@ -160,6 +160,9 @@ class ChatBot(Bot):
     def __init__(self,
                  name: Optional[str] = None,
                  bot_logger_factory: Optional[ILoggerFactory] = None,
+                 chat_error_message: str = "Error occurred",
+                 chat_unknown_error_message: str = "Unknown command",
+                 chat_refuse_message: str = "Access forbidden",
                  ):
         super().__init__(name=name, bot_logger_factory=bot_logger_factory)
         self._message_handlers: List[ChatMessageHandler1] = list()
@@ -169,7 +172,11 @@ class ChatBot(Bot):
                 sender=sender,
                 message=message,
                 function_sender=self._sender_func,
-                logger=self.logger)
+                logger=self.logger,
+                error_message=chat_error_message,
+                unknown_message=chat_unknown_error_message,
+                refuse_message=chat_refuse_message
+            )
             all_deps['chat'] = chat
             return self.overridden_handler(message=message, chat=chat, all_deps=all_deps)
         self.handler_func = handler
@@ -224,7 +231,11 @@ class TelegramBot(ChatBot):
                  name: Optional[str] = None,
                  bot_logger_factory: Optional[ILoggerFactory] = None,
                  greeting_enabled: bool = True,
-                 skip_old_updates: bool = True):
+                 skip_old_updates: bool = True,
+                 chat_error_message: str = "Error occurred",
+                 chat_unknown_error_message: str = "Unknown command",
+                 chat_refuse_message: str = "Access forbidden",
+                 ):
         super().__init__(name=name, bot_logger_factory=bot_logger_factory)
         self.__token = token
         self.__admin = admin
@@ -237,7 +248,8 @@ class TelegramBot(ChatBot):
                     sender: Union[str, int],
                     all_deps: dict[str, Any],
                     message_id: int,
-                    username: Union[str, None]) -> Coroutine:
+                    username: Union[str, None]
+                    ) -> Coroutine:
             chat = TelegramChat(
                 sender=sender,
                 message=message,
@@ -245,7 +257,10 @@ class TelegramBot(ChatBot):
                 logger=self.logger,
                 message_id=message_id,
                 username=username,
-                fetch_async=self.fetch_async
+                fetch_async=self.fetch_async,
+                error_message=chat_error_message,
+                unknown_message=chat_unknown_error_message,
+                refuse_message=chat_refuse_message,
             )
             all_deps['chat'] = chat
             return self.overridden_handler(message, chat, all_deps)
@@ -427,6 +442,9 @@ class VkontakteBot(ChatBot):
                  bot_logger_factory: Optional[ILoggerFactory] = None,
                  greeting_enabled: bool = True,
                  skip_old_updates: bool = True,
+                 chat_error_message: str = "Error occurred",
+                 chat_unknown_error_message: str = "Unknown command",
+                 chat_refuse_message: str = "Access forbidden",
                  api_version: str = "5.199"):
         super().__init__(name=name, bot_logger_factory=bot_logger_factory)
         self.__token = token
@@ -449,7 +467,10 @@ class VkontakteBot(ChatBot):
                 function_sender=self._sender_func,
                 logger=self.logger,
                 message_id=message_id,
-                fetch_async=self.fetch_async
+                fetch_async=self.fetch_async,
+                error_message=chat_error_message,
+                unknown_message=chat_unknown_error_message,
+                refuse_message=chat_refuse_message,
             )
             all_deps['chat'] = chat
             return self.overridden_handler(message, chat, all_deps)

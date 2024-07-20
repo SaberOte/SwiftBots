@@ -7,21 +7,23 @@ from swiftbots.types import AsyncSenderFunction
 
 
 class Chat:
-    error_message = "Error occurred"
-    unknown_error_message = "Unknown command"
-    refuse_message = "Access forbidden"
-
     def __init__(
             self,
             sender: Union[str, int],
             message: str,
             function_sender: AsyncSenderFunction,
-            logger: ILogger
+            logger: ILogger,
+            error_message: str,
+            unknown_message: str,
+            refuse_message: str
     ):
         self.sender = sender
         self.message = message
         self.function_sender = function_sender
         self.logger = logger
+        self.error_message = error_message
+        self.unknown_message = unknown_message
+        self.refuse_message = refuse_message
 
     async def reply_async(self, message: str) -> dict:
         """
@@ -60,12 +62,18 @@ class TelegramChat(Chat):
             logger: ILogger,
             message_id: int,
             username: Union[str, None],
-            fetch_async: Callable
+            fetch_async: Callable,
+            error_message: str,
+            unknown_message: str,
+            refuse_message: str
     ):
         super().__init__(sender=sender,
                          message=message,
                          function_sender=function_sender,
-                         logger=logger)
+                         logger=logger,
+                         error_message=error_message,
+                         unknown_message=unknown_message,
+                         refuse_message=refuse_message)
         self.message_id = message_id
         self.username = username
         self.fetch_async = fetch_async
@@ -121,12 +129,18 @@ class VkChat(Chat):
             function_sender: AsyncSenderFunction,
             logger: ILogger,
             message_id: int,
-            fetch_async: Callable
+            fetch_async: Callable,
+            error_message: str,
+            unknown_message: str,
+            refuse_message: str
     ):
         super().__init__(sender=sender,
                          message=message,
                          function_sender=function_sender,
-                         logger=logger)
+                         logger=logger,
+                         error_message=error_message,
+                         unknown_message=unknown_message,
+                         refuse_message=refuse_message)
         self.message_id = message_id
         self.fetch_async = fetch_async
 
