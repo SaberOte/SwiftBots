@@ -1,37 +1,13 @@
 import asyncio
+import random
 import urllib.parse
 import urllib.request
-from collections.abc import Callable, Coroutine
-from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Tuple
+from typing import Any, Dict, Optional, Set, Tuple
 
 import aiohttp
 
-from swiftbots.all_types import ChatContext, ExitApplicationException, IChatView, IVkontakteView, StartBotException
+from swiftbots.all_types import ExitApplicationException, StartBotException
 from swiftbots.runners import get_all_tasks
-
-if TYPE_CHECKING:
-    from swiftbots.all_types import IContext, IController, IView
-
-
-controller_method = Callable[
-    ["IController", "IView", "IContext"], Coroutine[Any, Any, None]
-]
-
-
-def admin_only_async(func: controller_method) -> controller_method:
-    """Decorator. Should wrap controller method to prevent non-admin execution"""
-
-    async def wrapper(self: "IController", view: "IView", context: "IContext") -> None:
-        """admin_only_wrapper"""
-        assert isinstance(view, IChatView) and isinstance(
-            context, ChatContext
-        ), "Admin only decorator can be used only with Chat Views"
-        if await view.is_admin_async(context.sender):
-            await func(self, view, context)
-        else:
-            await view.refuse_async(context)
-
-    return wrapper
 
 
 def shutdown_app() -> None:
@@ -149,7 +125,7 @@ async def send_vk_message_async(
             send_data = {
                 "user_id": admin,
                 "message": msg,
-                "random_id": IVkontakteView.get_random_id(),
+                "random_id": random.randint(-(2 ** 31), 2 ** 31),
                 "dont_parse_links": 1,
             }
             send_data.update(data)
@@ -169,7 +145,7 @@ def send_vk_message(
         send_data = {
             "user_id": admin,
             "message": msg,
-            "random_id": IVkontakteView.get_random_id(),
+            "random_id": random.randint(-(2 ** 31), 2 ** 31),
             "dont_parse_links": 1,
         }
         send_data.update(data)

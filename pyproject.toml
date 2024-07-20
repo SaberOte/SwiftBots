@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "swiftbots"
-version = "0.3.0b1"
+version = "0.3.0b3"
 description = "Python asynchronous web framework for rapid any-level bots development"
 authors = ["Polka <you@example.com>"]
 readme = "docs/README.md"
@@ -12,9 +12,7 @@ repository = "https://github.com/SaberOte/SwiftBots"
 
 [tool.poetry.dependencies]
 python = ">=3.8.0"
-alembic = "^1.3.0"
 aiohttp = "^3.0.0"
-sqlalchemy = {extras = ["asyncio"], version = "^2.0.0"}
 
 [tool.poetry.group.dev.dependencies]
 ruff = "*"

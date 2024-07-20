@@ -1,6 +1,6 @@
 import re
 from collections.abc import Coroutine
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Union
 
 from swiftbots.functions import resolve_function_args
 from swiftbots.types import DecoratedCallable
@@ -12,10 +12,16 @@ if TYPE_CHECKING:
 __trimmer = re.compile(r"\s+$")
 
 
-class ChatMessageHandler1:
-    def __init__(self, commands: List[str], function: DecoratedCallable):
+class ChatMessageHandler:
+    def __init__(self,
+                 commands: List[str],
+                 function: DecoratedCallable,
+                 whitelist_users: Optional[List[Union[str, int]]],
+                 blacklist_users: Optional[List[Union[str, int]]]):
         self.commands = commands
         self.function = function
+        self.whitelist_users = None if whitelist_users is None else [str(x).casefold() for x in whitelist_users]
+        self.blacklist_users = None if whitelist_users is None else [str(x).casefold() for x in blacklist_users]
 
 
 class CompiledChatCommand:
@@ -24,10 +30,14 @@ class CompiledChatCommand:
         command_name: str,
         method: DecoratedCallable,
         pattern: re.Pattern,
+        whitelist_users: Optional[List[str]],
+        blacklist_users: Optional[List[str]]
     ):
         self.command_name = command_name
         self.method = method
         self.pattern = pattern
+        self.whitelist_users = whitelist_users
+        self.blacklist_users = blacklist_users
 
 
 def compile_command_as_regex(name: str) -> re.Pattern:
@@ -44,18 +54,32 @@ def compile_command_as_regex(name: str) -> re.Pattern:
 
 
 def compile_chat_commands(
-    handlers: List[ChatMessageHandler1],
+    handlers: List[ChatMessageHandler],
 ) -> List[CompiledChatCommand]:
     compiled_commands = [
         CompiledChatCommand(
             command_name=command,
             method=handler.function,
             pattern=compile_command_as_regex(command),
+            blacklist_users=handler.blacklist_users,
+            whitelist_users=handler.whitelist_users
         )
         for handler in handlers
         for command in handler.commands
     ]
     return compiled_commands
+
+
+def is_user_allowed(user: Union[str, int],
+                    whitelist_users: Optional[List[str]],
+                    blacklist_users: Optional[List[str]]
+                    ) -> bool:
+    user = str(user).casefold()
+    if blacklist_users is not None:
+        return user not in blacklist_users
+    if whitelist_users is not None:
+        return user in whitelist_users
+    return True
 
 
 def handle_message(
@@ -101,7 +125,11 @@ def handle_message(
         all_deps['message'] = arguments
         # del all_deps['message']  # Maybe, I'll delete 'message' because it can mislead
         args = resolve_function_args(method, all_deps)
-        return method(**args)
+
+        if is_user_allowed(chat.sender, best_matched_command.whitelist_users, best_matched_command.blacklist_users):
+            return method(**args)
+        else:
+            return chat.refuse_async()
 
     elif default_handler_func is not None:  # No matches. Use default handler
         method = default_handler_func

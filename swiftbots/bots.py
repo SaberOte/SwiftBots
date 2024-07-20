@@ -22,7 +22,7 @@ from swiftbots.functions import (
 )
 from swiftbots.loggers import SysIOLoggerFactory
 from swiftbots.message_handlers import (
-    ChatMessageHandler1,
+    ChatMessageHandler,
     CompiledChatCommand,
     compile_chat_commands,
     handle_message,
@@ -40,9 +40,9 @@ class Bot:
     __logger: ILogger
 
     def __init__(
-        self,
-        name: Optional[str] = None,
-        bot_logger_factory: Optional[ILoggerFactory] = None,
+            self,
+            name: Optional[str] = None,
+            bot_logger_factory: Optional[ILoggerFactory] = None,
     ):
         assert bot_logger_factory is None or isinstance(
             bot_logger_factory, ILoggerFactory
@@ -156,6 +156,8 @@ class ChatBot(Bot):
     _sender_func: AsyncSenderFunction
     _compiled_chat_commands: List[CompiledChatCommand]
     _default_handler_func: Optional[DecoratedCallable] = None
+    _message_handlers: List[ChatMessageHandler]
+    _admin: Optional[str] = None
 
     def __init__(self,
                  name: Optional[str] = None,
@@ -163,9 +165,11 @@ class ChatBot(Bot):
                  chat_error_message: str = "Error occurred",
                  chat_unknown_error_message: str = "Unknown command",
                  chat_refuse_message: str = "Access forbidden",
+                 admin: Optional[int, str] = None,
                  ):
         super().__init__(name=name, bot_logger_factory=bot_logger_factory)
-        self._message_handlers: List[ChatMessageHandler1] = list()
+        self._message_handlers = list()
+        self._admin = admin
 
         def handler(message: str, sender: Union[str, int], all_deps: dict[str, Any]) -> Coroutine:
             chat = Chat(
@@ -179,16 +183,30 @@ class ChatBot(Bot):
             )
             all_deps['chat'] = chat
             return self.overridden_handler(message=message, chat=chat, all_deps=all_deps)
+
         self.handler_func = handler
 
-    def message_handler(self, commands: List[str]) -> DecoratedCallable:
+    def message_handler(self,
+                        commands: List[str],
+                        admin_only: bool = False,
+                        whitelist_users: Optional[List[Union[str, int]]] = None,
+                        blacklist_users: Optional[List[Union[str, int]]] = None) -> DecoratedCallable:
+        """
+        :param commands: commands, that will fire the method. For example: ['add', '+']. Message "add 2 2" will execute in this method.
+        :param admin_only: only admin will be able to use this command. If True, whitelist_users list will be ignored.
+        :param whitelist_users: the only users from the list will be able to use this command. If admin_only = True, then whitelist_users will be ignored.
+        :param blacklist_users: the users from list won't be able to use this command. blacklist has a privilege upon whitelist.
+        """
         assert isinstance(commands, list), 'Commands must be a list of strings'
         assert len(commands) > 0, 'Empty list of commands'
         for command in commands:
             assert isinstance(command, str), 'Command must be a string'
 
-        def wrapper(func: DecoratedCallable) -> ChatMessageHandler1:
-            handler = ChatMessageHandler1(commands=commands, function=func)
+        def wrapper(func: DecoratedCallable) -> ChatMessageHandler:
+            handler = ChatMessageHandler(commands=commands,
+                                         function=func,
+                                         whitelist_users=whitelist_users if not admin_only else [self._admin],
+                                         blacklist_users=blacklist_users)
             self._message_handlers.append(handler)
             return handler
 
@@ -202,7 +220,7 @@ class ChatBot(Bot):
         return wrapper
 
     def default_handler(self) -> DecoratedCallable:
-        def wrapper(func: DecoratedCallable) -> ChatMessageHandler1:
+        def wrapper(func: DecoratedCallable) -> ChatMessageHandler:
             self._default_handler_func = func
             return func
 
@@ -215,19 +233,19 @@ class ChatBot(Bot):
         await super().before_start_async()
         # TODO: do assert, check if listener_func is exist in self
         self._compiled_chat_commands = compile_chat_commands(self._message_handlers)
+        self._message_handlers.clear()
 
 
 class TelegramBot(ChatBot):
     Chat = TypeVar('Chat', bound=TelegramChat)
     __token: str
-    __admin: Union[str, int, None]
     __http_session: aiohttp.client.ClientSession
     __first_time_launched = True
     ALLOWED_UPDATES = ["messages"]
 
     def __init__(self,
                  token: str,
-                 admin: Union[str, int, None] = None,
+                 admin: Optional[int, str] = None,
                  name: Optional[str] = None,
                  bot_logger_factory: Optional[ILoggerFactory] = None,
                  greeting_enabled: bool = True,
@@ -236,9 +254,10 @@ class TelegramBot(ChatBot):
                  chat_unknown_error_message: str = "Unknown command",
                  chat_refuse_message: str = "Access forbidden",
                  ):
-        super().__init__(name=name, bot_logger_factory=bot_logger_factory)
+        super().__init__(name=name,
+                         bot_logger_factory=bot_logger_factory,
+                         admin=admin)
         self.__token = token
-        self.__admin = admin
         self.__greeting_enabled = greeting_enabled
         self._sender_func = self._send_async
         self.__should_skip_old_updates = skip_old_updates
@@ -264,6 +283,7 @@ class TelegramBot(ChatBot):
             )
             all_deps['chat'] = chat
             return self.overridden_handler(message, chat, all_deps)
+
         self.handler_func = handler
 
     async def _send_async(self, message: str, user: Union[str, int]) -> Dict:
@@ -275,11 +295,11 @@ class TelegramBot(ChatBot):
         return result
 
     async def fetch_async(
-        self,
-        method: str,
-        data: Dict,
-        headers: Optional[Dict] = None,
-        ignore_errors: bool = False,
+            self,
+            method: str,
+            data: Dict,
+            headers: Optional[Dict] = None,
+            ignore_errors: bool = False,
     ) -> Dict:
         url = f"https://api.telegram.org/bot{self.__token}/{method}"
         response = await self.__http_session.post(url=url, json=data, headers=headers)
@@ -300,8 +320,8 @@ class TelegramBot(ChatBot):
 
     async def telegram_listener(self) -> None:
         while True:
-            if self.__greeting_enabled and self.__admin is not None:
-                await self._sender_func(f"{self.name} is started!", self.__admin)
+            if self.__greeting_enabled and self._admin is not None:
+                await self._sender_func(f"{self.name} is started!", self._admin)
 
             try:
                 async for update in self._get_updates_async():
@@ -429,7 +449,6 @@ class VkontakteBot(ChatBot):
     Chat = TypeVar('Chat', bound=VkChat)
     _group_id: int
     __default_headers: Dict
-    __admin: Union[int, None]
     __http_session: aiohttp.client.ClientSession
     __first_time_launched = True
     ALLOWED_UPDATES = ["messages"]
@@ -437,7 +456,7 @@ class VkontakteBot(ChatBot):
     def __init__(self,
                  token: str,
                  group_id: Union[int, str],
-                 admin: Union[str, int, None] = None,
+                 admin: Optional[int, str] = None,
                  name: Optional[str] = None,
                  bot_logger_factory: Optional[ILoggerFactory] = None,
                  greeting_enabled: bool = True,
@@ -446,10 +465,11 @@ class VkontakteBot(ChatBot):
                  chat_unknown_error_message: str = "Unknown command",
                  chat_refuse_message: str = "Access forbidden",
                  api_version: str = "5.199"):
-        super().__init__(name=name, bot_logger_factory=bot_logger_factory)
+        super().__init__(name=name,
+                         bot_logger_factory=bot_logger_factory,
+                         admin=None if admin is None else int(admin))
         self.__token = token
         self._group_id = int(group_id)
-        self.__admin = int(admin) if admin is not None else None
         self.__greeting_enabled = greeting_enabled
         self._sender_func = self._send_async
         self.__should_skip_old_updates = skip_old_updates
@@ -474,6 +494,7 @@ class VkontakteBot(ChatBot):
             )
             all_deps['chat'] = chat
             return self.overridden_handler(message, chat, all_deps)
+
         self.handler_func = handler
 
     async def _send_async(self, message: str, user: Union[int, str]) -> dict:
@@ -538,8 +559,8 @@ class VkontakteBot(ChatBot):
 
     async def vk_listener(self) -> None:
         while True:
-            if self.__greeting_enabled and self.__admin is not None:
-                await self._sender_func(f"{self.name} is started!", self.__admin)
+            if self.__greeting_enabled and self._admin is not None:
+                await self._sender_func(f"{self.name} is started!", self._admin)
 
             try:
                 async for update in self._get_updates_async():
@@ -631,27 +652,27 @@ class VkontakteBot(ChatBot):
             return 0
         # notify administrator
         elif error_code in (
-            3,
-            8,
-            9,
-            14,
-            15,
-            16,
-            17,
-            18,
-            23,
-            24,
-            29,
-            30,
-            113,
-            150,
-            200,
-            201,
-            203,
-            300,
-            500,
-            600,
-            603,
+                3,
+                8,
+                9,
+                14,
+                15,
+                16,
+                17,
+                18,
+                23,
+                24,
+                29,
+                30,
+                113,
+                150,
+                200,
+                201,
+                203,
+                300,
+                500,
+                600,
+                603,
         ):
             await self.logger.error_async(msg)
             return 1
@@ -697,6 +718,7 @@ def build_task_caller(info: TaskInfo, bot: Bot) -> Callable[..., Any]:
 
     def wrapped_caller() -> Any:  # noqa: ANN401
         return call_raisable_function_async(caller, bot)
+
     return wrapped_caller
 
 
