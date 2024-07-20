@@ -14,7 +14,7 @@ def shutdown_app() -> None:
     raise ExitApplicationException("Exited from administrator")
 
 
-async def shutdown_bot_async(bot_name: str) -> bool:
+def shutdown_bot(bot_name: str) -> bool:
     """
     Shutdown the instance. Won't restart.
     If param bot_name is provided, it closes the current task.
