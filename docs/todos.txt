@@ -2,6 +2,7 @@ ERRORS
 ======
 - Add logs everywhere in views
 - Message from admin sending functions doesn't log if raised.
+- Bots with not overloaded loggers won't use app's logger
 
 ROADMAP
 =======
