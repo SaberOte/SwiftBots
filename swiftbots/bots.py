@@ -402,7 +402,7 @@ class TelegramBot(ChatBot):
         error_msg: str = error["description"]
         msg = f"Error {error_code} from TG API: {error_msg}"
         # notify administrator and repeat request
-        if error_code in (400, 403, 404, 406, 500, 303):
+        if error_code in (400, 403, 404, 406, 303) or 500 <= error_code <= 599:
             await self.logger.error_async(msg)
             return 1
         # too many requests (flood)
@@ -424,7 +424,7 @@ class TelegramBot(ChatBot):
             await self.logger.critical_async(msg)
             raise ExitBotException(msg)
         else:
-            await self.logger.error_async("Unknown error. Add code" + msg)
+            await self.logger.error_async("Unknown error. Add code " + msg)
             return 1
 
     async def _skip_old_updates_async(self) -> int:
@@ -673,7 +673,7 @@ class VkontakteBot(ChatBot):
                 500,
                 600,
                 603,
-        ):
+        ) or 500 <= error_code <= 599:
             await self.logger.error_async(msg)
             return 1
         # too many requests
