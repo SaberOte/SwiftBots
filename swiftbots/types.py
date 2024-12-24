@@ -9,4 +9,4 @@ class DependencyContainer:
 
 DecoratedCallable = TypeVar("DecoratedCallable", bound=Callable[..., Any])
 AsyncSenderFunction = TypeVar("AsyncSenderFunction", bound=Callable[[str, Union[str, int]], Any])
-AsyncListenerFunction = TypeVar("AsyncListenerFunction", bound=[AsyncGenerator[[], dict]])
+AsyncListenerFunction = TypeVar("AsyncListenerFunction", bound=AsyncGenerator[Any, dict])
