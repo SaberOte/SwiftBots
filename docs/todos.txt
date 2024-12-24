@@ -15,6 +15,7 @@ ROADMAP
 NEW FEATURES
 ============
 - Make REST api view.
+- Add admin with report method as a dependency
 
 REFACTORING
 ===========
