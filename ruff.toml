@@ -28,8 +28,6 @@ ignore = [
     "Q000",
     # use X | Y, not Optional[X]. But I support python 3.9
     "UP007",
-    # use list, not typing.List. But I support python 3.8
-    "UP035",
     "UP006"
 ]
 
