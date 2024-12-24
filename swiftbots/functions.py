@@ -3,7 +3,7 @@ import random
 import string
 from collections.abc import Callable
 from traceback import format_exc
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any
 
 from swiftbots.types import DependencyContainer
 
@@ -22,7 +22,7 @@ def is_dependable_param(param: inspect.Parameter) -> bool:
     return isinstance(param.default, DependencyContainer)
 
 
-def resolve_function_args(function: Callable[..., Any], given_data: Dict) -> Dict:
+def resolve_function_args(function: Callable[..., Any], given_data: dict) -> dict:
     sig = inspect.signature(function)
     args = {}
     for param in sig.parameters.values():
@@ -43,7 +43,7 @@ def resolve_function_args(function: Callable[..., Any], given_data: Dict) -> Dic
     return args
 
 
-def decompose_bot_as_dependencies(bot: 'Bot') -> Dict[str, Any]:
+def decompose_bot_as_dependencies(bot: 'Bot') -> dict[str, Any]:
     return {
         'name': bot.name,
         'logger': bot.logger,

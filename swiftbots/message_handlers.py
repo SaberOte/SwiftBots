@@ -1,6 +1,6 @@
 import re
 from collections.abc import Coroutine
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from swiftbots.functions import resolve_function_args
 from swiftbots.types import DecoratedCallable
@@ -14,10 +14,10 @@ __trimmer = re.compile(r"\s+$")
 
 class ChatMessageHandler:
     def __init__(self,
-                 commands: List[str],
+                 commands: list[str],
                  function: DecoratedCallable,
-                 whitelist_users: Optional[List[Union[str, int]]],
-                 blacklist_users: Optional[List[Union[str, int]]]):
+                 whitelist_users: Optional[list[Union[str, int]]],
+                 blacklist_users: Optional[list[Union[str, int]]]):
         self.commands = commands
         self.function = function
         self.whitelist_users = None if whitelist_users is None else [str(x).casefold() for x in whitelist_users]
@@ -30,8 +30,8 @@ class CompiledChatCommand:
         command_name: str,
         method: DecoratedCallable,
         pattern: re.Pattern,
-        whitelist_users: Optional[List[str]],
-        blacklist_users: Optional[List[str]]
+        whitelist_users: Optional[list[str]],
+        blacklist_users: Optional[list[str]]
     ):
         self.command_name = command_name
         self.method = method
@@ -54,8 +54,8 @@ def compile_command_as_regex(name: str) -> re.Pattern:
 
 
 def compile_chat_commands(
-    handlers: List[ChatMessageHandler],
-) -> List[CompiledChatCommand]:
+    handlers: list[ChatMessageHandler],
+) -> list[CompiledChatCommand]:
     compiled_commands = [
         CompiledChatCommand(
             command_name=command,
@@ -71,8 +71,8 @@ def compile_chat_commands(
 
 
 def is_user_allowed(user: Union[str, int],
-                    whitelist_users: Optional[List[str]],
-                    blacklist_users: Optional[List[str]]
+                    whitelist_users: Optional[list[str]],
+                    blacklist_users: Optional[list[str]]
                     ) -> bool:
     user = str(user).casefold()
     if blacklist_users is not None:
@@ -85,7 +85,7 @@ def is_user_allowed(user: Union[str, int],
 def handle_message(
         message: str,
         chat: 'Chat',
-        commands: List[CompiledChatCommand],
+        commands: list[CompiledChatCommand],
         default_handler_func: Optional[DecoratedCallable],
         all_deps: dict[str, Any]
 ) -> Coroutine:

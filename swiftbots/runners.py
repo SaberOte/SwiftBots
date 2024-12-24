@@ -1,6 +1,6 @@
 import asyncio
 from traceback import format_exc
-from typing import Any, Dict, Set
+from typing import Any
 
 from swiftbots.all_types import (
     ExitApplicationException,
@@ -14,11 +14,11 @@ from swiftbots.bots import Bot, build_scheduler, stop_bot_async
 from swiftbots.functions import call_raisable_function_async, decompose_bot_as_dependencies, resolve_function_args
 from swiftbots.utils import ErrorRateMonitor
 
-__ALL_TASKS: Set[str] = set()
+__ALL_TASKS: set[str] = set()
 __SCHEDULER_TASK_NAME = '__sched__'
 
 
-def get_all_tasks() -> Set[str]:
+def get_all_tasks() -> set[str]:
     return __ALL_TASKS
 
 
@@ -77,9 +77,9 @@ async def start_async_loop(app_container: AppContainer) -> None:
         await bot.before_start_async()
 
     sched = app_container.scheduler
-    tasks: Set[asyncio.Task] = set()
+    tasks: set[asyncio.Task] = set()
 
-    bots_dict: Dict[str, Bot] = {bot.name: bot for bot in bots}
+    bots_dict: dict[str, Bot] = {bot.name: bot for bot in bots}
     global __ALL_TASKS
     __ALL_TASKS = set(bots_dict.keys())
 

@@ -2,7 +2,7 @@ import asyncio
 import random
 import urllib.parse
 import urllib.request
-from typing import Any, Dict, Optional, Set, Tuple
+from typing import Any, Optional
 
 import aiohttp
 
@@ -32,7 +32,7 @@ async def shutdown_bot_async(bot_name: str) -> bool:
         return False
 
 
-async def get_bot_names_async() -> Tuple[Set[str], Set[str], Set[str]]:
+async def get_bot_names_async() -> tuple[set[str], set[str], set[str]]:
     """
     :returns: 1. a set of all the tasks in app;
     2. set of running tasks;
@@ -68,7 +68,7 @@ async def start_bot_async(bot_name: str) -> int:
 
 
 async def send_telegram_message_async(
-    message: str, admin: str, token: str, data: Optional[Dict[str, Any]] = None
+    message: str, admin: str, token: str, data: Optional[dict[str, Any]] = None
 ) -> None:
     if data is None:
         data = {}
@@ -90,7 +90,7 @@ async def send_telegram_message_async(
 
 
 def send_telegram_message(
-    message: str, admin: str, token: str, data: Optional[Dict[str, Any]] = None
+    message: str, admin: str, token: str, data: Optional[dict[str, Any]] = None
 ) -> None:
     if data is None:
         data = {}
@@ -115,7 +115,7 @@ def send_telegram_message(
 
 
 async def send_vk_message_async(
-    message: str, admin: str, token: str, data: Optional[Dict[str, Any]] = None
+    message: str, admin: str, token: str, data: Optional[dict[str, Any]] = None
 ) -> None:
     if data is None:
         data = {}
@@ -136,7 +136,7 @@ async def send_vk_message_async(
 
 
 def send_vk_message(
-    message: str, admin: str, token: str, data: Optional[Dict[str, Any]] = None
+    message: str, admin: str, token: str, data: Optional[dict[str, Any]] = None
 ) -> None:
     if data is None:
         data = {}

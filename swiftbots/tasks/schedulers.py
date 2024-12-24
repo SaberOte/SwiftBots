@@ -5,7 +5,7 @@ __all__ = [
 import asyncio
 import datetime
 from collections.abc import Callable
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from swiftbots.all_types import IPeriodTrigger, IScheduler
 from swiftbots.tasks.tasks import TaskInfo
@@ -47,7 +47,7 @@ class TaskContainer:
 
 
 class SimpleScheduler(IScheduler):
-    __tasks: Dict[str, TaskContainer]
+    __tasks: dict[str, TaskContainer]
     __ping_updates_period_seconds: float = 1.0
     __supported_trigger_types = (IPeriodTrigger,)
 
@@ -69,7 +69,7 @@ class SimpleScheduler(IScheduler):
         assert name in self.__tasks, f'Task {name} has not been added'
         del self.__tasks[name]
 
-    def list_tasks(self) -> List[str]:
+    def list_tasks(self) -> list[str]:
         return list(self.__tasks.keys())
 
     async def start(self) -> None:
@@ -78,7 +78,7 @@ class SimpleScheduler(IScheduler):
             await self.__run_pending_tasks()
             await asyncio.sleep(self.__ping_updates_period_seconds)
 
-    def __find_tasks_to_run(self) -> List[TaskContainer]:
+    def __find_tasks_to_run(self) -> list[TaskContainer]:
         return [task for task in self.__tasks.values() if task.should_run()]
 
     async def __run_pending_tasks(self) -> None:

@@ -1,5 +1,3 @@
-from typing import List
-
 from swiftbots.all_types import ITrigger
 from swiftbots.types import DecoratedCallable
 
@@ -8,7 +6,7 @@ class TaskInfo:
     def __init__(self,
                  name: str,
                  func: DecoratedCallable,
-                 triggers: List[ITrigger],
+                 triggers: list[ITrigger],
                  run_at_start: bool):
         self.name = name
         self.func = func

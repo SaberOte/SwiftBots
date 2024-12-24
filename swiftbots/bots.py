@@ -1,7 +1,7 @@
 import asyncio
 import random
-from collections.abc import Callable
-from typing import Any, AsyncGenerator, Coroutine, Dict, List, Optional, Tuple, TypeVar, Union
+from collections.abc import AsyncGenerator, Callable, Coroutine
+from typing import Any, Optional, TypeVar, Union
 
 import aiohttp
 
@@ -36,7 +36,7 @@ class Bot:
     This bot can only have a listener, a handler or tasks"""
     listener_func: AsyncListenerFunction
     handler_func: DecoratedCallable
-    task_infos: List[TaskInfo]
+    task_infos: list[TaskInfo]
     __logger: ILogger
 
     def __init__(
@@ -85,7 +85,7 @@ class Bot:
 
     def task(
             self,
-            triggers: Union[ITrigger, List[ITrigger]],
+            triggers: Union[ITrigger, list[ITrigger]],
             run_at_start: bool = False,
             name: Optional[str] = None
     ) -> Callable[[DecoratedCallable], TaskInfo]:
@@ -140,7 +140,7 @@ class StubBot(Bot):
         self.listener_func = self.stub_listener
         self.handler_func = self.stub_handler
 
-    async def stub_listener(self) -> Dict:
+    async def stub_listener(self) -> dict:
         while True:
             await asyncio.sleep(1000000.)
             if False:
@@ -154,9 +154,9 @@ class StubBot(Bot):
 class ChatBot(Bot):
     Chat = TypeVar('Chat', bound=Chat)
     _sender_func: AsyncSenderFunction
-    _compiled_chat_commands: List[CompiledChatCommand]
+    _compiled_chat_commands: list[CompiledChatCommand]
     _default_handler_func: Optional[DecoratedCallable] = None
-    _message_handlers: List[ChatMessageHandler]
+    _message_handlers: list[ChatMessageHandler]
     _admin: Optional[str] = None
 
     def __init__(self,
@@ -187,10 +187,10 @@ class ChatBot(Bot):
         self.handler_func = handler
 
     def message_handler(self,
-                        commands: List[str],
+                        commands: list[str],
                         admin_only: bool = False,
-                        whitelist_users: Optional[List[Union[str, int]]] = None,
-                        blacklist_users: Optional[List[Union[str, int]]] = None) -> DecoratedCallable:
+                        whitelist_users: Optional[list[Union[str, int]]] = None,
+                        blacklist_users: Optional[list[Union[str, int]]] = None) -> DecoratedCallable:
         """
         :param commands: commands, that will fire the method. For example: ['add', '+']. Message "add 2 2" will execute in this method.
         :param admin_only: only admin will be able to use this command. If True, whitelist_users list will be ignored.
@@ -286,7 +286,7 @@ class TelegramBot(ChatBot):
 
         self.handler_func = handler
 
-    async def _send_async(self, message: str, user: Union[str, int]) -> Dict:
+    async def _send_async(self, message: str, user: Union[str, int]) -> dict:
         messages = [message[i: i + 4096] for i in range(0, len(message), 4096)]
         result = {}
         for msg in messages:
@@ -297,10 +297,10 @@ class TelegramBot(ChatBot):
     async def fetch_async(
             self,
             method: str,
-            data: Dict,
-            headers: Optional[Dict] = None,
+            data: dict,
+            headers: Optional[dict] = None,
             ignore_errors: bool = False,
-    ) -> Dict:
+    ) -> dict:
         url = f"https://api.telegram.org/bot{self.__token}/{method}"
         response = await self.__http_session.post(url=url, json=data, headers=headers)
 
@@ -332,7 +332,7 @@ class TelegramBot(ChatBot):
             except (aiohttp.ServerConnectionError, aiohttp.ClientConnectorError):
                 await self._handle_server_connection_error_async()
 
-    async def _deconstruct_message_async(self, update: Dict) -> Union[Dict, None]:
+    async def _deconstruct_message_async(self, update: dict) -> Union[dict, None]:
         """
         https://core.telegram.org/bots/api#message
         """
@@ -448,7 +448,7 @@ class TelegramBot(ChatBot):
 class VkontakteBot(ChatBot):
     Chat = TypeVar('Chat', bound=VkChat)
     _group_id: int
-    __default_headers: Dict
+    __default_headers: dict
     __http_session: aiohttp.client.ClientSession
     __first_time_launched = True
     ALLOWED_UPDATES = ["messages"]
@@ -518,11 +518,11 @@ class VkontakteBot(ChatBot):
     async def fetch_async(
             self,
             method: str,
-            data: Optional[Dict] = None,
-            headers: Optional[Dict] = None,
-            query_data: Optional[Dict] = None,
+            data: Optional[dict] = None,
+            headers: Optional[dict] = None,
+            query_data: Optional[dict] = None,
             ignore_errors: bool = False,
-    ) -> Dict:
+    ) -> dict:
         args = (
             "".join([f"{name}={value}&" for name, value in query_data.items()])
             if query_data
@@ -571,7 +571,7 @@ class VkontakteBot(ChatBot):
             except (aiohttp.ServerConnectionError, aiohttp.ClientConnectorError):
                 await self._handle_server_connection_error_async()
 
-    async def _deconstruct_message_async(self, update: dict) -> Dict:
+    async def _deconstruct_message_async(self, update: dict) -> dict:
         message = update["object"]["message"]
         text: str = message["text"]
         sender: int = message["from_id"]
@@ -589,7 +589,7 @@ class VkontakteBot(ChatBot):
         )
         await asyncio.sleep(5)
 
-    async def _get_long_poll_server_async(self) -> Tuple[str, str, str]:
+    async def _get_long_poll_server_async(self) -> tuple[str, str, str]:
         """
         https://dev.vk.com/ru/api/bots-long-poll/getting-started#Подключение
         """
@@ -722,7 +722,7 @@ def build_task_caller(info: TaskInfo, bot: Bot) -> Callable[..., Any]:
     return wrapped_caller
 
 
-def build_scheduler(bots: List[Bot], scheduler: IScheduler) -> None:
+def build_scheduler(bots: list[Bot], scheduler: IScheduler) -> None:
     task_names = set()
     for bot in bots:
         for task_info in bot.task_infos:

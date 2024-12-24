@@ -1,6 +1,6 @@
 import random
 from collections.abc import Callable
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 
 from swiftbots.all_types import ILogger
 from swiftbots.types import AsyncSenderFunction
@@ -79,7 +79,7 @@ class TelegramChat(Chat):
         self.fetch_async = fetch_async
 
     async def update_message_async(
-        self, new_text: str, message_id: int, data: Optional[Dict] = None
+        self, new_text: str, message_id: int, data: Optional[dict] = None
     ) -> dict:
         if data is None:
             data = {}

@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 from swiftbots.all_types import ILogger, ILoggerFactory, IScheduler
 from swiftbots.app.container import AppContainer
@@ -19,7 +19,7 @@ class SwiftBots:
             logger_factory, ILoggerFactory
         ), "Logger factory must be of type ILoggerFactory"
 
-        self.__bots: Dict[str, Bot] = {}
+        self.__bots: dict[str, Bot] = {}
         self.__logger_factory: ILoggerFactory = logger_factory or SysIOLoggerFactory()
         self.__logger: ILogger = self.__logger_factory.get_logger()
         self.__scheduler: IScheduler = scheduler or SimpleScheduler()
@@ -38,7 +38,7 @@ class SwiftBots:
 
         self.__bots[bot.name] = bot
 
-    def add_bots(self, bots: Union[Bot, List[Bot]]) -> None:
+    def add_bots(self, bots: Union[Bot, list[Bot]]) -> None:
         if isinstance(bots, list):
             for bot in bots:
                 self.add_bot(bot)

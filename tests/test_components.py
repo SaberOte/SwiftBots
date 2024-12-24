@@ -1,6 +1,5 @@
 import asyncio
 from datetime import datetime, timedelta
-from typing import List, Tuple
 
 import pytest
 
@@ -27,7 +26,7 @@ class TestComponents:
 
     @pytest.mark.timeout(8)
     def test_simple_scheduler(self):
-        logs: List[Tuple[str, int]] = []
+        logs: list[tuple[str, int]] = []
 
         def get_now() -> datetime:
             return datetime.now()

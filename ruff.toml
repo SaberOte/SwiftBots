@@ -1,6 +1,6 @@
 line-length = 121
 indent-width = 4
-target-version = "py310"
+target-version = "py39"
 
 [lint]
 extend-select = [
@@ -16,8 +16,6 @@ extend-select = [
 ]
 
 ignore = [
-    # annotate `self`. wtf ?????
-    "ANN101",
     # annotate `__init__` ???????
     "ANN204",
     # annotate *args :/

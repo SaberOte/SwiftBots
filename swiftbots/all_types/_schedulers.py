@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from swiftbots.tasks import TaskInfo
@@ -23,7 +23,7 @@ class IScheduler(ABC):
         ...
 
     @abstractmethod
-    def list_tasks(self) -> List[str]:
+    def list_tasks(self) -> list[str]:
         """Return a list of tasks which now are scheduled"""
         ...
 
