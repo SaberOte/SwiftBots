@@ -1,22 +1,19 @@
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.poetry]
+[project]
 name = "swiftbots"
-version = "0.3.0rc2"
+version = "0.3.1"
 description = "Python asynchronous web framework for rapid any-level bots development"
-authors = ["Polka <you@example.com>"]
 readme = "docs/README.md"
 repository = "https://github.com/SaberOte/SwiftBots"
+requires-python = ">=3.9.0"
+dependencies = [
+    "aiohttp>=3.11.14",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.9.0"
-aiohttp = "^3.0.0"
-
-[tool.poetry.group.dev.dependencies]
-ruff = "*"
-aiosqlite = "*"
-pytest = "*"
-pytest-timeout = "*"
-mypy = "*"
+[dependency-groups]
+dev = [
+    "aiosqlite>=0.21.0",
+    "mypy>=1.15.0",
+    "pytest>=8.3.5",
+    "pytest-timeout>=2.3.1",
+    "ruff>=0.11.2",
+]
