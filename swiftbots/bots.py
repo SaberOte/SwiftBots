@@ -337,27 +337,33 @@ class TelegramBot(ChatBot):
         https://core.telegram.org/bots/api#message
         """
         update = update["result"][0]
-        if "message" in update and "text" in update["message"]:
+        if "message" in update:
             message = update["message"]
-            text = message["text"]
             sender = message["from"]["id"]
             username = (
                 message["from"]["username"]
                 if "username" in message["from"]
                 else None
             )
+            text = ''
+            photo = None
+            if "text" in message:
+                text = message["text"]
+            if "photo" in message:
+                photo = message["photo"][-1]["file_id"]
             await self.logger.info_async(
-                f"Came message from '{sender}' ({username}): '{text}'"
+                f"Came message {'with photo' + photo if photo else ''} from '{sender}' ({username}): '{text}'"
             )
-            return {
-                "message": text,
-                "sender": sender,
-                "message_id": message["message_id"],
-                "username": username,
-                "raw_update": update
-            }
-        else:
-            await self.logger.error_async("Unknown message type:\n" + str(update))
+            if text or photo:
+                return {
+                    "message": text,
+                    "photo": photo,
+                    "sender": sender,
+                    "message_id": message["message_id"],
+                    "username": username,
+                    "raw_update": update
+                }
+        await self.logger.error_async("Unknown message type:\n" + str(update))
         return None
 
     async def _handle_server_connection_error_async(self) -> None:
