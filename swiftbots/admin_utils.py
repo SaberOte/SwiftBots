@@ -1,10 +1,8 @@
 import asyncio
 import random
-import urllib.parse
-import urllib.request
 from typing import Any, Optional
 
-import aiohttp
+import httpx
 
 from swiftbots.all_types import ExitApplicationException, StartBotException
 from swiftbots.runners import get_all_tasks
@@ -74,7 +72,7 @@ async def send_telegram_message_async(
         data = {}
 
     is_traceback = "Traceback" in message and "parse_mode" not in data
-    async with aiohttp.ClientSession() as session:
+    async with httpx.AsyncClient() as session:
         messages = [message[i : i + 4096] for i in range(0, len(message), 4096)]
         for msg in messages:
             send_data = {
@@ -104,14 +102,7 @@ def send_telegram_message(
         if is_traceback:
             send_data["parse_mode"] = "markdown"
         send_data.update(data)
-
-        encoded_data = urllib.parse.urlencode(send_data).encode()
-        req = urllib.request.Request(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            data=encoded_data,
-            method="POST",
-        )
-        urllib.request.urlopen(req)
+        httpx.post(f"https://api.telegram.org/bot{token}/sendMessage", json=send_data)
 
 
 async def send_vk_message_async(
@@ -119,7 +110,7 @@ async def send_vk_message_async(
 ) -> None:
     if data is None:
         data = {}
-    async with aiohttp.ClientSession() as session:
+    async with httpx.AsyncClient() as session:
         messages = [message[i : i + 4096] for i in range(0, len(message), 4096)]
         for msg in messages:
             send_data = {
@@ -150,10 +141,4 @@ def send_vk_message(
         }
         send_data.update(data)
 
-        encoded_data = urllib.parse.urlencode(send_data).encode()
-        req = urllib.request.Request(
-            f"https://api.vk.com/method/messages.send?v=5.199&access_token={token}",
-            data=encoded_data,
-            method="POST",
-        )
-        urllib.request.urlopen(req)
+        httpx.post(f"https://api.vk.com/method/messages.send?v=5.199&access_token={token}", json=send_data)

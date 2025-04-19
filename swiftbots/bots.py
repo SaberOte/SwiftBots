@@ -3,7 +3,7 @@ import random
 from collections.abc import AsyncGenerator, Callable, Coroutine
 from typing import Any, Optional, TypeVar, Union
 
-import aiohttp
+import httpx
 
 from swiftbots.all_types import (
     ExitBotException,
@@ -245,7 +245,7 @@ class ChatBot(Bot):
 class TelegramBot(ChatBot):
     Chat = TypeVar('Chat', bound=TelegramChat)
     __token: str
-    __http_session: aiohttp.client.ClientSession
+    __http_session: httpx.AsyncClient
     __first_time_launched = True
     ALLOWED_UPDATES = ["messages"]
 
@@ -335,7 +335,7 @@ class TelegramBot(ChatBot):
                     if data:
                         yield data
 
-            except (aiohttp.ServerConnectionError, aiohttp.ClientConnectorError):
+            except httpx.ConnectError:
                 await self._handle_server_connection_error_async()
 
     async def _deconstruct_message_async(self, update: dict) -> Union[dict, None]:
@@ -449,19 +449,19 @@ class TelegramBot(ChatBot):
 
     async def before_close_async(self) -> None:
         await super().before_close_async()
-        if not self.__http_session.closed:
-            await self.__http_session.close()
+        if not self.__http_session.is_closed:
+            await self.__http_session.aclose()
 
     async def before_start_async(self) -> None:
         await super().before_start_async()
-        self.__http_session = aiohttp.ClientSession()
+        self.__http_session = httpx.AsyncClient()
 
 
 class VkontakteBot(ChatBot):
     Chat = TypeVar('Chat', bound=VkChat)
     _group_id: int
     __default_headers: dict
-    __http_session: aiohttp.client.ClientSession
+    __http_session: httpx.AsyncClient
     __first_time_launched = True
     ALLOWED_UPDATES = ["messages"]
 
@@ -580,7 +580,7 @@ class VkontakteBot(ChatBot):
                     if data:
                         yield data
 
-            except (aiohttp.ServerConnectionError, aiohttp.ClientConnectorError):
+            except httpx.ConnectError:
                 await self._handle_server_connection_error_async()
 
     async def _deconstruct_message_async(self, update: dict) -> dict:
@@ -711,12 +711,12 @@ class VkontakteBot(ChatBot):
 
     async def before_close_async(self) -> None:
         await super().before_close_async()
-        if not self.__http_session.closed:
-            await self.__http_session.close()
+        if not self.__http_session.is_closed:
+            await self.__http_session.aclose()
 
     async def before_start_async(self) -> None:
         await super().before_start_async()
-        self.__http_session = aiohttp.ClientSession()
+        self.__http_session = httpx.AsyncClient()
 
 
 def build_task_caller(info: TaskInfo, bot: Bot) -> Callable[..., Any]:
