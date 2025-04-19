@@ -12,6 +12,7 @@ ROADMAP
 - Implement new app design like in file examples/new_ui.py
 - Add picture handling for TelegramBot
 - Integrate uvicorn
+- use normal logger
 
 NEW FEATURES
 ============

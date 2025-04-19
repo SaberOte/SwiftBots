@@ -5,7 +5,7 @@ description = "Python asynchronous web framework for rapid any-level bots develo
 readme = "docs/README.md"
 requires-python = ">=3.9.0"
 dependencies = [
-    "httpx>=0.28.1",
+    "httpx>=0.23.0",
 ]
 
 [dependency-groups]
