@@ -1,6 +1,6 @@
 [project]
 name = "swiftbots"
-version = "0.4.2"
+version = "0.5.0"
 description = "Python asynchronous web framework for rapid any-level bots development"
 readme = "docs/README.md"
 requires-python = ">=3.9.0"
