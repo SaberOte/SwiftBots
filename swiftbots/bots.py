@@ -26,6 +26,8 @@ from swiftbots.message_handlers import (
     CompiledChatCommand,
     compile_chat_commands,
     handle_message,
+    Trie,
+    insert_trie,
 )
 from swiftbots.tasks.tasks import TaskInfo
 from swiftbots.types import AsyncListenerFunction, AsyncSenderFunction, DecoratedCallable
@@ -158,6 +160,7 @@ class ChatBot(Bot):
     _default_handler_func: Optional[DecoratedCallable] = None
     _message_handlers: list[ChatMessageHandler]
     _admin: Optional[str] = None
+    _trie: Trie
 
     def __init__(self,
                  name: Optional[str] = None,
@@ -170,6 +173,7 @@ class ChatBot(Bot):
         super().__init__(name=name, bot_logger_factory=bot_logger_factory)
         self._message_handlers = list()
         self._admin = admin
+        self._trie = {}
 
         def handler(message: str, sender: Union[str, int], all_deps: dict[str, Any]) -> Coroutine:
             chat = Chat(
@@ -227,13 +231,15 @@ class ChatBot(Bot):
         return wrapper
 
     def overridden_handler(self, message: str, chat: Chat, all_deps: dict[str, Any]) -> Coroutine:
-        return handle_message(message, chat, self._compiled_chat_commands, self._default_handler_func, all_deps)
+        return handle_message(message, chat, self._trie, self._default_handler_func, all_deps)
 
     async def before_start_async(self) -> None:
         await super().before_start_async()
         # TODO: do assert, check if listener_func is exist in self
         self._compiled_chat_commands = compile_chat_commands(self._message_handlers)
         self._message_handlers.clear()
+        for command in self._compiled_chat_commands:
+            insert_trie(self._trie, command.command_name.lower(), command)
 
 
 class TelegramBot(ChatBot):

@@ -1,51 +1,11 @@
-import re
-from typing import Callable
+from typing import Optional
 
 import pytest
 
-from swiftbots.message_handlers import compile_command_as_regex, CompiledChatCommand
+from swiftbots.message_handlers import compile_command_as_regex, CompiledChatCommand, insert_trie, search_best_command_match, Trie
 
 
-FINAL_INDICATOR = '**'
-type Trie = dict[str, Trie | CompiledChatCommand]
-
-
-def insert_trie(trie: Trie, word: str, command: CompiledChatCommand) -> None:
-    for ch in word:
-        trie = trie.setdefault(ch, {})
-    trie[FINAL_INDICATOR] = command
-
-
-def search_trie(trie: Trie, word: str) -> Trie | None:
-    """
-    Searches the first full command match in the trie.
-    """
-    for ch in word:
-        trie = trie.get(ch)
-        if trie is None:
-            return None
-        if FINAL_INDICATOR in trie:
-            return trie
-    return None
-
-
-def search_best_command_match(trie: Trie, word: str) -> tuple[CompiledChatCommand | None, re.Match | None]:
-    matches = []
-    sub_word = word
-    while trie:
-        trie = search_trie(trie, sub_word)
-        if trie:
-            command: CompiledChatCommand = trie[FINAL_INDICATOR]
-            matches.append(command)
-            sub_word = word[len(command.command_name):]
-    for command in reversed(matches):
-        match = command.pattern.fullmatch(word)
-        if match:
-            return command, match
-    return None, None
-
-
-def try_on(trie: Trie, word: str) -> None | int:
+def try_on(trie: Trie, word: str) -> Optional[int]:
     command, match = search_best_command_match(trie, word)
     if command:
         return command.method()
