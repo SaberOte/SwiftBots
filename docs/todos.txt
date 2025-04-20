@@ -4,8 +4,9 @@ ERRORS
 - Message from admin sending functions doesn't log if raised.
 - Bots with not overloaded loggers won't use app's logger
 
-ROADMAP
-=======
+TODOS
+=====
+- Add admin with report method as a dependency
 - Load in the app settings before it starts. Settings like the map of tasks/views/bots to run.
 - Remove sqlalchemy and alembic from project. They're useless here.
 - Implement new app design like in file examples/new_ui.py
@@ -13,13 +14,9 @@ ROADMAP
 - use normal logger
 - Remake ways to start/stop bots. Using base exception breaks a grpc server
 
-NEW FEATURES
-============
-- Add admin with report method as a dependency
-
 REFACTORING
 ===========
-- Write docs
+- Write some docs
 - Use license
 
 TODOS TESTS
