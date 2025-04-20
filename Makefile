@@ -19,4 +19,4 @@ blac:
 	black --check -t py310 --diff .
 
 build:
-	poetry build
+	uv build
