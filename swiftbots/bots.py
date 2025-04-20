@@ -310,7 +310,7 @@ class TelegramBot(ChatBot):
         url = f"https://api.telegram.org/bot{self.__token}/{method}"
         response = await self.__http_session.post(url=url, json=data, headers=headers)
 
-        answer = await response.json()
+        answer = response.json()
 
         if not answer["ok"] and not ignore_errors:
             state = await self._handle_error_async(answer)
@@ -319,7 +319,7 @@ class TelegramBot(ChatBot):
                 response = await self.__http_session.post(
                     url=url, json=data, headers=headers
                 )
-                answer = await response.json()
+                answer = response.json()
             if not answer["ok"]:
                 raise RestartListeningException()
         return answer
@@ -555,7 +555,7 @@ class VkontakteBot(ChatBot):
             url=url, data=data, headers=request_headers
         )
 
-        answer = await response.json()
+        answer = response.json()
         if "error" in answer and not ignore_errors:
             state = await self._handle_error_async(answer)
             if state == 0:  # repeat request
@@ -563,7 +563,7 @@ class VkontakteBot(ChatBot):
                 response = await self.__http_session.post(
                     url=url, data=data, headers=request_headers
                 )
-                answer = await response.json()
+                answer = response.json()
             if "error" in answer:
                 await self.logger.info_async("Error and Restart Listener invoked: " + str(answer))
                 raise RestartListeningException()
@@ -631,7 +631,7 @@ class VkontakteBot(ChatBot):
         while True:
             url = f"{server}?act=a_check&key={key}&ts={ts}&wait={timeout}"
             ans = await self.__http_session.post(url=url)
-            result = await ans.json()
+            result = ans.json()
             if "updates" in result:
                 updates = result["updates"]
                 if len(updates) != 0:
