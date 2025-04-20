@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package bots_admin;
+
+service BotsAdmin {
+  rpc Ping (BotNameRequest) returns (StatusReply) {}
+  rpc Start (BotNameRequest) returns (StatusReply) {}
+  rpc Stop (BotNameRequest) returns (StatusReply) {}
+}
+
+message BotNameRequest {
+  string name = 1;
+}
+
+message StatusReply {
+  string status = 1;
+}
