@@ -13,6 +13,7 @@ TODOS
 - Add picture handling for TelegramBot
 - use normal logger
 - Remake ways to start/stop bots. Using base exception breaks a grpc server
+- Make integration with celery
 
 REFACTORING
 ===========
