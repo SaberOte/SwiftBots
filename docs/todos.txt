@@ -6,27 +6,21 @@ ERRORS
 
 ROADMAP
 =======
-- Make utils for managing tasks like: view a list of tasks, stop task, run task.
 - Load in the app settings before it starts. Settings like the map of tasks/views/bots to run.
 - Remove sqlalchemy and alembic from project. They're useless here.
 - Implement new app design like in file examples/new_ui.py
 - Add picture handling for TelegramBot
-- Integrate uvicorn
 - use normal logger
+- Remake ways to start/stop bots. Using base exception breaks a grpc server
 
 NEW FEATURES
 ============
-- Make REST api view.
 - Add admin with report method as a dependency
 
 REFACTORING
 ===========
 - Write docs
-- Make license like GPL
-- Try pyright instead of mypy
-- Set __all__ in some modules
+- Use license
 
 TODOS TESTS
 ===========
-- Check in tests DatabaseConnectionProvider (sqlite inmemory).
-- Check AbstractMessangerView
