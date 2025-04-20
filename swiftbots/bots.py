@@ -306,9 +306,10 @@ class TelegramBot(ChatBot):
             data: dict,
             headers: Optional[dict] = None,
             ignore_errors: bool = False,
+            timeout: float = 30.,
     ) -> dict:
         url = f"https://api.telegram.org/bot{self.__token}/{method}"
-        response = await self.__http_session.post(url=url, json=data, headers=headers)
+        response = await self.__http_session.post(url=url, json=data, headers=headers, timeout=timeout)
 
         answer = response.json()
 
@@ -317,7 +318,7 @@ class TelegramBot(ChatBot):
             if state == 0:  # repeat request
                 await asyncio.sleep(4)
                 response = await self.__http_session.post(
-                    url=url, json=data, headers=headers
+                    url=url, json=data, headers=headers, timeout=timeout
                 )
                 answer = response.json()
             if not answer["ok"]:
@@ -388,7 +389,7 @@ class TelegramBot(ChatBot):
             self.first_time_launched = False
             data["offset"] = await self._skip_old_updates_async()
         while True:
-            ans = await self.fetch_async("getUpdates", data, ignore_errors=True)
+            ans = await self.fetch_async("getUpdates", data, ignore_errors=True, timeout=timeout*2)
             if not ans["ok"]:
                 state = await self._handle_error_async(ans)
                 if state == 0:
@@ -534,6 +535,7 @@ class VkontakteBot(ChatBot):
             headers: Optional[dict] = None,
             query_data: Optional[dict] = None,
             ignore_errors: bool = False,
+            timeout: float = 30.,
     ) -> dict:
         args = (
             "".join([f"{name}={value}&" for name, value in query_data.items()])
@@ -552,7 +554,7 @@ class VkontakteBot(ChatBot):
             request_headers.update(headers)
 
         response = await self.__http_session.post(
-            url=url, data=data, headers=request_headers
+            url=url, data=data, headers=request_headers, timeout=timeout
         )
 
         answer = response.json()
@@ -561,7 +563,7 @@ class VkontakteBot(ChatBot):
             if state == 0:  # repeat request
                 await asyncio.sleep(5)
                 response = await self.__http_session.post(
-                    url=url, data=data, headers=request_headers
+                    url=url, data=data, headers=request_headers, timeout=timeout
                 )
                 answer = response.json()
             if "error" in answer:
@@ -630,7 +632,7 @@ class VkontakteBot(ChatBot):
         timeout = "25"
         while True:
             url = f"{server}?act=a_check&key={key}&ts={ts}&wait={timeout}"
-            ans = await self.__http_session.post(url=url)
+            ans = await self.__http_session.post(url=url, timeout=float(timeout)*2)
             result = ans.json()
             if "updates" in result:
                 updates = result["updates"]
